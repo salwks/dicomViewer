@@ -15,7 +15,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loadedFiles, setLoadedFiles] = useState<File[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [layoutType, setLayoutType] = useState<'1x1' | '2x2'>('1x1');
   const [renderingSuccess, setRenderingSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,8 +26,10 @@ function App() {
     annotations, 
     annotationsVisible, 
     panZoomEnabled,
+    layoutType,
     setAnnotationsVisible,
     setPanZoomEnabled,
+    setLayout,
     clearAllAnnotations
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
@@ -36,8 +37,10 @@ function App() {
     annotations: state.annotations,
     annotationsVisible: state.annotationsVisible,
     panZoomEnabled: state.panZoomEnabled,
+    layoutType: state.layoutType,
     setAnnotationsVisible: state.setAnnotationsVisible,
     setPanZoomEnabled: state.setPanZoomEnabled,
+    setLayout: state.setLayout,
     clearAllAnnotations: state.clearAllAnnotations
   }));
 
@@ -375,8 +378,12 @@ function App() {
                   <button
                     key={layout}
                     className={`toolbar-button ${layoutType === layout ? 'active' : ''}`}
-                    onClick={() => setLayoutType(layout)}
+                    onClick={() => {
+                      debugLogger.log(`🔄 레이아웃 변경 요청: ${layout}`);
+                      setLayout(layout);
+                    }}
                     disabled={isLoading}
+                    title={`${layout} 레이아웃으로 변경`}
                   >
                     <Grid size={16} />
                     <span className="toolbar-button-text">{layout}</span>

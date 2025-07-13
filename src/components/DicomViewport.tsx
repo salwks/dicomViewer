@@ -16,7 +16,8 @@ import {
   RectangleROITool,
   EllipticalROITool,
   ArrowAnnotateTool,
-  annotation
+  annotation,
+  Enums as ToolsEnums
 } from '@cornerstonejs/tools';
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
@@ -130,29 +131,134 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       }
     };
 
-    // 이벤트 리스너 등록
-    eventTarget.addEventListener('ANNOTATION_COMPLETED', handleAnnotationCompleted);
-    eventTarget.addEventListener('ANNOTATION_MODIFIED', handleAnnotationModified);
-    eventTarget.addEventListener('ANNOTATION_REMOVED', handleAnnotationRemoved);
+    // 🔥 Cornerstone3D 정확한 이벤트 이름 사용
+    const annotationCompletedEvent = ToolsEnums.Events.ANNOTATION_COMPLETED;
+    const annotationModifiedEvent = ToolsEnums.Events.ANNOTATION_MODIFIED;
+    const annotationRemovedEvent = ToolsEnums.Events.ANNOTATION_REMOVED;
 
-    // DOM 이벤트 방식도 지원 (백업)
-    document.addEventListener('cornerstoneAnnotationCompleted', handleAnnotationCompleted);
-    document.addEventListener('cornerstoneAnnotationModified', handleAnnotationModified);
-    document.addEventListener('cornerstoneAnnotationRemoved', handleAnnotationRemoved);
+    debugLogger.log('🎯 주석 이벤트 등록', {
+      completedEvent: annotationCompletedEvent,
+      modifiedEvent: annotationModifiedEvent,
+      removedEvent: annotationRemovedEvent
+    });
+
+    // 이벤트 리스너 등록
+    eventTarget.addEventListener(annotationCompletedEvent, handleAnnotationCompleted);
+    eventTarget.addEventListener(annotationModifiedEvent, handleAnnotationModified);
+    eventTarget.addEventListener(annotationRemovedEvent, handleAnnotationRemoved);
+
+    // 추가적으로 다른 주석 관련 이벤트들도 모니터링
+    eventTarget.addEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
+    eventTarget.addEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
+    eventTarget.addEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
+
+    // 🔥 더 포괄적인 이벤트 모니터링 (디버깅용)
+    const allEventTypes = [
+      'annotationCompleted',
+      'annotationModified', 
+      'annotationAdded',
+      'measurementAdded',
+      'measurementCompleted'
+    ];
+
+    allEventTypes.forEach(eventType => {
+      eventTarget.addEventListener(eventType, (event: any) => {
+        debugLogger.log(`🎯 이벤트 감지: ${eventType}`, event.detail);
+        // 모든 주석 관련 이벤트를 완료 이벤트로 처리
+        if (event.detail && event.detail.annotation) {
+          handleAnnotationCompleted(event);
+        }
+      });
+    });
+
+    // 마우스 이벤트도 모니터링 (주석 생성 감지용)
+    const viewportElement = document.querySelector('#dicom-viewport') || 
+                           document.querySelector('.viewport-container-inner');
+    
+    if (viewportElement) {
+      const mouseUpHandler = () => {
+        // 마우스 업 후 약간의 지연을 두고 주석 상태 확인
+        setTimeout(() => {
+          try {
+            const annotationManager = annotation.state;
+            const allAnnotations = annotationManager.getAllAnnotations();
+            
+            debugLogger.log('💫 마우스 업 후 주석 확인', {
+              총주석수: Object.keys(allAnnotations).length,
+              주석목록: allAnnotations
+            });
+            
+            // 새로운 주석이 있으면 스토어에 추가
+            Object.values(allAnnotations).forEach((frameAnnotations: any) => {
+              frameAnnotations.forEach((ann: any) => {
+                if (ann && ann.annotationUID) {
+                  const existingAnnotation = useDicomStore.getState().annotations.find(
+                    a => a.annotationUID === ann.annotationUID
+                  );
+                  
+                  if (!existingAnnotation) {
+                    debugLogger.success('📝 새 주석 발견, 스토어에 추가', ann);
+                    const annotationData = {
+                      annotationUID: ann.annotationUID,
+                      toolName: ann.metadata?.toolName || ann.data?.label || 'Unknown',
+                      data: ann.data,
+                      metadata: ann.metadata,
+                      viewportId: 'dicom-viewport'
+                    };
+                    addAnnotation(annotationData);
+                  }
+                }
+              });
+            });
+          } catch (error) {
+            debugLogger.error('마우스 업 후 주석 확인 실패', error);
+          }
+        }, 100);
+      };
+
+      viewportElement.addEventListener('mouseup', mouseUpHandler);
+      
+      // 정리 함수에 마우스 이벤트 제거 추가
+      const originalCleanup = setupAnnotationEventListeners;
+      return () => {
+        // 기존 정리 작업
+        eventTarget.removeEventListener(annotationCompletedEvent, handleAnnotationCompleted);
+        eventTarget.removeEventListener(annotationModifiedEvent, handleAnnotationModified);
+        eventTarget.removeEventListener(annotationRemovedEvent, handleAnnotationRemoved);
+
+        eventTarget.removeEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
+        eventTarget.removeEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
+        eventTarget.removeEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
+
+        // 추가 이벤트 정리
+        allEventTypes.forEach(eventType => {
+          eventTarget.removeEventListener(eventType, handleAnnotationCompleted);
+        });
+
+        // 마우스 이벤트 정리
+        viewportElement.removeEventListener('mouseup', mouseUpHandler);
+
+        debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
+      };
+    }
 
     debugLogger.success('✅ 주석 이벤트 리스너 등록 완료');
 
-    // 정리 함수 반환
+    // 기본 정리 함수 (viewportElement가 없는 경우)
     return () => {
-      eventTarget.removeEventListener('ANNOTATION_COMPLETED', handleAnnotationCompleted);
-      eventTarget.removeEventListener('ANNOTATION_MODIFIED', handleAnnotationModified);
-      eventTarget.removeEventListener('ANNOTATION_REMOVED', handleAnnotationRemoved);
+      eventTarget.removeEventListener(annotationCompletedEvent, handleAnnotationCompleted);
+      eventTarget.removeEventListener(annotationModifiedEvent, handleAnnotationModified);
+      eventTarget.removeEventListener(annotationRemovedEvent, handleAnnotationRemoved);
 
-      document.removeEventListener('cornerstoneAnnotationCompleted', handleAnnotationCompleted);
-      document.removeEventListener('cornerstoneAnnotationModified', handleAnnotationModified);
-      document.removeEventListener('cornerstoneAnnotationRemoved', handleAnnotationRemoved);
+      eventTarget.removeEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
+      eventTarget.removeEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
+      eventTarget.removeEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
 
-      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
+      allEventTypes.forEach(eventType => {
+        eventTarget.removeEventListener(eventType, handleAnnotationCompleted);
+      });
+
+      debugLogger.log('🧹 기본 주석 이벤트 리스너 정리 완료');
     };
   };
 

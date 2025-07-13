@@ -28,7 +28,8 @@ export const useDicomStore = create<DicomViewerState>()(
     // Initial state
     viewports: new Map(),
     activeViewportId: null,
-    layoutType: '1x1',
+    layoutType: '1x1' as LayoutType,
+    viewportConfigs: new Map(), // 뷰포트별 설정 저장
     
     loadedSeries: [],
     currentSeries: null,
@@ -60,9 +61,113 @@ export const useDicomStore = create<DicomViewerState>()(
     setLayout: (layout: LayoutType) => {
       const state = get();
       if (state.layoutType !== layout) {
-        console.log(`Changing layout from ${state.layoutType} to ${layout}`);
+        console.log(`🔄 레이아웃 변경: ${state.layoutType} → ${layout}`);
         set({ layoutType: layout });
+        
+        // 레이아웃 변경 시 렌더링 엔진 재구성 트리거
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          get().applyLayoutChange(layout, renderingEngine);
+        }
       }
+    },
+
+    // 레이아웃 변경 적용
+    applyLayoutChange: (layout: LayoutType, renderingEngine: any) => {
+      console.log(`🏗️ 레이아웃 적용 시작: ${layout}`);
+      
+      try {
+        // 기존 뷰포트들 정리
+        const existingViewports = ['dicom-viewport', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
+        existingViewports.forEach(viewportId => {
+          try {
+            const viewport = renderingEngine.getViewport(viewportId);
+            if (viewport) {
+              renderingEngine.disableElement(viewportId);
+            }
+          } catch (e) {
+            // 뷰포트가 없으면 무시
+          }
+        });
+
+        // 새 레이아웃에 따라 뷰포트 설정
+        if (layout === '1x1') {
+          get().setupSingleViewport(renderingEngine);
+        } else if (layout === '2x2') {
+          get().setupQuadViewports(renderingEngine);
+        }
+        
+        console.log(`✅ 레이아웃 적용 완료: ${layout}`);
+        
+      } catch (error) {
+        console.error(`❌ 레이아웃 변경 실패:`, error);
+      }
+    },
+
+    // 1x1 레이아웃 설정
+    setupSingleViewport: (renderingEngine: any) => {
+      console.log('🔧 1x1 레이아웃 설정');
+      
+      // 메인 뷰포트 재활성화
+      const mainElement = document.querySelector('.viewport-container-inner') as HTMLElement;
+      if (mainElement) {
+        const viewportInput = {
+          viewportId: 'dicom-viewport',
+          type: 'STACK' as any,
+          element: mainElement,
+          defaultOptions: {
+            background: [0, 0, 0] as [number, number, number],
+          }
+        };
+        
+        renderingEngine.enableElement(viewportInput);
+        console.log('✅ 1x1 뷰포트 활성화 완료');
+      }
+    },
+
+    // 2x2 레이아웃 설정
+    setupQuadViewports: (renderingEngine: any) => {
+      console.log('🔧 2x2 레이아웃 설정');
+      
+      const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
+      if (!mainContainer) return;
+
+      // 기존 내용 제거
+      mainContainer.innerHTML = '';
+      
+      // 2x2 그리드 스타일 적용
+      mainContainer.style.display = 'grid';
+      mainContainer.style.gridTemplateColumns = '1fr 1fr';
+      mainContainer.style.gridTemplateRows = '1fr 1fr';
+      mainContainer.style.gap = '2px';
+      
+      // 4개의 뷰포트 요소 생성
+      const viewportIds = ['dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
+      
+      viewportIds.forEach((viewportId, index) => {
+        const viewportElement = document.createElement('div');
+        viewportElement.id = viewportId;
+        viewportElement.style.backgroundColor = '#000000';
+        viewportElement.style.border = '1px solid #333';
+        viewportElement.style.minHeight = '200px';
+        
+        mainContainer.appendChild(viewportElement);
+        
+        // 뷰포트 활성화
+        const viewportInput = {
+          viewportId,
+          type: 'STACK' as any,
+          element: viewportElement,
+          defaultOptions: {
+            background: [0, 0, 0] as [number, number, number],
+          }
+        };
+        
+        renderingEngine.enableElement(viewportInput);
+        console.log(`✅ 뷰포트 ${index + 1} 활성화 완료`);
+      });
+      
+      console.log('✅ 2x2 레이아웃 설정 완료');
     },
 
     loadSeries: (series: SeriesInfo) => {
