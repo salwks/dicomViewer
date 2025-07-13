@@ -28,10 +28,8 @@ function App() {
     annotations, 
     annotationsVisible, 
     panZoomEnabled,
-    layoutType,
     setAnnotationsVisible,
     setPanZoomEnabled,
-    setLayout,
     clearAllAnnotations,
     removeAnnotation,
     updateAnnotationLabel
@@ -41,10 +39,8 @@ function App() {
     annotations: state.annotations,
     annotationsVisible: state.annotationsVisible,
     panZoomEnabled: state.panZoomEnabled,
-    layoutType: state.layoutType,
     setAnnotationsVisible: state.setAnnotationsVisible,
     setPanZoomEnabled: state.setPanZoomEnabled,
-    setLayout: state.setLayout,
     clearAllAnnotations: state.clearAllAnnotations,
     removeAnnotation: state.removeAnnotation,
     updateAnnotationLabel: state.updateAnnotationLabel
@@ -472,14 +468,65 @@ function App() {
             <div className="toolbar-section">
               <label className="toolbar-label">기본 도구</label>
               <div className="toolbar-group">
-                {['Pan', 'Zoom', 'WindowLevel'].map((tool) => (
+                {[
+                  { tool: 'Pan', abbrev: 'P', tooltip: 'Pan Tool - 화면 이동' },
+                  { tool: 'Zoom', abbrev: 'Z', tooltip: 'Zoom Tool - 확대/축소' },
+                  { tool: 'WindowLevel', abbrev: 'W', tooltip: 'Window Level Tool - 창 레벨 조정' },
+                  { tool: 'Magnify', abbrev: 'M', tooltip: 'Magnify Tool - 돋보기' },
+                ].map(({ tool, abbrev, tooltip }) => (
                   <button
                     key={tool}
                     className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
                     onClick={() => setActiveTool(tool)}
                     disabled={isLoading}
+                    title={tooltip}
                   >
-                    <span className="toolbar-button-text">{tool}</span>
+                    <span className="toolbar-button-text">{abbrev}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Measurement Tools Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">측정 도구</label>
+              <div className="toolbar-group">
+                {[
+                  { tool: 'Length', abbrev: 'L', tooltip: 'Length Tool - 길이 측정' },
+                  { tool: 'Angle', abbrev: 'A', tooltip: 'Angle Tool - 각도 측정' },
+                  { tool: 'CobbAngle', abbrev: 'C', tooltip: 'Cobb Angle Tool - 콥 각도' },
+                  { tool: 'Bidirectional', abbrev: 'B', tooltip: 'Bidirectional Tool - 양방향 측정' },
+                ].map(({ tool, abbrev, tooltip }) => (
+                  <button
+                    key={tool}
+                    className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
+                    onClick={() => setActiveTool(tool)}
+                    disabled={isLoading}
+                    title={tooltip}
+                  >
+                    <span className="toolbar-button-text">{abbrev}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ROI Tools Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">ROI 도구</label>
+              <div className="toolbar-group">
+                {[
+                  { tool: 'RectangleROI', abbrev: 'R', tooltip: 'Rectangle ROI - 사각형 관심영역' },
+                  { tool: 'EllipticalROI', abbrev: 'E', tooltip: 'Elliptical ROI - 타원형 관심영역' },
+                  { tool: 'CircleROI', abbrev: 'O', tooltip: 'Circle ROI - 원형 관심영역' },
+                ].map(({ tool, abbrev, tooltip }) => (
+                  <button
+                    key={tool}
+                    className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
+                    onClick={() => setActiveTool(tool)}
+                    disabled={isLoading}
+                    title={tooltip}
+                  >
+                    <span className="toolbar-button-text">{abbrev}</span>
                   </button>
                 ))}
               </div>
@@ -489,45 +536,24 @@ function App() {
             <div className="toolbar-section">
               <label className="toolbar-label">주석 도구</label>
               <div className="toolbar-group">
-                {['Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'].map((tool) => (
+                {[
+                  { tool: 'ArrowAnnotate', abbrev: 'Ar', tooltip: 'Arrow Annotate - 화살표 주석' },
+                  { tool: 'Probe', abbrev: 'Pr', tooltip: 'Probe Tool - 탐침 도구' },
+                ].map(({ tool, abbrev, tooltip }) => (
                   <button
                     key={tool}
                     className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
                     onClick={() => setActiveTool(tool)}
                     disabled={isLoading}
+                    title={tooltip}
                   >
-                    <span className="toolbar-button-text">
-                      {tool === 'Length' ? '길이 측정' :
-                       tool === 'RectangleROI' ? '사각형 ROI' :
-                       tool === 'EllipticalROI' ? '타원형 ROI' :
-                       tool === 'ArrowAnnotate' ? '화살표 주석' : tool}
-                    </span>
+                    <span className="toolbar-button-text">{abbrev}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Layout Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">레이아웃</label>
-              <div className="toolbar-group">
-                {(['1x1', '2x2'] as const).map((layout) => (
-                  <button
-                    key={layout}
-                    className={`toolbar-button ${layoutType === layout ? 'active' : ''}`}
-                    onClick={() => {
-                      debugLogger.log(`🔄 레이아웃 변경 요청: ${layout}`);
-                      setLayout(layout);
-                    }}
-                    disabled={isLoading}
-                    title={`${layout} 레이아웃으로 변경`}
-                  >
-                    <Grid size={16} />
-                    <span className="toolbar-button-text">{layout}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Layout Section Removed for Stability */}
 
             {/* Debug Section */}
             <div className="toolbar-section">
@@ -579,7 +605,6 @@ function App() {
             <div className="viewport-container-inner">
               {/* Viewport info */}
               <div className="viewport-info">
-                <span className="layout-indicator">Layout: {layoutType}</span>
                 <span className="engine-indicator">Tool: {activeTool}</span>
               </div>
 

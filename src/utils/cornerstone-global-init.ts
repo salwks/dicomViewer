@@ -12,7 +12,13 @@ import {
   LengthTool,
   RectangleROITool,
   EllipticalROITool,
-  ArrowAnnotateTool
+  ArrowAnnotateTool,
+  AngleTool,
+  CobbAngleTool,
+  ProbeTool,
+  CircleROITool,
+  BidirectionalTool,
+  MagnifyTool
 } from '@cornerstonejs/tools';
 import cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';
 import dicomParser from 'dicom-parser';
@@ -100,14 +106,27 @@ async function performGlobalInitialization(): Promise<boolean> {
     debugLogger.log('🛠️ 도구 등록 시작...');
     
     const toolsToRegister = [
+      // Basic Tools
       { tool: PanTool, name: 'Pan' },
       { tool: ZoomTool, name: 'Zoom' },
       { tool: WindowLevelTool, name: 'WindowLevel' },
       { tool: StackScrollTool, name: 'StackScroll' },
+      { tool: MagnifyTool, name: 'Magnify' },
+      
+      // Measurement Tools
       { tool: LengthTool, name: 'Length' },
+      { tool: AngleTool, name: 'Angle' },
+      { tool: CobbAngleTool, name: 'CobbAngle' },
+      { tool: BidirectionalTool, name: 'Bidirectional' },
+      
+      // ROI Tools
       { tool: RectangleROITool, name: 'RectangleROI' },
       { tool: EllipticalROITool, name: 'EllipticalROI' },
-      { tool: ArrowAnnotateTool, name: 'ArrowAnnotate' }
+      { tool: CircleROITool, name: 'CircleROI' },
+      
+      // Annotation Tools
+      { tool: ArrowAnnotateTool, name: 'ArrowAnnotate' },
+      { tool: ProbeTool, name: 'Probe' }
     ];
 
     for (const { tool, name } of toolsToRegister) {

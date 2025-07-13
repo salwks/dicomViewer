@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { annotation } from '@cornerstonejs/tools';
 import type { 
   DicomViewerState, 
   ViewportConfig, 
@@ -28,7 +29,6 @@ export const useDicomStore = create<DicomViewerState>()(
     // Initial state
     viewports: new Map(),
     activeViewportId: null,
-    layoutType: '1x1' as LayoutType,
     viewportConfigs: new Map(), // 뷰포트별 설정 저장
     
     loadedSeries: [],
@@ -58,186 +58,7 @@ export const useDicomStore = create<DicomViewerState>()(
       set({ activeViewportId: viewportId });
     },
 
-    setLayout: (layout: LayoutType) => {
-      const state = get();
-      if (state.layoutType !== layout) {
-        console.log(`🔄 레이아웃 변경: ${state.layoutType} → ${layout}`);
-        set({ layoutType: layout });
-        
-        // 레이아웃 변경 시 렌더링 엔진 재구성 트리거
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (renderingEngine) {
-          get().applyLayoutChange(layout, renderingEngine);
-        }
-      }
-    },
-
-    // 레이아웃 변경 적용
-    applyLayoutChange: (layout: LayoutType, renderingEngine: any) => {
-      console.log(`🏗️ 레이아웃 적용 시작: ${layout}`);
-      
-      try {
-        // 기존 뷰포트들 정리
-        const existingViewports = ['dicom-viewport', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
-        existingViewports.forEach(viewportId => {
-          try {
-            const viewport = renderingEngine.getViewport(viewportId);
-            if (viewport) {
-              renderingEngine.disableElement(viewportId);
-            }
-          } catch (e) {
-            // 뷰포트가 없으면 무시
-          }
-        });
-
-        // 새 레이아웃에 따라 뷰포트 설정
-        if (layout === '1x1') {
-          get().setupSingleViewport(renderingEngine);
-        } else if (layout === '2x2') {
-          get().setupQuadViewports(renderingEngine);
-        }
-        
-        console.log(`✅ 레이아웃 적용 완료: ${layout}`);
-        
-      } catch (error) {
-        console.error(`❌ 레이아웃 변경 실패:`, error);
-      }
-    },
-
-    // 1x1 레이아웃 설정
-    setupSingleViewport: (renderingEngine: any) => {
-      console.log('🔧 1x1 레이아웃 설정');
-      
-      try {
-        const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
-        if (!mainContainer) {
-          console.error('메인 컨테이너를 찾을 수 없음');
-          return;
-        }
-
-        // 기존 내용 정리
-        mainContainer.innerHTML = '';
-        
-        // 단일 뷰포트 스타일 복원
-        mainContainer.style.display = 'block';
-        mainContainer.style.gridTemplateColumns = '';
-        mainContainer.style.gridTemplateRows = '';
-        mainContainer.style.gap = '';
-
-        // 새 뷰포트 요소 생성
-        const viewportElement = document.createElement('div');
-        viewportElement.style.width = '100%';
-        viewportElement.style.height = '100%';
-        viewportElement.style.minHeight = '400px';
-        viewportElement.style.backgroundColor = '#000000';
-        
-        mainContainer.appendChild(viewportElement);
-
-        // 🔥 올바른 Enums 사용
-        const { Enums } = require('@cornerstonejs/core');
-        const viewportInput = {
-          viewportId: 'dicom-viewport',
-          type: Enums.ViewportType.STACK,
-          element: viewportElement,
-          defaultOptions: {
-            background: [0, 0, 0] as [number, number, number],
-          }
-        };
-        
-        renderingEngine.enableElement(viewportInput);
-        console.log('✅ 1x1 뷰포트 활성화 완료');
-
-        // 기존 이미지 데이터 복원
-        get().restoreImageData('dicom-viewport');
-        
-      } catch (error) {
-        console.error('1x1 레이아웃 설정 실패:', error);
-      }
-    },
-
-    // 2x2 레이아웃 설정  
-    setupQuadViewports: (renderingEngine: any) => {
-      console.log('🔧 2x2 레이아웃 설정');
-      
-      try {
-        const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
-        if (!mainContainer) {
-          console.error('메인 컨테이너를 찾을 수 없음');
-          return;
-        }
-
-        // 기존 내용 제거
-        mainContainer.innerHTML = '';
-        
-        // 2x2 그리드 스타일 적용
-        mainContainer.style.display = 'grid';
-        mainContainer.style.gridTemplateColumns = '1fr 1fr';
-        mainContainer.style.gridTemplateRows = '1fr 1fr';
-        mainContainer.style.gap = '2px';
-        
-        // 4개의 뷰포트 요소 생성
-        const viewportIds = ['dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
-        
-        viewportIds.forEach((viewportId, index) => {
-          const viewportElement = document.createElement('div');
-          viewportElement.id = viewportId;
-          viewportElement.style.backgroundColor = '#000000';
-          viewportElement.style.border = '1px solid #333';
-          viewportElement.style.minHeight = '200px';
-          
-          mainContainer.appendChild(viewportElement);
-          
-          // 🔥 올바른 Enums 사용
-          const { Enums } = require('@cornerstonejs/core');
-          const viewportInput = {
-            viewportId,
-            type: Enums.ViewportType.STACK,
-            element: viewportElement,
-            defaultOptions: {
-              background: [0, 0, 0] as [number, number, number],
-            }
-          };
-          
-          renderingEngine.enableElement(viewportInput);
-          console.log(`✅ 뷰포트 ${index + 1} (${viewportId}) 활성화 완료`);
-
-          // 각 뷰포트에 동일한 이미지 데이터 적용
-          get().restoreImageData(viewportId);
-        });
-        
-        console.log('✅ 2x2 레이아웃 설정 완료');
-        
-      } catch (error) {
-        console.error('2x2 레이아웃 설정 실패:', error);
-      }
-    },
-
-    // 이미지 데이터 복원 (레이아웃 변경 시 사용)
-    restoreImageData: (viewportId: string) => {
-      try {
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (!renderingEngine) return;
-
-        const viewport = renderingEngine.getViewport(viewportId);
-        if (!viewport) return;
-
-        // 기존 이미지 스택 정보 가져오기
-        const mainViewport = renderingEngine.getViewport('dicom-viewport');
-        if (mainViewport && mainViewport.getImageIds) {
-          const imageIds = mainViewport.getImageIds();
-          if (imageIds && imageIds.length > 0) {
-            viewport.setStack(imageIds).then(() => {
-              viewport.render();
-              console.log(`✅ ${viewportId}에 이미지 데이터 복원 완료`);
-            }).catch((error: any) => {
-              console.error(`${viewportId} 이미지 복원 실패:`, error);
-            });
-          }
-        }
-      } catch (error) {
-        console.error(`이미지 데이터 복원 실패 (${viewportId}):`, error);
-      }
-    },
+    // Layout functionality completely removed for single viewport stability
 
     loadSeries: (series: SeriesInfo) => {
       set((state) => {
@@ -285,8 +106,12 @@ export const useDicomStore = create<DicomViewerState>()(
         console.log(`🔧 도구 활성화 시작: ${toolName}`);
 
         // Define tool categories and their activation logic
-        const annotationTools = ['Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'];
-        const basicTools = ['Pan', 'Zoom', 'WindowLevel'];
+        const annotationTools = [
+          'Length', 'Angle', 'CobbAngle', 'Bidirectional',
+          'RectangleROI', 'EllipticalROI', 'CircleROI',
+          'ArrowAnnotate', 'Probe'
+        ];
+        const basicTools = ['Pan', 'Zoom', 'WindowLevel', 'StackScroll', 'Magnify'];
 
         console.log(`📋 도구 카테고리 확인:`, {
           toolName,
@@ -294,8 +119,9 @@ export const useDicomStore = create<DicomViewerState>()(
           isBasicTool: basicTools.includes(toolName)
         });
 
-        // Reset all annotation tools to passive first
-        annotationTools.forEach(tool => {
+        // Reset all tools to passive first
+        const allTools = [...annotationTools, ...basicTools];
+        allTools.forEach(tool => {
           try {
             toolGroupRef.current.setToolPassive(tool);
           } catch (e) {
@@ -303,32 +129,12 @@ export const useDicomStore = create<DicomViewerState>()(
           }
         });
 
-        // 🔥 핵심 수정: 모든 도구를 마우스 왼쪽 버튼에 명시적으로 바인딩
-        
-        // 1단계: 모든 기본 도구들을 먼저 passive로 설정
-        basicTools.forEach(tool => {
-          try {
-            toolGroupRef.current.setToolPassive(tool);
-          } catch (e) {
-            console.warn(`Failed to set ${tool} passive:`, e);
-          }
-        });
-
-        // 2단계: 선택된 도구만 마우스 왼쪽 버튼에 활성화
-        if (annotationTools.includes(toolName)) {
-          // 주석 도구 활성화
+        // 선택된 도구만 마우스 왼쪽 버튼에 활성화
+        if (annotationTools.includes(toolName) || basicTools.includes(toolName)) {
           toolGroupRef.current.setToolActive(toolName, {
             bindings: [{ mouseButton: 1 }] // 마우스 왼쪽 버튼
           });
-          console.log(`✅ 주석 도구 활성화: ${toolName} (왼쪽 버튼에 바인딩)`);
-          
-        } else if (basicTools.includes(toolName)) {
-          // 🔥 기본 도구도 마우스 왼쪽 버튼에 명시적으로 바인딩!
-          toolGroupRef.current.setToolActive(toolName, {
-            bindings: [{ mouseButton: 1 }] // 마우스 왼쪽 버튼
-          });
-          console.log(`✅ 기본 도구 활성화: ${toolName} (왼쪽 버튼에 바인딩)`);
-          
+          console.log(`✅ 도구 활성화: ${toolName} (왼쪽 버튼에 바인딩)`);
         } else {
           console.warn(`Unknown tool: ${toolName}`);
           return false;
@@ -428,27 +234,21 @@ export const useDicomStore = create<DicomViewerState>()(
 
       // 🔥 Cornerstone에서 주석 제거 (화면에서 즉시 사라짐)
       try {
-        const { annotation } = require('@cornerstonejs/tools');
         annotation.state.removeAnnotation(annotationUID);
         console.log(`✅ Cornerstone에서 주석 제거 완료: ${annotationUID}`);
         
-        // 추가: 모든 뷰포트에서 주석 제거 (2x2 레이아웃 지원)
+        // 단일 뷰포트 새로고침
         const renderingEngine = (window as any).cornerstoneRenderingEngine;
         if (renderingEngine) {
-          const viewportIds = ['dicom-viewport', 'dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
-          
-          viewportIds.forEach(viewportId => {
-            try {
-              const viewport = renderingEngine.getViewport(viewportId);
-              if (viewport) {
-                viewport.render();
-              }
-            } catch (e) {
-              // 뷰포트가 존재하지 않는 경우 무시
+          try {
+            const viewport = renderingEngine.getViewport('dicom-viewport');
+            if (viewport) {
+              viewport.render();
+              console.log('✅ 뷰포트 새로고침 완료');
             }
-          });
-          
-          console.log('✅ 모든 뷰포트 새로고침 완료');
+          } catch (e) {
+            console.warn('뷰포트 새로고침 실패:', e);
+          }
         }
         
       } catch (error) {
@@ -508,7 +308,13 @@ export const useDicomStore = create<DicomViewerState>()(
         if (toolGroupRef?.current) {
           try {
             // 모든 도구를 passive로 설정
-            ['WindowLevel', 'Pan', 'Zoom', 'Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'].forEach(tool => {
+            const allToolNames = [
+              'WindowLevel', 'Pan', 'Zoom', 'StackScroll', 'Magnify',
+              'Length', 'Angle', 'CobbAngle', 'Bidirectional',
+              'RectangleROI', 'EllipticalROI', 'CircleROI',
+              'ArrowAnnotate', 'Probe'
+            ];
+            allToolNames.forEach(tool => {
               toolGroupRef.current.setToolPassive(tool);
             });
             

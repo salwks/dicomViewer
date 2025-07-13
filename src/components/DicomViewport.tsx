@@ -16,6 +16,12 @@ import {
   RectangleROITool,
   EllipticalROITool,
   ArrowAnnotateTool,
+  AngleTool,
+  CobbAngleTool,
+  ProbeTool,
+  CircleROITool,
+  BidirectionalTool,
+  MagnifyTool,
   annotation,
   Enums as ToolsEnums
 } from '@cornerstonejs/tools';
@@ -240,18 +246,45 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
           throw new Error('도구 그룹 생성 실패');
         }
 
-        // 모든 도구 추가
-        toolGroup.addTool(WindowLevelTool.toolName);
-        toolGroup.addTool(PanTool.toolName);
-        toolGroup.addTool(ZoomTool.toolName);
-        toolGroup.addTool(StackScrollTool.toolName);
-        toolGroup.addTool(LengthTool.toolName);
-        toolGroup.addTool(RectangleROITool.toolName);
-        toolGroup.addTool(EllipticalROITool.toolName);
-        toolGroup.addTool(ArrowAnnotateTool.toolName);
+        // 사용 가능한 모든 도구 추가
+        const allTools = [
+          // Basic Tools
+          WindowLevelTool.toolName,
+          PanTool.toolName,
+          ZoomTool.toolName,
+          StackScrollTool.toolName,
+          MagnifyTool.toolName,
+          
+          // Measurement Tools
+          LengthTool.toolName,
+          AngleTool.toolName,
+          CobbAngleTool.toolName,
+          BidirectionalTool.toolName,
+          
+          // ROI Tools
+          RectangleROITool.toolName,
+          EllipticalROITool.toolName,
+          CircleROITool.toolName,
+          
+          // Annotation Tools
+          ArrowAnnotateTool.toolName,
+          ProbeTool.toolName
+        ];
+
+        // 도구 그룹에 모든 도구 추가
+        allTools.forEach(toolName => {
+          toolGroup.addTool(toolName);
+        });
 
         // 모든 도구를 passive로 초기화 (사용자 선택 대기)
-        ['WindowLevel', 'Pan', 'Zoom', 'StackScroll', 'Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'].forEach(tool => {
+        const allToolNames = [
+          'WindowLevel', 'Pan', 'Zoom', 'StackScroll', 'Magnify',
+          'Length', 'Angle', 'CobbAngle', 'Bidirectional',
+          'RectangleROI', 'EllipticalROI', 'CircleROI',
+          'ArrowAnnotate', 'Probe'
+        ];
+        
+        allToolNames.forEach(tool => {
           toolGroup.setToolPassive(tool);
         });
 
