@@ -69,39 +69,65 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     }
   };
 
-  // 🔥 주석 이벤트 리스너 설정 (핵심!)
+  // 🔥 단순화된 주석 이벤트 리스너 (중복 방지)
   const setupAnnotationEventListeners = () => {
-    debugLogger.log('🎯 주석 이벤트 리스너 설정 시작');
+    debugLogger.log('🎯 단순화된 주석 이벤트 리스너 설정 시작');
 
-    // 주석 완료 이벤트 (새 주석 생성됨)
+    // 중복 방지를 위한 Set
+    const processedAnnotations = new Set<string>();
+
+    // 주석 완료 이벤트 핸들러 (단 한 번만 처리)
     const handleAnnotationCompleted = (event: any) => {
-      debugLogger.log('🎉 주석 생성 완료 이벤트 수신', event.detail);
+      debugLogger.log('🎉 주석 완료 이벤트 수신', event.detail);
       
       try {
-        const annotation = event.detail.annotation;
-        if (annotation) {
-          const annotationData = {
-            annotationUID: annotation.annotationUID || `annotation-${Date.now()}`,
-            toolName: annotation.metadata?.toolName || 'Unknown',
-            data: annotation.data,
-            metadata: annotation.metadata,
-            viewportId: 'dicom-viewport'
-          };
-
-          debugLogger.success('📝 새 주석을 스토어에 추가', annotationData);
-          addAnnotation(annotationData);
+        const annotation = event.detail?.annotation;
+        if (!annotation || !annotation.annotationUID) {
+          debugLogger.warn('주석 데이터가 없거나 UID가 없음');
+          return;
         }
+
+        // 🔥 중복 처리 방지
+        if (processedAnnotations.has(annotation.annotationUID)) {
+          debugLogger.log(`이미 처리된 주석: ${annotation.annotationUID}`);
+          return;
+        }
+
+        // 스토어에서도 중복 확인
+        const existingAnnotation = useDicomStore.getState().annotations.find(
+          a => a.annotationUID === annotation.annotationUID
+        );
+        
+        if (existingAnnotation) {
+          debugLogger.log(`스토어에 이미 존재하는 주석: ${annotation.annotationUID}`);
+          return;
+        }
+
+        // 처리 완료 표시
+        processedAnnotations.add(annotation.annotationUID);
+
+        const annotationData = {
+          annotationUID: annotation.annotationUID,
+          toolName: annotation.metadata?.toolName || annotation.data?.label || 'Unknown',
+          data: annotation.data,
+          metadata: annotation.metadata,
+          viewportId: 'dicom-viewport'
+        };
+
+        debugLogger.success('📝 새 주석을 스토어에 추가', annotationData);
+        addAnnotation(annotationData);
+
       } catch (error) {
-        debugLogger.error('주석 생성 이벤트 처리 실패', error);
+        debugLogger.error('주석 완료 이벤트 처리 실패', error);
       }
     };
 
-    // 주석 수정 이벤트
+    // 주석 수정 이벤트 핸들러
     const handleAnnotationModified = (event: any) => {
       debugLogger.log('✏️ 주석 수정 이벤트 수신', event.detail);
       
       try {
-        const annotation = event.detail.annotation;
+        const annotation = event.detail?.annotation;
         if (annotation && annotation.annotationUID) {
           const updates = {
             data: annotation.data,
@@ -116,149 +142,46 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       }
     };
 
-    // 주석 삭제 이벤트
+    // 주석 삭제 이벤트 핸들러
     const handleAnnotationRemoved = (event: any) => {
       debugLogger.log('🗑️ 주석 삭제 이벤트 수신', event.detail);
       
       try {
-        const annotation = event.detail.annotation;
+        const annotation = event.detail?.annotation;
         if (annotation && annotation.annotationUID) {
           debugLogger.log('🗑️ 스토어에서 주석 제거', annotation.annotationUID);
           removeAnnotation(annotation.annotationUID);
+          processedAnnotations.delete(annotation.annotationUID);
         }
       } catch (error) {
         debugLogger.error('주석 삭제 이벤트 처리 실패', error);
       }
     };
 
-    // 🔥 Cornerstone3D 정확한 이벤트 이름 사용
-    const annotationCompletedEvent = ToolsEnums.Events.ANNOTATION_COMPLETED;
-    const annotationModifiedEvent = ToolsEnums.Events.ANNOTATION_MODIFIED;
-    const annotationRemovedEvent = ToolsEnums.Events.ANNOTATION_REMOVED;
+    // 🔥 공식 Cornerstone3D 이벤트만 사용
+    const events = {
+      completed: ToolsEnums.Events.ANNOTATION_COMPLETED,
+      modified: ToolsEnums.Events.ANNOTATION_MODIFIED,
+      removed: ToolsEnums.Events.ANNOTATION_REMOVED
+    };
 
-    debugLogger.log('🎯 주석 이벤트 등록', {
-      completedEvent: annotationCompletedEvent,
-      modifiedEvent: annotationModifiedEvent,
-      removedEvent: annotationRemovedEvent
-    });
+    debugLogger.log('🎯 공식 이벤트 등록', events);
 
-    // 이벤트 리스너 등록
-    eventTarget.addEventListener(annotationCompletedEvent, handleAnnotationCompleted);
-    eventTarget.addEventListener(annotationModifiedEvent, handleAnnotationModified);
-    eventTarget.addEventListener(annotationRemovedEvent, handleAnnotationRemoved);
-
-    // 추가적으로 다른 주석 관련 이벤트들도 모니터링
-    eventTarget.addEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
-    eventTarget.addEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
-    eventTarget.addEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
-
-    // 🔥 더 포괄적인 이벤트 모니터링 (디버깅용)
-    const allEventTypes = [
-      'annotationCompleted',
-      'annotationModified', 
-      'annotationAdded',
-      'measurementAdded',
-      'measurementCompleted'
-    ];
-
-    allEventTypes.forEach(eventType => {
-      eventTarget.addEventListener(eventType, (event: any) => {
-        debugLogger.log(`🎯 이벤트 감지: ${eventType}`, event.detail);
-        // 모든 주석 관련 이벤트를 완료 이벤트로 처리
-        if (event.detail && event.detail.annotation) {
-          handleAnnotationCompleted(event);
-        }
-      });
-    });
-
-    // 마우스 이벤트도 모니터링 (주석 생성 감지용)
-    const viewportElement = document.querySelector('#dicom-viewport') || 
-                           document.querySelector('.viewport-container-inner');
-    
-    if (viewportElement) {
-      const mouseUpHandler = () => {
-        // 마우스 업 후 약간의 지연을 두고 주석 상태 확인
-        setTimeout(() => {
-          try {
-            const annotationManager = annotation.state;
-            const allAnnotations = annotationManager.getAllAnnotations();
-            
-            debugLogger.log('💫 마우스 업 후 주석 확인', {
-              총주석수: Object.keys(allAnnotations).length,
-              주석목록: allAnnotations
-            });
-            
-            // 새로운 주석이 있으면 스토어에 추가
-            Object.values(allAnnotations).forEach((frameAnnotations: any) => {
-              frameAnnotations.forEach((ann: any) => {
-                if (ann && ann.annotationUID) {
-                  const existingAnnotation = useDicomStore.getState().annotations.find(
-                    a => a.annotationUID === ann.annotationUID
-                  );
-                  
-                  if (!existingAnnotation) {
-                    debugLogger.success('📝 새 주석 발견, 스토어에 추가', ann);
-                    const annotationData = {
-                      annotationUID: ann.annotationUID,
-                      toolName: ann.metadata?.toolName || ann.data?.label || 'Unknown',
-                      data: ann.data,
-                      metadata: ann.metadata,
-                      viewportId: 'dicom-viewport'
-                    };
-                    addAnnotation(annotationData);
-                  }
-                }
-              });
-            });
-          } catch (error) {
-            debugLogger.error('마우스 업 후 주석 확인 실패', error);
-          }
-        }, 100);
-      };
-
-      viewportElement.addEventListener('mouseup', mouseUpHandler);
-      
-      // 정리 함수에 마우스 이벤트 제거 추가
-      const originalCleanup = setupAnnotationEventListeners;
-      return () => {
-        // 기존 정리 작업
-        eventTarget.removeEventListener(annotationCompletedEvent, handleAnnotationCompleted);
-        eventTarget.removeEventListener(annotationModifiedEvent, handleAnnotationModified);
-        eventTarget.removeEventListener(annotationRemovedEvent, handleAnnotationRemoved);
-
-        eventTarget.removeEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
-        eventTarget.removeEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
-        eventTarget.removeEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
-
-        // 추가 이벤트 정리
-        allEventTypes.forEach(eventType => {
-          eventTarget.removeEventListener(eventType, handleAnnotationCompleted);
-        });
-
-        // 마우스 이벤트 정리
-        viewportElement.removeEventListener('mouseup', mouseUpHandler);
-
-        debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
-      };
-    }
+    // 이벤트 리스너 등록 (공식 이벤트만)
+    eventTarget.addEventListener(events.completed, handleAnnotationCompleted);
+    eventTarget.addEventListener(events.modified, handleAnnotationModified);
+    eventTarget.addEventListener(events.removed, handleAnnotationRemoved);
 
     debugLogger.success('✅ 주석 이벤트 리스너 등록 완료');
 
-    // 기본 정리 함수 (viewportElement가 없는 경우)
+    // 정리 함수
     return () => {
-      eventTarget.removeEventListener(annotationCompletedEvent, handleAnnotationCompleted);
-      eventTarget.removeEventListener(annotationModifiedEvent, handleAnnotationModified);
-      eventTarget.removeEventListener(annotationRemovedEvent, handleAnnotationRemoved);
-
-      eventTarget.removeEventListener('ANNOTATION_ADDED', handleAnnotationCompleted);
-      eventTarget.removeEventListener('MEASUREMENT_ADDED', handleAnnotationCompleted);
-      eventTarget.removeEventListener('MEASUREMENT_COMPLETED', handleAnnotationCompleted);
-
-      allEventTypes.forEach(eventType => {
-        eventTarget.removeEventListener(eventType, handleAnnotationCompleted);
-      });
-
-      debugLogger.log('🧹 기본 주석 이벤트 리스너 정리 완료');
+      eventTarget.removeEventListener(events.completed, handleAnnotationCompleted);
+      eventTarget.removeEventListener(events.modified, handleAnnotationModified);
+      eventTarget.removeEventListener(events.removed, handleAnnotationRemoved);
+      
+      processedAnnotations.clear();
+      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
     };
   };
 

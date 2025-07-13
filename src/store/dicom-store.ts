@@ -108,55 +108,36 @@ export const useDicomStore = create<DicomViewerState>()(
     setupSingleViewport: (renderingEngine: any) => {
       console.log('🔧 1x1 레이아웃 설정');
       
-      // 메인 뷰포트 재활성화
-      const mainElement = document.querySelector('.viewport-container-inner') as HTMLElement;
-      if (mainElement) {
-        const viewportInput = {
-          viewportId: 'dicom-viewport',
-          type: 'STACK' as any,
-          element: mainElement,
-          defaultOptions: {
-            background: [0, 0, 0] as [number, number, number],
-          }
-        };
+      try {
+        const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
+        if (!mainContainer) {
+          console.error('메인 컨테이너를 찾을 수 없음');
+          return;
+        }
+
+        // 기존 내용 정리
+        mainContainer.innerHTML = '';
         
-        renderingEngine.enableElement(viewportInput);
-        console.log('✅ 1x1 뷰포트 활성화 완료');
-      }
-    },
+        // 단일 뷰포트 스타일 복원
+        mainContainer.style.display = 'block';
+        mainContainer.style.gridTemplateColumns = '';
+        mainContainer.style.gridTemplateRows = '';
+        mainContainer.style.gap = '';
 
-    // 2x2 레이아웃 설정
-    setupQuadViewports: (renderingEngine: any) => {
-      console.log('🔧 2x2 레이아웃 설정');
-      
-      const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
-      if (!mainContainer) return;
-
-      // 기존 내용 제거
-      mainContainer.innerHTML = '';
-      
-      // 2x2 그리드 스타일 적용
-      mainContainer.style.display = 'grid';
-      mainContainer.style.gridTemplateColumns = '1fr 1fr';
-      mainContainer.style.gridTemplateRows = '1fr 1fr';
-      mainContainer.style.gap = '2px';
-      
-      // 4개의 뷰포트 요소 생성
-      const viewportIds = ['dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
-      
-      viewportIds.forEach((viewportId, index) => {
+        // 새 뷰포트 요소 생성
         const viewportElement = document.createElement('div');
-        viewportElement.id = viewportId;
+        viewportElement.style.width = '100%';
+        viewportElement.style.height = '100%';
+        viewportElement.style.minHeight = '400px';
         viewportElement.style.backgroundColor = '#000000';
-        viewportElement.style.border = '1px solid #333';
-        viewportElement.style.minHeight = '200px';
         
         mainContainer.appendChild(viewportElement);
-        
-        // 뷰포트 활성화
+
+        // 🔥 올바른 Enums 사용
+        const { Enums } = require('@cornerstonejs/core');
         const viewportInput = {
-          viewportId,
-          type: 'STACK' as any,
+          viewportId: 'dicom-viewport',
+          type: Enums.ViewportType.STACK,
           element: viewportElement,
           defaultOptions: {
             background: [0, 0, 0] as [number, number, number],
@@ -164,10 +145,98 @@ export const useDicomStore = create<DicomViewerState>()(
         };
         
         renderingEngine.enableElement(viewportInput);
-        console.log(`✅ 뷰포트 ${index + 1} 활성화 완료`);
-      });
+        console.log('✅ 1x1 뷰포트 활성화 완료');
+
+        // 기존 이미지 데이터 복원
+        get().restoreImageData('dicom-viewport');
+        
+      } catch (error) {
+        console.error('1x1 레이아웃 설정 실패:', error);
+      }
+    },
+
+    // 2x2 레이아웃 설정  
+    setupQuadViewports: (renderingEngine: any) => {
+      console.log('🔧 2x2 레이아웃 설정');
       
-      console.log('✅ 2x2 레이아웃 설정 완료');
+      try {
+        const mainContainer = document.querySelector('.viewport-container-inner') as HTMLElement;
+        if (!mainContainer) {
+          console.error('메인 컨테이너를 찾을 수 없음');
+          return;
+        }
+
+        // 기존 내용 제거
+        mainContainer.innerHTML = '';
+        
+        // 2x2 그리드 스타일 적용
+        mainContainer.style.display = 'grid';
+        mainContainer.style.gridTemplateColumns = '1fr 1fr';
+        mainContainer.style.gridTemplateRows = '1fr 1fr';
+        mainContainer.style.gap = '2px';
+        
+        // 4개의 뷰포트 요소 생성
+        const viewportIds = ['dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
+        
+        viewportIds.forEach((viewportId, index) => {
+          const viewportElement = document.createElement('div');
+          viewportElement.id = viewportId;
+          viewportElement.style.backgroundColor = '#000000';
+          viewportElement.style.border = '1px solid #333';
+          viewportElement.style.minHeight = '200px';
+          
+          mainContainer.appendChild(viewportElement);
+          
+          // 🔥 올바른 Enums 사용
+          const { Enums } = require('@cornerstonejs/core');
+          const viewportInput = {
+            viewportId,
+            type: Enums.ViewportType.STACK,
+            element: viewportElement,
+            defaultOptions: {
+              background: [0, 0, 0] as [number, number, number],
+            }
+          };
+          
+          renderingEngine.enableElement(viewportInput);
+          console.log(`✅ 뷰포트 ${index + 1} (${viewportId}) 활성화 완료`);
+
+          // 각 뷰포트에 동일한 이미지 데이터 적용
+          get().restoreImageData(viewportId);
+        });
+        
+        console.log('✅ 2x2 레이아웃 설정 완료');
+        
+      } catch (error) {
+        console.error('2x2 레이아웃 설정 실패:', error);
+      }
+    },
+
+    // 이미지 데이터 복원 (레이아웃 변경 시 사용)
+    restoreImageData: (viewportId: string) => {
+      try {
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (!renderingEngine) return;
+
+        const viewport = renderingEngine.getViewport(viewportId);
+        if (!viewport) return;
+
+        // 기존 이미지 스택 정보 가져오기
+        const mainViewport = renderingEngine.getViewport('dicom-viewport');
+        if (mainViewport && mainViewport.getImageIds) {
+          const imageIds = mainViewport.getImageIds();
+          if (imageIds && imageIds.length > 0) {
+            viewport.setStack(imageIds).then(() => {
+              viewport.render();
+              console.log(`✅ ${viewportId}에 이미지 데이터 복원 완료`);
+            }).catch((error: any) => {
+              console.error(`${viewportId} 이미지 복원 실패:`, error);
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`이미지 데이터 복원 실패 (${viewportId}):`, error);
+      }
     },
 
     loadSeries: (series: SeriesInfo) => {
@@ -316,6 +385,38 @@ export const useDicomStore = create<DicomViewerState>()(
       console.log(`Updated annotation: ${annotationUID}`);
     },
 
+    updateAnnotationLabel: (annotationUID: string, newLabel: string) => {
+      // Ensure annotationUID is string type and newLabel is provided
+      if (typeof annotationUID !== 'string' || !annotationUID) {
+        console.error('Invalid annotationUID provided for label update');
+        return;
+      }
+
+      if (typeof newLabel !== 'string') {
+        console.error('Invalid label provided for annotation update');
+        return;
+      }
+
+      console.log(`📝 주석 라벨 업데이트: ${annotationUID} -> "${newLabel}"`);
+
+      set((state) => ({
+        annotations: state.annotations.map(ann => 
+          ann.annotationUID === annotationUID 
+            ? { 
+                ...ann, 
+                data: { 
+                  ...ann.data, 
+                  label: newLabel,
+                  text: newLabel 
+                }
+              }
+            : ann
+        )
+      }));
+      
+      console.log(`✅ 주석 라벨 업데이트 완료: ${annotationUID}`);
+    },
+
     removeAnnotation: (annotationUID: string) => {
       // Ensure annotationUID is string type - fix for TS2345
       if (typeof annotationUID !== 'string' || !annotationUID) {
@@ -323,6 +424,38 @@ export const useDicomStore = create<DicomViewerState>()(
         return;
       }
 
+      console.log(`🗑️ 주석 삭제 시작: ${annotationUID}`);
+
+      // 🔥 Cornerstone에서 주석 제거 (화면에서 즉시 사라짐)
+      try {
+        const { annotation } = require('@cornerstonejs/tools');
+        annotation.state.removeAnnotation(annotationUID);
+        console.log(`✅ Cornerstone에서 주석 제거 완료: ${annotationUID}`);
+        
+        // 추가: 모든 뷰포트에서 주석 제거 (2x2 레이아웃 지원)
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewportIds = ['dicom-viewport', 'dicom-viewport-0', 'dicom-viewport-1', 'dicom-viewport-2', 'dicom-viewport-3'];
+          
+          viewportIds.forEach(viewportId => {
+            try {
+              const viewport = renderingEngine.getViewport(viewportId);
+              if (viewport) {
+                viewport.render();
+              }
+            } catch (e) {
+              // 뷰포트가 존재하지 않는 경우 무시
+            }
+          });
+          
+          console.log('✅ 모든 뷰포트 새로고침 완료');
+        }
+        
+      } catch (error) {
+        console.error('Cornerstone 주석 제거 실패:', error);
+      }
+
+      // 🔥 Zustand 스토어에서 주석 제거 (목록에서 즉시 사라짐)
       set((state) => ({
         annotations: state.annotations.filter(ann => ann.annotationUID !== annotationUID),
         selectedAnnotationUID: state.selectedAnnotationUID === annotationUID 
@@ -330,7 +463,7 @@ export const useDicomStore = create<DicomViewerState>()(
           : state.selectedAnnotationUID
       }));
       
-      console.log(`Removed annotation: ${annotationUID}`);
+      console.log(`✅ 스토어에서 주석 제거 완료: ${annotationUID}`);
     },
 
     setWindowLevel: (config: WindowLevelConfig) => {

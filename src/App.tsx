@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Layout, Settings, Grid, FileText, Terminal } from 'lucide-react';
+import { Upload, Layout, Settings, Grid, FileText, Terminal, X } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
 import { debugLogger } from './utils/debug-logger';
 import { useDicomStore } from './store/dicom-store';
@@ -16,6 +16,8 @@ function App() {
   const [loadedFiles, setLoadedFiles] = useState<File[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [renderingSuccess, setRenderingSuccess] = useState(false);
+  const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +32,9 @@ function App() {
     setAnnotationsVisible,
     setPanZoomEnabled,
     setLayout,
-    clearAllAnnotations
+    clearAllAnnotations,
+    removeAnnotation,
+    updateAnnotationLabel
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
@@ -41,10 +45,42 @@ function App() {
     setAnnotationsVisible: state.setAnnotationsVisible,
     setPanZoomEnabled: state.setPanZoomEnabled,
     setLayout: state.setLayout,
-    clearAllAnnotations: state.clearAllAnnotations
+    clearAllAnnotations: state.clearAllAnnotations,
+    removeAnnotation: state.removeAnnotation,
+    updateAnnotationLabel: state.updateAnnotationLabel
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
+
+  // 주석 이름 편집 관련 함수들
+  const startEditingAnnotation = (annotationUID: string, currentLabel: string) => {
+    setEditingAnnotationId(annotationUID);
+    setEditingValue(currentLabel || `${annotations.find(a => a.annotationUID === annotationUID)?.toolName} #${annotations.findIndex(a => a.annotationUID === annotationUID) + 1}`);
+    debugLogger.log(`📝 주석 편집 시작: ${annotationUID}`, currentLabel);
+  };
+
+  const saveAnnotationEdit = () => {
+    if (editingAnnotationId && editingValue.trim()) {
+      updateAnnotationLabel(editingAnnotationId, editingValue.trim());
+      debugLogger.log(`💾 주석 라벨 저장: ${editingAnnotationId} -> "${editingValue.trim()}"`);
+    }
+    setEditingAnnotationId(null);
+    setEditingValue('');
+  };
+
+  const cancelAnnotationEdit = () => {
+    setEditingAnnotationId(null);
+    setEditingValue('');
+    debugLogger.log('❌ 주석 편집 취소');
+  };
+
+  const handleAnnotationKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      saveAnnotationEdit();
+    } else if (event.key === 'Escape') {
+      cancelAnnotationEdit();
+    }
+  };
 
   // Initialize default tool
   useEffect(() => {
@@ -224,19 +260,120 @@ function App() {
                   <div className="annotations-list">
                     {annotations.slice(0, 5).map((annotation, index) => (
                       <div key={annotation.annotationUID} className="annotation-item">
-                        <div className="annotation-header">
-                          <span className="annotation-tool">{annotation.toolName}</span>
-                          <span className="annotation-id">
-                            #{index + 1}
-                          </span>
-                        </div>
-                        {annotation.data?.text && (
-                          <div className="annotation-label">
-                            {annotation.data.text}
+                        <div className="annotation-header" style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '4px'
+                        }}>
+                          <div className="annotation-info" style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flex: 1
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className="annotation-tool" style={{ fontSize: '12px', color: '#888' }}>
+                                {annotation.toolName}
+                              </span>
+                              <span className="annotation-id" style={{ fontSize: '12px', color: '#888' }}>
+                                #{index + 1}
+                              </span>
+                            </div>
+                            
+                            {/* 편집 가능한 주석 이름 */}
+                            <div style={{ marginTop: '2px' }}>
+                              {editingAnnotationId === annotation.annotationUID ? (
+                                <input
+                                  type="text"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onKeyPress={handleAnnotationKeyPress}
+                                  onBlur={saveAnnotationEdit}
+                                  autoFocus
+                                  style={{
+                                    border: '1px solid #3b82f6',
+                                    borderRadius: '4px',
+                                    padding: '2px 6px',
+                                    fontSize: '13px',
+                                    width: '100%',
+                                    background: '#fff',
+                                    outline: 'none'
+                                  }}
+                                  placeholder="주석 이름 입력..."
+                                />
+                              ) : (
+                                <span
+                                  className="annotation-name"
+                                  onClick={() => startEditingAnnotation(
+                                    annotation.annotationUID,
+                                    annotation.data?.label || annotation.data?.text || `${annotation.toolName} #${index + 1}`
+                                  )}
+                                  style={{
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    color: '#333',
+                                    padding: '2px 4px',
+                                    borderRadius: '4px',
+                                    transition: 'background-color 0.2s',
+                                    display: 'inline-block',
+                                    minHeight: '20px',
+                                    minWidth: '50px'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                  }}
+                                  title="클릭하여 이름 편집"
+                                >
+                                  {annotation.data?.label || annotation.data?.text || `${annotation.toolName} #${index + 1}`}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
+                          
+                          <button
+                            className="annotation-delete-btn"
+                            onClick={() => {
+                              debugLogger.log(`🗑️ 주석 삭제 요청: ${annotation.annotationUID}`);
+                              removeAnnotation(annotation.annotationUID);
+                            }}
+                            title="주석 삭제"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'background-color 0.2s',
+                              ':hover': {
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                              }
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        
+                        {/* 추가 정보 표시 */}
                         {annotation.data?.length && (
-                          <div className="annotation-label">
+                          <div className="annotation-details" style={{
+                            fontSize: '12px',
+                            color: '#666',
+                            marginTop: '2px'
+                          }}>
                             길이: {annotation.data.length.toFixed(2)}mm
                           </div>
                         )}
