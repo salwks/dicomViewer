@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import type { RenderingEngine } from '@cornerstonejs/core';
 import type { LayoutType } from '../types';
 import type { ModernAnnotationManager } from '../utils/annotation-manager';
@@ -13,7 +13,7 @@ export function ViewportContainer({
   renderingEngine, 
   layoutType,
   annotationManager 
-}: ViewportContainerProps): JSX.Element {
+}: ViewportContainerProps) {
   
   useEffect(() => {
     if (!renderingEngine) return;

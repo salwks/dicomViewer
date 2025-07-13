@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -14,7 +13,7 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export function Sidebar({ isOpen, onToggle }: SidebarProps): JSX.Element {
+export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const currentSeries = useDicomStore(selectCurrentSeries);
   const annotations = useDicomStore(selectAnnotations);
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import { Upload } from 'lucide-react';
 import { 
   MousePointer, 
   Move, 
@@ -39,9 +39,41 @@ export function Toolbar({
   layoutType, 
   onLayoutChange, 
   disabled = false 
-}: ToolbarProps): JSX.Element {
+}: ToolbarProps) {
+  
+  const handleFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.dcm,application/dicom';
+    input.onchange = (e) => {
+      const files = Array.from((e.target as HTMLInputElement).files || []);
+      if (files.length > 0) {
+        // Trigger file processing - this will be handled by the App component
+        const event = new CustomEvent('dicom-files-selected', { detail: files });
+        document.dispatchEvent(event);
+      }
+    };
+    input.click();
+  };
   return (
     <div className="toolbar">
+      {/* File Section */}
+      <div className="toolbar-section">
+        <label className="toolbar-label">File</label>
+        <div className="toolbar-group">
+          <button
+            className="toolbar-button"
+            onClick={handleFileUpload}
+            disabled={disabled}
+            title="Upload DICOM Files"
+          >
+            <Upload size={16} />
+            <span className="toolbar-button-text">파일 불러오기</span>
+          </button>
+        </div>
+      </div>
+
       {/* Tool Section */}
       <div className="toolbar-section">
         <label className="toolbar-label">Tools</label>

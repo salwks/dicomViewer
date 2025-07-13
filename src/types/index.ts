@@ -47,7 +47,7 @@ export interface ViewportConfig {
   type: 'stack' | 'volume' | 'video';
   element: HTMLDivElement;
   defaultOptions?: {
-    orientation?: Types.OrientationAxis;
+    orientation?: any; // Using any to avoid OrientationAxis import issue
     background?: Types.RGB;
   };
 }

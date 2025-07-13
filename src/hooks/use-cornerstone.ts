@@ -124,7 +124,7 @@ export function useCornerstone({
     });
     
     toolGroup.setToolActive(StackScrollTool.toolName, {
-      bindings: [{ mouseButton: ToolEnums.MouseBindings.Wheel }]
+      bindings: [{ mouseButton: 4 }] // Use numeric value instead of MouseBindings.Wheel
     });
 
     // Set annotation tools to passive
