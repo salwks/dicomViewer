@@ -64,10 +64,37 @@ async function performGlobalInitialization(): Promise<boolean> {
     cornerstoneDICOMImageLoader.external.cornerstone = await import('@cornerstonejs/core');
     cornerstoneDICOMImageLoader.external.dicomParser = dicomParser;
 
+    // 🔧 웹 워커 경로 명시적 설정 (핵심!)
+    const webWorkerPath = '/workers/cornerstoneDICOMImageLoaderWebWorker.min.js';
+
+    debugLogger.log('🔧 웹 워커 경로 설정', { 
+      webWorkerPath,
+      isDev: import.meta.env.DEV 
+    });
+
+    // 이미지 로더 웹 워커 설정
+    try {
+      cornerstoneDICOMImageLoader.webWorkerManager.initialize({
+        maxWebWorkers: navigator.hardwareConcurrency || 1,
+        startWebWorkersOnDemand: true,
+        taskConfiguration: {
+          'decodeTask': {
+            initializeCodecsInWorker: true,
+            usePDFJS: false,
+            strict: false
+          }
+        },
+        webWorkerPath: webWorkerPath
+      });
+      debugLogger.success('✅ 웹 워커 매니저 초기화 완료');
+    } catch (workerError) {
+      debugLogger.warn('⚠️ 웹 워커 초기화 실패, 메인 스레드 사용', workerError);
+    }
+
     // 이미지 로더 등록
     imageLoader.registerImageLoader('wadouri', cornerstoneDICOMImageLoader.wadouri.loadImage);
     imageLoader.registerImageLoader('wadors', cornerstoneDICOMImageLoader.wadors.loadImage);
-    debugLogger.success('✅ DICOM Image Loader 설정 완료');
+    debugLogger.success('✅ DICOM Image Loader 및 웹 워커 설정 완료');
 
     // 4. 모든 도구 등록 (중복 등록 방지)
     debugLogger.log('🛠️ 도구 등록 시작...');

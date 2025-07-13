@@ -2,13 +2,27 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     wasm(),
-    topLevelAwait()
+    topLevelAwait(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'node_modules/@cornerstonejs/dicom-image-loader/dist/index.worker.bundle.min.worker.js',
+          dest: 'workers',
+          rename: 'cornerstoneDICOMImageLoaderWebWorker.min.js'
+        },
+        {
+          src: 'node_modules/@cornerstonejs/dicom-image-loader/dist/dynamic-import/*.worker.js',
+          dest: 'workers'
+        }
+      ]
+    })
   ],
   server: {
     port: 3000,

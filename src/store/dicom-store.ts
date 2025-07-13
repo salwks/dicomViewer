@@ -103,11 +103,17 @@ export const useDicomStore = create<DicomViewerState>()(
       }
 
       try {
-        console.log(`Activating tool in viewport: ${toolName}`);
+        console.log(`🔧 도구 활성화 시작: ${toolName}`);
 
         // Define tool categories and their activation logic
         const annotationTools = ['Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'];
         const basicTools = ['Pan', 'Zoom', 'WindowLevel'];
+
+        console.log(`📋 도구 카테고리 확인:`, {
+          toolName,
+          isAnnotationTool: annotationTools.includes(toolName),
+          isBasicTool: basicTools.includes(toolName)
+        });
 
         // Reset all annotation tools to passive first
         annotationTools.forEach(tool => {
@@ -118,18 +124,31 @@ export const useDicomStore = create<DicomViewerState>()(
           }
         });
 
-        // Activate the requested tool based on its type
+        // 🔥 핵심 수정: 모든 도구를 마우스 왼쪽 버튼에 명시적으로 바인딩
+        
+        // 1단계: 모든 기본 도구들을 먼저 passive로 설정
+        basicTools.forEach(tool => {
+          try {
+            toolGroupRef.current.setToolPassive(tool);
+          } catch (e) {
+            console.warn(`Failed to set ${tool} passive:`, e);
+          }
+        });
+
+        // 2단계: 선택된 도구만 마우스 왼쪽 버튼에 활성화
         if (annotationTools.includes(toolName)) {
-          // Annotation tools - set as active with primary mouse binding
+          // 주석 도구 활성화
           toolGroupRef.current.setToolActive(toolName, {
-            bindings: [{ mouseButton: 1 }] // Primary mouse button (left click)
+            bindings: [{ mouseButton: 1 }] // 마우스 왼쪽 버튼
           });
-          console.log(`✅ Annotation tool activated: ${toolName}`);
+          console.log(`✅ 주석 도구 활성화: ${toolName} (왼쪽 버튼에 바인딩)`);
           
         } else if (basicTools.includes(toolName)) {
-          // Basic tools are always active with their respective mouse bindings
-          // Just ensure the store state is updated - the tools are already configured
-          console.log(`✅ Basic tool selected: ${toolName} (already active)`);
+          // 🔥 기본 도구도 마우스 왼쪽 버튼에 명시적으로 바인딩!
+          toolGroupRef.current.setToolActive(toolName, {
+            bindings: [{ mouseButton: 1 }] // 마우스 왼쪽 버튼
+          });
+          console.log(`✅ 기본 도구 활성화: ${toolName} (왼쪽 버튼에 바인딩)`);
           
         } else {
           console.warn(`Unknown tool: ${toolName}`);
@@ -138,6 +157,14 @@ export const useDicomStore = create<DicomViewerState>()(
 
         // Update store state to reflect successful activation
         set({ activeTool: toolName });
+        
+        // 🔍 최종 확인: 도구 활성화 상태 검증
+        console.log(`🎯 도구 활성화 완료! 현재 상태:`, {
+          selectedTool: toolName,
+          mouseButton: 1,
+          message: `마우스 왼쪽 버튼으로 ${toolName} 도구를 사용할 수 있습니다.`
+        });
+        
         return true;
 
       } catch (error) {
