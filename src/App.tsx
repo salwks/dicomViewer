@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, Layout, Settings, Grid, FileText, Terminal } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
 import { debugLogger } from './utils/debug-logger';
-import { useAnnotationListener } from './hooks/use-annotation-listener';
 import { useDicomStore } from './store/dicom-store';
 import './App.css';
 
@@ -21,14 +20,28 @@ function App() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Zustand store for tool management
-  const { activeTool, setActiveTool } = useDicomStore((state) => ({
+  // Zustand store for tool management and sidebar controls
+  const { 
+    activeTool, 
+    setActiveTool, 
+    annotations, 
+    annotationsVisible, 
+    panZoomEnabled,
+    setAnnotationsVisible,
+    setPanZoomEnabled,
+    clearAllAnnotations
+  } = useDicomStore((state) => ({
     activeTool: state.activeTool,
-    setActiveTool: state.setActiveTool
+    setActiveTool: state.setActiveTool,
+    annotations: state.annotations,
+    annotationsVisible: state.annotationsVisible,
+    panZoomEnabled: state.panZoomEnabled,
+    setAnnotationsVisible: state.setAnnotationsVisible,
+    setPanZoomEnabled: state.setPanZoomEnabled,
+    clearAllAnnotations: state.clearAllAnnotations
   }));
 
-  // 주석 이벤트 리스너
-  const { annotations, annotationCount, clearAllAnnotations } = useAnnotationListener();
+  // 주석은 이제 Zustand 스토어에서 관리됨
 
   // Initialize default tool
   useEffect(() => {
@@ -37,6 +50,12 @@ function App() {
       debugLogger.log('기본 도구로 WindowLevel 설정');
     }
   }, [activeTool, setActiveTool]);
+
+  // 팬/줌 토글 핸들러 (toolGroupRef 접근을 위해)
+  const handlePanZoomToggle = (enabled: boolean) => {
+    const toolGroupRef = (window as any).cornerstoneToolGroupRef; // DicomViewport에서 설정
+    setPanZoomEnabled(enabled, toolGroupRef);
+  };
 
   // 파일 업로드 핸들러
   const handleFileUpload = () => {
@@ -69,7 +88,7 @@ function App() {
       setIsLoading(true);
       setError(null);
       setRenderingSuccess(false);
-      clearAllAnnotations(); // 새 파일 로드 시 주석 초기화
+      clearAllAnnotations(); // 새 파일 로드 시 주석 초기화  
       setLoadedFiles(dicomFiles);
       
       debugLogger.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
@@ -196,7 +215,7 @@ function App() {
               <div className="sidebar-section">
                 <h3 className="sidebar-section-title">
                   <FileText size={16} />
-                  주석 목록 ({annotationCount}개)
+                  주석 목록 ({annotations.length}개)
                 </h3>
                 {annotations.length > 0 ? (
                   <div className="annotations-list">
@@ -247,21 +266,42 @@ function App() {
                 <div className="settings-list">
                   <div className="setting-item">
                     <label>
-                      <input type="checkbox" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        checked={annotationsVisible}
+                        onChange={(e) => {
+                          debugLogger.log(`🔧 주석 표시 토글: ${e.target.checked}`);
+                          setAnnotationsVisible(e.target.checked);
+                        }}
+                      />
                       주석 표시
                     </label>
                   </div>
                   <div className="setting-item">
                     <label>
-                      <input type="checkbox" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        checked={panZoomEnabled}
+                        onChange={(e) => {
+                          debugLogger.log(`🔧 팬/줌 모드 토글: ${e.target.checked}`);
+                          handlePanZoomToggle(e.target.checked);
+                        }}
+                      />
                       팬/줌 활성화
                     </label>
                   </div>
                   <div className="setting-item">
                     <label>
-                      활성 도구: <strong>{activeTool}</strong>
+                      활성 도구: <strong>{activeTool || 'None'}</strong>
                     </label>
                   </div>
+                  {panZoomEnabled && (
+                    <div className="setting-item">
+                      <small style={{ color: '#888', fontSize: '12px' }}>
+                        💡 왼쪽 버튼: Pan, 오른쪽 버튼: Zoom
+                      </small>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

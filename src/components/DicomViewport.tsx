@@ -3,7 +3,8 @@ import {
   RenderingEngine, 
   Types,
   Enums,
-  getRenderingEngine
+  getRenderingEngine,
+  eventTarget
 } from '@cornerstonejs/core';
 import { 
   ToolGroupManager,
@@ -14,7 +15,8 @@ import {
   LengthTool,
   RectangleROITool,
   EllipticalROITool,
-  ArrowAnnotateTool
+  ArrowAnnotateTool,
+  annotation
 } from '@cornerstonejs/tools';
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
@@ -35,10 +37,21 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
   const toolGroupRef = useRef<any>(null);
   const isViewportInitialized = useRef(false);
 
-  // Zustand store for tool management
-  const { activeTool, activateToolInViewport } = useDicomStore((state) => ({
+  // Zustand store for tool management and annotations
+  const { 
+    activeTool, 
+    activateToolInViewport, 
+    addAnnotation, 
+    updateAnnotation, 
+    removeAnnotation,
+    annotationsVisible
+  } = useDicomStore((state) => ({
     activeTool: state.activeTool,
-    activateToolInViewport: state.activateToolInViewport
+    activateToolInViewport: state.activateToolInViewport,
+    addAnnotation: state.addAnnotation,
+    updateAnnotation: state.updateAnnotation,
+    removeAnnotation: state.removeAnnotation,
+    annotationsVisible: state.annotationsVisible
   }));
 
   // Tool activation through Zustand store
@@ -53,6 +66,94 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     } else {
       debugLogger.error(`❌ 뷰포트 도구 활성화 실패: ${toolName}`);
     }
+  };
+
+  // 🔥 주석 이벤트 리스너 설정 (핵심!)
+  const setupAnnotationEventListeners = () => {
+    debugLogger.log('🎯 주석 이벤트 리스너 설정 시작');
+
+    // 주석 완료 이벤트 (새 주석 생성됨)
+    const handleAnnotationCompleted = (event: any) => {
+      debugLogger.log('🎉 주석 생성 완료 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail.annotation;
+        if (annotation) {
+          const annotationData = {
+            annotationUID: annotation.annotationUID || `annotation-${Date.now()}`,
+            toolName: annotation.metadata?.toolName || 'Unknown',
+            data: annotation.data,
+            metadata: annotation.metadata,
+            viewportId: 'dicom-viewport'
+          };
+
+          debugLogger.success('📝 새 주석을 스토어에 추가', annotationData);
+          addAnnotation(annotationData);
+        }
+      } catch (error) {
+        debugLogger.error('주석 생성 이벤트 처리 실패', error);
+      }
+    };
+
+    // 주석 수정 이벤트
+    const handleAnnotationModified = (event: any) => {
+      debugLogger.log('✏️ 주석 수정 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail.annotation;
+        if (annotation && annotation.annotationUID) {
+          const updates = {
+            data: annotation.data,
+            metadata: annotation.metadata
+          };
+
+          debugLogger.log('📝 주석 업데이트', { uid: annotation.annotationUID, updates });
+          updateAnnotation(annotation.annotationUID, updates);
+        }
+      } catch (error) {
+        debugLogger.error('주석 수정 이벤트 처리 실패', error);
+      }
+    };
+
+    // 주석 삭제 이벤트
+    const handleAnnotationRemoved = (event: any) => {
+      debugLogger.log('🗑️ 주석 삭제 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail.annotation;
+        if (annotation && annotation.annotationUID) {
+          debugLogger.log('🗑️ 스토어에서 주석 제거', annotation.annotationUID);
+          removeAnnotation(annotation.annotationUID);
+        }
+      } catch (error) {
+        debugLogger.error('주석 삭제 이벤트 처리 실패', error);
+      }
+    };
+
+    // 이벤트 리스너 등록
+    eventTarget.addEventListener('ANNOTATION_COMPLETED', handleAnnotationCompleted);
+    eventTarget.addEventListener('ANNOTATION_MODIFIED', handleAnnotationModified);
+    eventTarget.addEventListener('ANNOTATION_REMOVED', handleAnnotationRemoved);
+
+    // DOM 이벤트 방식도 지원 (백업)
+    document.addEventListener('cornerstoneAnnotationCompleted', handleAnnotationCompleted);
+    document.addEventListener('cornerstoneAnnotationModified', handleAnnotationModified);
+    document.addEventListener('cornerstoneAnnotationRemoved', handleAnnotationRemoved);
+
+    debugLogger.success('✅ 주석 이벤트 리스너 등록 완료');
+
+    // 정리 함수 반환
+    return () => {
+      eventTarget.removeEventListener('ANNOTATION_COMPLETED', handleAnnotationCompleted);
+      eventTarget.removeEventListener('ANNOTATION_MODIFIED', handleAnnotationModified);
+      eventTarget.removeEventListener('ANNOTATION_REMOVED', handleAnnotationRemoved);
+
+      document.removeEventListener('cornerstoneAnnotationCompleted', handleAnnotationCompleted);
+      document.removeEventListener('cornerstoneAnnotationModified', handleAnnotationModified);
+      document.removeEventListener('cornerstoneAnnotationRemoved', handleAnnotationRemoved);
+
+      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
+    };
   };
 
   // 🔧 한 번만 실행되는 뷰포트 초기화
@@ -133,6 +234,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         isViewportInitialized.current = true;
         onSuccess('뷰포트 초기화 완료');
 
+        // 🔥 주석 이벤트 리스너 설정 (핵심!)
+        setupAnnotationEventListeners();
+
         // 초기 도구 활성화
         if (activeTool) {
           handleToolActivation(activeTool);
@@ -154,6 +258,31 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     }
   }, [activeTool, activateToolInViewport]);
 
+  // 주석 가시성 제어
+  useEffect(() => {
+    if (isViewportInitialized.current && renderingEngineRef.current) {
+      try {
+        const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
+        if (viewport) {
+          if (annotationsVisible) {
+            // 모든 주석 표시
+            annotation.state.setAnnotationVisibility(true);
+            debugLogger.log('👁️ 모든 주석 표시');
+          } else {
+            // 모든 주석 숨김
+            annotation.state.setAnnotationVisibility(false);
+            debugLogger.log('🙈 모든 주석 숨김');
+          }
+          
+          // 뷰포트 새로고침
+          viewport.render();
+        }
+      } catch (error) {
+        debugLogger.error('주석 가시성 제어 실패', error);
+      }
+    }
+  }, [annotationsVisible]);
+
   // 정리
   useEffect(() => {
     return () => {
@@ -170,11 +299,13 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     };
   }, []);
 
-  // 렌더링 엔진 참조를 외부에서 접근할 수 있도록 노출
+  // 렌더링 엔진과 툴 그룹 참조를 외부에서 접근할 수 있도록 노출
   useEffect(() => {
-    if (renderingEngineRef.current && isViewportInitialized.current) {
-      // 전역적으로 렌더링 엔진 참조 저장
+    if (renderingEngineRef.current && toolGroupRef.current && isViewportInitialized.current) {
+      // 전역적으로 참조 저장 (사이드바 컨트롤에서 사용)
       (window as any).cornerstoneRenderingEngine = renderingEngineRef.current;
+      (window as any).cornerstoneToolGroupRef = toolGroupRef;
+      debugLogger.log('🌐 전역 참조 설정 완료');
     }
   }, [isViewportInitialized.current]);
 

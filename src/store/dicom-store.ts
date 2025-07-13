@@ -40,6 +40,11 @@ export const useDicomStore = create<DicomViewerState>()(
     annotations: [],
     selectedAnnotationUID: null,
     
+    // 사이드바 컨트롤 상태
+    annotationsVisible: true,
+    panZoomEnabled: false,
+    lastActiveTool: null, // 팬/줌 모드 이전의 마지막 도구
+    
     windowLevelPresets: defaultWindowLevelPresets,
     currentWindowLevel: null,
     
@@ -241,6 +246,72 @@ export const useDicomStore = create<DicomViewerState>()(
 
     toggleSidebar: () => {
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
+    },
+
+    // 주석 가시성 제어
+    setAnnotationsVisible: (visible: boolean) => {
+      set({ annotationsVisible: visible });
+      console.log(`주석 가시성 설정: ${visible ? '표시' : '숨김'}`);
+    },
+
+    // 팬/줌 모드 토글
+    setPanZoomEnabled: (enabled: boolean, toolGroupRef?: any) => {
+      const state = get();
+      
+      if (enabled) {
+        // 팬/줌 모드 활성화: 현재 도구를 저장하고 팬/줌 설정
+        console.log('🔄 팬/줌 모드 활성화');
+        set({ 
+          panZoomEnabled: true, 
+          lastActiveTool: state.activeTool 
+        });
+        
+        // 팬 도구를 왼쪽 버튼에, 줌 도구를 오른쪽 버튼에 바인딩
+        if (toolGroupRef?.current) {
+          try {
+            // 모든 도구를 passive로 설정
+            ['WindowLevel', 'Pan', 'Zoom', 'Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'].forEach(tool => {
+              toolGroupRef.current.setToolPassive(tool);
+            });
+            
+            // 팬/줌 도구 활성화
+            toolGroupRef.current.setToolActive('Pan', {
+              bindings: [{ mouseButton: 1 }] // 왼쪽 버튼
+            });
+            toolGroupRef.current.setToolActive('Zoom', {
+              bindings: [{ mouseButton: 2 }] // 오른쪽 버튼
+            });
+            
+            console.log('✅ 팬/줌 도구 활성화 완료: 왼쪽=Pan, 오른쪽=Zoom');
+          } catch (error) {
+            console.error('팬/줌 도구 활성화 실패:', error);
+          }
+        }
+        
+      } else {
+        // 팬/줌 모드 비활성화: 이전 도구로 복구
+        console.log('🔄 팬/줌 모드 비활성화');
+        const previousTool = state.lastActiveTool || 'WindowLevel';
+        
+        set({ 
+          panZoomEnabled: false,
+          activeTool: previousTool,
+          lastActiveTool: null
+        });
+        
+        // 이전 도구로 복구
+        if (toolGroupRef?.current) {
+          get().activateToolInViewport(previousTool, toolGroupRef);
+        }
+        
+        console.log(`✅ 이전 도구로 복구: ${previousTool}`);
+      }
+    },
+
+    // 모든 주석 지우기
+    clearAllAnnotations: () => {
+      set({ annotations: [], selectedAnnotationUID: null });
+      console.log('🗑️ 모든 주석 지움');
     },
   }))
 );
