@@ -1,5 +1,5 @@
-import { Upload } from 'lucide-react';
 import { 
+  Upload,
   MousePointer, 
   Move, 
   ZoomIn, 
@@ -8,8 +8,10 @@ import {
   Triangle,
   Square,
   Circle,
+  ArrowRight,
   Grid,
-  Layers
+  Layers,
+  Terminal
 } from 'lucide-react';
 import type { LayoutType } from '../types';
 
@@ -21,15 +23,22 @@ interface ToolbarProps {
   disabled?: boolean;
 }
 
-const tools = [
-  { name: 'WindowLevel', icon: Palette, label: 'Window/Level' },
-  { name: 'Pan', icon: Move, label: 'Pan' },
-  { name: 'Zoom', icon: ZoomIn, label: 'Zoom' },
-  { name: 'Length', icon: Ruler, label: 'Length' },
-  { name: 'Angle', icon: Triangle, label: 'Angle' },
-  { name: 'RectangleROI', icon: Square, label: 'Rectangle ROI' },
-  { name: 'EllipticalROI', icon: Circle, label: 'Ellipse ROI' },
+// 기본 조작 도구
+const basicTools = [
+  { name: 'WindowLevel', icon: Palette, label: 'Window/Level', category: 'basic' },
+  { name: 'Pan', icon: Move, label: 'Pan', category: 'basic' },
+  { name: 'Zoom', icon: ZoomIn, label: 'Zoom', category: 'basic' },
 ];
+
+// 주석 도구 (Cornerstone3D의 실제 도구명 사용)
+const annotationTools = [
+  { name: 'Length', icon: Ruler, label: '길이 측정', category: 'annotation' },
+  { name: 'RectangleROI', icon: Square, label: '사각형 ROI', category: 'annotation' },
+  { name: 'EllipticalROI', icon: Circle, label: '타원형 ROI', category: 'annotation' },
+  { name: 'ArrowAnnotate', icon: ArrowRight, label: '화살표 주석', category: 'annotation' },
+];
+
+const allTools = [...basicTools, ...annotationTools];
 
 const layouts: LayoutType[] = ['1x1', '1x2', '2x1', '2x2'];
 
@@ -74,11 +83,30 @@ export function Toolbar({
         </div>
       </div>
 
-      {/* Tool Section */}
+      {/* 기본 도구 섹션 */}
       <div className="toolbar-section">
-        <label className="toolbar-label">Tools</label>
+        <label className="toolbar-label">기본 도구</label>
         <div className="toolbar-group">
-          {tools.map(({ name, icon: Icon, label }) => (
+          {basicTools.map(({ name, icon: Icon, label }) => (
+            <button
+              key={name}
+              className={`toolbar-button ${activeTool === name ? 'active' : ''}`}
+              onClick={() => onToolChange(name)}
+              disabled={disabled}
+              title={label}
+            >
+              <Icon size={16} />
+              <span className="toolbar-button-text">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 주석 도구 섹션 */}
+      <div className="toolbar-section">
+        <label className="toolbar-label">주석 도구</label>
+        <div className="toolbar-group">
+          {annotationTools.map(({ name, icon: Icon, label }) => (
             <button
               key={name}
               className={`toolbar-button ${activeTool === name ? 'active' : ''}`}

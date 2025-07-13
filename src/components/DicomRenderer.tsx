@@ -3,9 +3,7 @@ import {
   RenderingEngine, 
   Types,
   Enums,
-  getRenderingEngine,
-  imageLoader,
-  metaData
+  getRenderingEngine
 } from '@cornerstonejs/core';
 import { 
   ToolGroupManager,
@@ -13,77 +11,98 @@ import {
   ZoomTool,
   WindowLevelTool,
   StackScrollTool,
-  addTool,
+  LengthTool,
+  RectangleROITool,
+  EllipticalROITool,
+  ArrowAnnotateTool,
   Enums as ToolEnums
 } from '@cornerstonejs/tools';
-import cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';
 import dicomParser from 'dicom-parser';
 import { debugLogger } from '../utils/debug-logger';
+import { initializeCornerstoneGlobally, isCornerstoneInitialized } from '../utils/cornerstone-global-init';
 
 interface DicomRendererProps {
   files: File[];
   onError: (error: string) => void;
   onSuccess: (message: string) => void;
+  activeTool?: string;
 }
 
-export function DicomRenderer({ files, onError, onSuccess }: DicomRendererProps) {
+// 노출할 도구 활성화 함수 타입
+export interface DicomRendererRef {
+  activateTool: (toolName: string) => void;
+}
+
+export function DicomRenderer({ files, onError, onSuccess, activeTool }: DicomRendererProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const renderingEngineRef = useRef<RenderingEngine | null>(null);
   const toolGroupRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
 
-  // Cornerstone3D 초기화
+  // 도구 활성화 함수
+  const activateSelectedTool = (toolName: string) => {
+    if (!toolGroupRef.current) {
+      debugLogger.warn('도구 그룹이 없어서 도구 활성화 불가');
+      return;
+    }
+
+    try {
+      debugLogger.log(`도구 활성화 요청: ${toolName}`);
+
+      // 모든 주석 도구를 passive로 설정
+      const annotationTools = [
+        LengthTool.toolName,
+        RectangleROITool.toolName,
+        EllipticalROITool.toolName,
+        ArrowAnnotateTool.toolName
+      ];
+
+      annotationTools.forEach(tool => {
+        toolGroupRef.current.setToolPassive(tool);
+      });
+
+      // 요청된 도구가 주석 도구인 경우 활성화
+      if (annotationTools.includes(toolName)) {
+        toolGroupRef.current.setToolActive(toolName, {
+          bindings: [{ mouseButton: ToolEnums.MouseBindings.Primary }]
+        });
+        debugLogger.success(`주석 도구 활성화: ${toolName}`);
+      } else {
+        debugLogger.log(`기본 도구는 이미 활성화됨: ${toolName}`);
+      }
+
+    } catch (error) {
+      debugLogger.error('도구 활성화 실패', { toolName, error });
+    }
+  };
+
+  // Cornerstone3D 전역 초기화 (애플리케이션당 한 번만 실행)
   useEffect(() => {
     const initializeCornerstone = async () => {
       if (isInitializedRef.current) return;
 
       try {
-        debugLogger.log('Cornerstone3D 초기화 시작');
-        debugLogger.time('Cornerstone3D 초기화');
-
-        // Core 초기화
-        const { init: csRenderInit } = await import('@cornerstonejs/core');
-        await csRenderInit();
-        debugLogger.success('Cornerstone3D Core 초기화 완료');
-
-        // Tools 초기화
-        const { init: csToolsInit } = await import('@cornerstonejs/tools');
-        await csToolsInit();
-        debugLogger.success('Cornerstone3D Tools 초기화 완료');
-
-        // DICOM Image Loader 설정
-        cornerstoneDICOMImageLoader.external.cornerstone = await import('@cornerstonejs/core');
-        cornerstoneDICOMImageLoader.external.dicomParser = dicomParser;
-
-        // 이미지 로더 등록
-        imageLoader.registerImageLoader('wadouri', cornerstoneDICOMImageLoader.wadouri.loadImage);
-        imageLoader.registerImageLoader('wadors', cornerstoneDICOMImageLoader.wadors.loadImage);
-
-        debugLogger.success('DICOM Image Loader 설정 완료');
-
-        // 도구 추가
-        addTool(PanTool);
-        addTool(ZoomTool);
-        addTool(WindowLevelTool);
-        addTool(StackScrollTool);
-
-        debugLogger.success('도구 등록 완료');
-
-        debugLogger.timeEnd('Cornerstone3D 초기화');
-        debugLogger.logMemoryUsage();
+        debugLogger.log('DicomRenderer: 전역 초기화 요청');
         
-        isInitializedRef.current = true;
-        onSuccess('Cornerstone3D 초기화 완료');
+        // 전역 초기화 수행 (중복 실행 방지됨)
+        const success = await initializeCornerstoneGlobally();
+        
+        if (success) {
+          isInitializedRef.current = true;
+          onSuccess('Cornerstone3D 초기화 완료');
+          debugLogger.success('DicomRenderer: 초기화 완료');
+        } else {
+          throw new Error('전역 초기화 실패');
+        }
 
       } catch (error) {
-        debugLogger.timeEnd('Cornerstone3D 초기화');
-        debugLogger.error('Cornerstone3D 초기화 실패', error);
+        debugLogger.error('DicomRenderer: 초기화 실패', error);
         onError(`Cornerstone3D 초기화 실패: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
 
     initializeCornerstone();
-  }, [onError, onSuccess]);
+  }, []); // 빈 의존성 배열로 한 번만 실행
 
   // 렌더링 엔진 및 뷰포트 설정
   useEffect(() => {
@@ -147,13 +166,21 @@ export function DicomRenderer({ files, onError, onSuccess }: DicomRendererProps)
           throw new Error('도구 그룹 생성 실패');
         }
 
-        // 도구 추가 및 설정
+        // 기본 도구 추가
         toolGroup.addTool(WindowLevelTool.toolName);
         toolGroup.addTool(PanTool.toolName);
         toolGroup.addTool(ZoomTool.toolName);
         toolGroup.addTool(StackScrollTool.toolName);
+        
+        // 주석 도구 추가
+        toolGroup.addTool(LengthTool.toolName);
+        toolGroup.addTool(RectangleROITool.toolName);
+        toolGroup.addTool(EllipticalROITool.toolName);
+        toolGroup.addTool(ArrowAnnotateTool.toolName);
 
-        // 도구 활성화
+        debugLogger.success('도구 그룹에 모든 도구 추가 완료');
+
+        // 기본 도구 활성화
         toolGroup.setToolActive(WindowLevelTool.toolName, {
           bindings: [{ mouseButton: ToolEnums.MouseBindings.Primary }]
         });
@@ -165,6 +192,12 @@ export function DicomRenderer({ files, onError, onSuccess }: DicomRendererProps)
         toolGroup.setToolActive(ZoomTool.toolName, {
           bindings: [{ mouseButton: ToolEnums.MouseBindings.Secondary }]
         });
+
+        // 주석 도구들은 passive 상태로 설정 (사용자가 활성화할 때까지)
+        toolGroup.setToolPassive(LengthTool.toolName);
+        toolGroup.setToolPassive(RectangleROITool.toolName);
+        toolGroup.setToolPassive(EllipticalROITool.toolName);
+        toolGroup.setToolPassive(ArrowAnnotateTool.toolName);
 
         // 뷰포트에 도구 그룹 연결
         toolGroup.addViewport(viewportId, renderingEngineId);
@@ -183,6 +216,13 @@ export function DicomRenderer({ files, onError, onSuccess }: DicomRendererProps)
 
     setupViewport();
   }, [files, onError]);
+
+  // 활성 도구 변경 감지
+  useEffect(() => {
+    if (activeTool && toolGroupRef.current) {
+      activateSelectedTool(activeTool);
+    }
+  }, [activeTool]);
 
   // DICOM 파일 로드 및 렌더링
   const loadAndRenderDicomFiles = async () => {

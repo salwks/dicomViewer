@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, Layout, Settings, Grid, FileText, Terminal } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
 import { debugLogger } from './utils/debug-logger';
+import { useAnnotationListener } from './hooks/use-annotation-listener';
 import './App.css';
 
 /**
@@ -19,6 +20,9 @@ function App() {
   const [renderingSuccess, setRenderingSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 주석 이벤트 리스너
+  const { annotations, annotationCount, clearAllAnnotations } = useAnnotationListener();
 
   // 파일 업로드 핸들러
   const handleFileUpload = () => {
@@ -51,15 +55,16 @@ function App() {
       setIsLoading(true);
       setError(null);
       setRenderingSuccess(false);
+      clearAllAnnotations(); // 새 파일 로드 시 주석 초기화
       setLoadedFiles(dicomFiles);
       
-      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
+      debugLogger.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
       
       // DicomRenderer에서 실제 렌더링이 수행됩니다
       // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
       
     } catch (error) {
-      console.error('❌ 파일 처리 중 오류:', error);
+      debugLogger.error('❌ 파일 처리 중 오류:', error);
       setError('파일 로드 중 오류가 발생했습니다.');
       setIsLoading(false);
     }
@@ -173,6 +178,52 @@ function App() {
                 )}
               </div>
 
+              {/* 주석 정보 */}
+              <div className="sidebar-section">
+                <h3 className="sidebar-section-title">
+                  <FileText size={16} />
+                  주석 목록 ({annotationCount}개)
+                </h3>
+                {annotations.length > 0 ? (
+                  <div className="annotations-list">
+                    {annotations.slice(0, 5).map((annotation, index) => (
+                      <div key={annotation.annotationUID} className="annotation-item">
+                        <div className="annotation-header">
+                          <span className="annotation-tool">{annotation.toolName}</span>
+                          <span className="annotation-id">
+                            #{index + 1}
+                          </span>
+                        </div>
+                        {annotation.data?.text && (
+                          <div className="annotation-label">
+                            {annotation.data.text}
+                          </div>
+                        )}
+                        {annotation.data?.length && (
+                          <div className="annotation-label">
+                            길이: {annotation.data.length.toFixed(2)}mm
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {annotations.length > 5 && (
+                      <div className="info-item">
+                        <span>... 및 {annotations.length - 5}개 더</span>
+                      </div>
+                    )}
+                    <button 
+                      onClick={clearAllAnnotations}
+                      className="toolbar-button"
+                      style={{ marginTop: '8px', fontSize: '12px' }}
+                    >
+                      모든 주석 지우기
+                    </button>
+                  </div>
+                ) : (
+                  <p className="no-data">주석이 없습니다</p>
+                )}
+              </div>
+
               {/* Settings */}
               <div className="sidebar-section">
                 <h3 className="sidebar-section-title">
@@ -194,8 +245,7 @@ function App() {
                   </div>
                   <div className="setting-item">
                     <label>
-                      <input type="checkbox" />
-                      오버레이 표시
+                      활성 도구: <strong>{activeTool}</strong>
                     </label>
                   </div>
                 </div>
@@ -330,6 +380,7 @@ function App() {
                   files={loadedFiles}
                   onError={handleRenderingError}
                   onSuccess={handleRenderingSuccess}
+                  activeTool={activeTool}
                 />
               )}
 
