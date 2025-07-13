@@ -89,6 +89,60 @@ export const useDicomStore = create<DicomViewerState>()(
       if (currentTool !== toolName) {
         console.log(`Activating tool: ${toolName}`);
         set({ activeTool: toolName });
+        
+        // Tool activation will be handled by DicomRenderer through subscription
+        // This ensures proper setToolActive and mouse binding integration
+      }
+    },
+
+    // Tool state management for DicomRenderer integration
+    activateToolInViewport: (toolName: string, toolGroupRef: any) => {
+      if (!toolGroupRef?.current) {
+        console.warn('No tool group available for tool activation');
+        return false;
+      }
+
+      try {
+        console.log(`Activating tool in viewport: ${toolName}`);
+
+        // Define tool categories and their activation logic
+        const annotationTools = ['Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'];
+        const basicTools = ['Pan', 'Zoom', 'WindowLevel'];
+
+        // Reset all annotation tools to passive first
+        annotationTools.forEach(tool => {
+          try {
+            toolGroupRef.current.setToolPassive(tool);
+          } catch (e) {
+            console.warn(`Failed to set ${tool} passive:`, e);
+          }
+        });
+
+        // Activate the requested tool based on its type
+        if (annotationTools.includes(toolName)) {
+          // Annotation tools - set as active with primary mouse binding
+          toolGroupRef.current.setToolActive(toolName, {
+            bindings: [{ mouseButton: 1 }] // Primary mouse button (left click)
+          });
+          console.log(`✅ Annotation tool activated: ${toolName}`);
+          
+        } else if (basicTools.includes(toolName)) {
+          // Basic tools are always active with their respective mouse bindings
+          // Just ensure the store state is updated - the tools are already configured
+          console.log(`✅ Basic tool selected: ${toolName} (already active)`);
+          
+        } else {
+          console.warn(`Unknown tool: ${toolName}`);
+          return false;
+        }
+
+        // Update store state to reflect successful activation
+        set({ activeTool: toolName });
+        return true;
+
+      } catch (error) {
+        console.error(`Failed to activate tool ${toolName}:`, error);
+        return false;
       }
     },
 

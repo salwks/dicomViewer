@@ -3,6 +3,7 @@ import { Upload, Layout, Settings, Grid, FileText, Terminal } from 'lucide-react
 import { DicomRenderer } from './components/DicomRenderer';
 import { debugLogger } from './utils/debug-logger';
 import { useAnnotationListener } from './hooks/use-annotation-listener';
+import { useDicomStore } from './store/dicom-store';
 import './App.css';
 
 /**
@@ -16,13 +17,26 @@ function App() {
   const [loadedFiles, setLoadedFiles] = useState<File[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [layoutType, setLayoutType] = useState<'1x1' | '2x2'>('1x1');
-  const [activeTool, setActiveTool] = useState<string>('Pan');
   const [renderingSuccess, setRenderingSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Zustand store for tool management
+  const { activeTool, setActiveTool } = useDicomStore((state) => ({
+    activeTool: state.activeTool,
+    setActiveTool: state.setActiveTool
+  }));
+
   // 주석 이벤트 리스너
   const { annotations, annotationCount, clearAllAnnotations } = useAnnotationListener();
+
+  // Initialize default tool
+  useEffect(() => {
+    if (!activeTool) {
+      setActiveTool('WindowLevel'); // Set default tool to WindowLevel
+      debugLogger.log('기본 도구로 WindowLevel 설정');
+    }
+  }, [activeTool, setActiveTool]);
 
   // 파일 업로드 핸들러
   const handleFileUpload = () => {
@@ -274,9 +288,9 @@ function App() {
               </div>
             </div>
 
-            {/* Tool Section */}
+            {/* Basic Tools Section */}
             <div className="toolbar-section">
-              <label className="toolbar-label">도구</label>
+              <label className="toolbar-label">기본 도구</label>
               <div className="toolbar-group">
                 {['Pan', 'Zoom', 'WindowLevel'].map((tool) => (
                   <button
@@ -286,6 +300,28 @@ function App() {
                     disabled={isLoading}
                   >
                     <span className="toolbar-button-text">{tool}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Annotation Tools Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">주석 도구</label>
+              <div className="toolbar-group">
+                {['Length', 'RectangleROI', 'EllipticalROI', 'ArrowAnnotate'].map((tool) => (
+                  <button
+                    key={tool}
+                    className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
+                    onClick={() => setActiveTool(tool)}
+                    disabled={isLoading}
+                  >
+                    <span className="toolbar-button-text">
+                      {tool === 'Length' ? '길이 측정' :
+                       tool === 'RectangleROI' ? '사각형 ROI' :
+                       tool === 'EllipticalROI' ? '타원형 ROI' :
+                       tool === 'ArrowAnnotate' ? '화살표 주석' : tool}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -380,7 +416,6 @@ function App() {
                   files={loadedFiles}
                   onError={handleRenderingError}
                   onSuccess={handleRenderingSuccess}
-                  activeTool={activeTool}
                 />
               )}
 

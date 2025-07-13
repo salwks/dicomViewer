@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { 
   RenderingEngine, 
   Types,
@@ -20,59 +20,36 @@ import {
 import dicomParser from 'dicom-parser';
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally, isCornerstoneInitialized } from '../utils/cornerstone-global-init';
+import { useDicomStore } from '../store/dicom-store';
 
 interface DicomRendererProps {
   files: File[];
   onError: (error: string) => void;
   onSuccess: (message: string) => void;
-  activeTool?: string;
 }
 
-// 노출할 도구 활성화 함수 타입
-export interface DicomRendererRef {
-  activateTool: (toolName: string) => void;
-}
-
-export function DicomRenderer({ files, onError, onSuccess, activeTool }: DicomRendererProps) {
+const DicomRendererComponent = ({ files, onError, onSuccess }: DicomRendererProps) => {
+  // Zustand store for tool management
+  const { activeTool, activateToolInViewport } = useDicomStore((state) => ({
+    activeTool: state.activeTool,
+    activateToolInViewport: state.activateToolInViewport
+  }));
   const viewportRef = useRef<HTMLDivElement>(null);
   const renderingEngineRef = useRef<RenderingEngine | null>(null);
   const toolGroupRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
 
-  // 도구 활성화 함수
-  const activateSelectedTool = (toolName: string) => {
-    if (!toolGroupRef.current) {
-      debugLogger.warn('도구 그룹이 없어서 도구 활성화 불가');
-      return;
-    }
-
-    try {
-      debugLogger.log(`도구 활성화 요청: ${toolName}`);
-
-      // 모든 주석 도구를 passive로 설정
-      const annotationTools = [
-        LengthTool.toolName,
-        RectangleROITool.toolName,
-        EllipticalROITool.toolName,
-        ArrowAnnotateTool.toolName
-      ];
-
-      annotationTools.forEach(tool => {
-        toolGroupRef.current.setToolPassive(tool);
-      });
-
-      // 요청된 도구가 주석 도구인 경우 활성화
-      if (annotationTools.includes(toolName)) {
-        toolGroupRef.current.setToolActive(toolName, {
-          bindings: [{ mouseButton: ToolEnums.MouseBindings.Primary }]
-        });
-        debugLogger.success(`주석 도구 활성화: ${toolName}`);
-      } else {
-        debugLogger.log(`기본 도구는 이미 활성화됨: ${toolName}`);
-      }
-
-    } catch (error) {
-      debugLogger.error('도구 활성화 실패', { toolName, error });
+  // Tool activation through Zustand store
+  const handleToolActivation = (toolName: string) => {
+    if (!toolName) return;
+    
+    debugLogger.log(`스토어를 통한 도구 활성화 요청: ${toolName}`);
+    const success = activateToolInViewport(toolName, toolGroupRef);
+    
+    if (success) {
+      debugLogger.success(`✅ 도구 활성화 성공: ${toolName}`);
+    } else {
+      debugLogger.error(`❌ 도구 활성화 실패: ${toolName}`);
     }
   };
 
@@ -217,12 +194,12 @@ export function DicomRenderer({ files, onError, onSuccess, activeTool }: DicomRe
     setupViewport();
   }, [files, onError]);
 
-  // 활성 도구 변경 감지
+  // 활성 도구 변경 감지 - Zustand 스토어 기반
   useEffect(() => {
     if (activeTool && toolGroupRef.current) {
-      activateSelectedTool(activeTool);
+      handleToolActivation(activeTool);
     }
-  }, [activeTool]);
+  }, [activeTool, activateToolInViewport]);
 
   // DICOM 파일 로드 및 렌더링
   const loadAndRenderDicomFiles = async () => {
@@ -400,4 +377,31 @@ export function DicomRenderer({ files, onError, onSuccess, activeTool }: DicomRe
       }}
     />
   );
-}
+};
+
+// React.memo로 최적화 - props가 실제로 변경될 때만 리렌더링
+export const DicomRenderer = memo(DicomRendererComponent, (prevProps, nextProps) => {
+  // files 배열 비교 (길이와 내용 모두)
+  if (prevProps.files.length !== nextProps.files.length) {
+    debugLogger.log('DicomRenderer: 파일 개수 변경으로 리렌더링', {
+      prev: prevProps.files.length,
+      next: nextProps.files.length
+    });
+    return false; // 리렌더링 필요
+  }
+
+  // 파일 내용 비교 (이름과 크기로 간단히)
+  for (let i = 0; i < prevProps.files.length; i++) {
+    if (prevProps.files[i].name !== nextProps.files[i].name || 
+        prevProps.files[i].size !== nextProps.files[i].size) {
+      debugLogger.log('DicomRenderer: 파일 내용 변경으로 리렌더링');
+      return false; // 리렌더링 필요
+    }
+  }
+
+  // activeTool은 더 이상 props가 아니므로 Zustand 스토어에서 관리됨
+  // 콜백 함수들은 참조 비교하지 않음 (함수형 컴포넌트에서 매번 새로 생성되기 때문)
+  
+  debugLogger.log('DicomRenderer: props 변경 없음 - 리렌더링 건너뜀');
+  return true; // 리렌더링 건너뜀
+});
