@@ -152,10 +152,18 @@ export class OfficialToolsManager {
     }
 
     /**
-     * Create synchronizer using official Cornerstone3D API
+     * Create synchronizer using official Cornerstone3D API with enhanced safety
      */
     public createSynchronizer(config: SynchronizerConfig): any {
         try {
+            if (!config || !config.id || !config.type) {
+                throw new Error('Invalid synchronizer configuration: missing required fields');
+            }
+            
+            if (!Array.isArray(config.viewportIds) || config.viewportIds.length === 0) {
+                throw new Error('Invalid synchronizer configuration: viewportIds must be a non-empty array');
+            }
+            
             let synchronizer;
             
             if (config.type === 'camera') {
@@ -165,10 +173,15 @@ export class OfficialToolsManager {
                     'CAMERA_MODIFIED', // Use string constant instead of Enums for compatibility
                     (synchronizerInstance: any, sourceViewport: any, targetViewport: any, cameraModifiedEvent: any) => {
                         try {
+                            if (!targetViewport || !cameraModifiedEvent?.detail) {
+                                return;
+                            }
                             const { camera } = cameraModifiedEvent.detail;
-                            if (camera) {
+                            if (camera && targetViewport.setCamera) {
                                 targetViewport.setCamera(camera);
-                                targetViewport.render();
+                                if (targetViewport.render) {
+                                    targetViewport.render();
+                                }
                             }
                         } catch (syncError) {
                             console.warn('Camera synchronization error:', syncError);
@@ -182,10 +195,15 @@ export class OfficialToolsManager {
                     'VOI_MODIFIED', // Use string constant instead of Enums for compatibility
                     (synchronizerInstance: any, sourceViewport: any, targetViewport: any, voiModifiedEvent: any) => {
                         try {
+                            if (!targetViewport || !voiModifiedEvent?.detail) {
+                                return;
+                            }
                             const { range } = voiModifiedEvent.detail;
-                            if (range) {
+                            if (range && targetViewport.setProperties) {
                                 targetViewport.setProperties({ voiRange: range });
-                                targetViewport.render();
+                                if (targetViewport.render) {
+                                    targetViewport.render();
+                                }
                             }
                         } catch (syncError) {
                             console.warn('VOI synchronization error:', syncError);
@@ -195,21 +213,35 @@ export class OfficialToolsManager {
             } else {
                 throw new Error(`Unsupported synchronizer type: ${config.type}`);
             }
+            
+            if (!synchronizer) {
+                throw new Error(`Failed to create ${config.type} synchronizer`);
+            }
 
-            // Add viewports to synchronizer
+            // Add viewports to synchronizer with enhanced error handling
+            let successfullyAdded = 0;
             config.viewportIds.forEach(viewportId => {
                 try {
+                    if (!viewportId || typeof viewportId !== 'string') {
+                        console.warn(`Invalid viewport ID: ${viewportId}`);
+                        return;
+                    }
                     synchronizer.add({
                         renderingEngineId: 'default-rendering-engine',
                         viewportId: viewportId
                     });
+                    successfullyAdded++;
                 } catch (addError) {
                     console.warn(`Failed to add viewport '${viewportId}' to synchronizer:`, addError);
                 }
             });
+            
+            if (successfullyAdded === 0) {
+                console.warn(`No viewports successfully added to synchronizer '${config.id}'`);
+            }
 
             this.synchronizers.set(config.id, synchronizer);
-            console.log(`✓ ${config.type} synchronizer '${config.id}' created for ${config.viewportIds.length} viewports`);
+            console.log(`✓ ${config.type} synchronizer '${config.id}' created for ${successfullyAdded}/${config.viewportIds.length} viewports`);
             
             return synchronizer;
         } catch (error) {
@@ -219,17 +251,39 @@ export class OfficialToolsManager {
     }
 
     /**
-     * Get tool group by ID
+     * Get tool group by ID with null safety
      */
     public getToolGroup(id: string): any {
-        return ToolGroupManager.getToolGroup(id);
+        try {
+            const toolGroup = ToolGroupManager.getToolGroup(id);
+            if (!toolGroup) {
+                console.warn(`Tool group '${id}' not found`);
+            }
+            return toolGroup;
+        } catch (error) {
+            console.error(`❌ Error getting tool group '${id}':`, error);
+            return null;
+        }
     }
 
     /**
-     * Get synchronizer by ID
+     * Get synchronizer by ID with null safety
      */
     public getSynchronizer(id: string): any {
-        return this.synchronizers.get(id);
+        try {
+            if (!id || typeof id !== 'string') {
+                console.warn('Invalid synchronizer ID provided');
+                return null;
+            }
+            const synchronizer = this.synchronizers.get(id);
+            if (!synchronizer) {
+                console.warn(`Synchronizer '${id}' not found`);
+            }
+            return synchronizer;
+        } catch (error) {
+            console.error(`❌ Error getting synchronizer '${id}':`, error);
+            return null;
+        }
     }
 
     /**
@@ -333,18 +387,33 @@ export class OfficialToolsManager {
     }
 
     /**
-     * Get all annotations using official API
+     * Get all annotations using official API with error handling
      */
     public getAllAnnotations(): any[] {
-        return annotation.state.getAllAnnotations();
+        try {
+            const annotations = annotation.state.getAllAnnotations();
+            return annotations || [];
+        } catch (error) {
+            console.error('❌ Error getting all annotations:', error);
+            return [];
+        }
     }
 
     /**
-     * Get annotations for specific tool
+     * Get annotations for specific tool with null safety
      */
     public getAnnotationsForTool(toolName: string): any[] {
-        const allAnnotations = this.getAllAnnotations();
-        return allAnnotations.filter(ann => ann.metadata?.toolName === toolName);
+        try {
+            const allAnnotations = this.getAllAnnotations();
+            if (!Array.isArray(allAnnotations)) {
+                console.warn('Invalid annotations data structure');
+                return [];
+            }
+            return allAnnotations.filter(ann => ann?.metadata?.toolName === toolName);
+        } catch (error) {
+            console.error(`❌ Error getting annotations for tool '${toolName}':`, error);
+            return [];
+        }
     }
 
     /**
@@ -374,13 +443,17 @@ export class OfficialToolsManager {
     }
 
     /**
-     * Enable synchronizer
+     * Enable synchronizer with enhanced safety checks
      */
     public enableSynchronizer(id: string): boolean {
         try {
             const synchronizer = this.getSynchronizer(id);
             if (!synchronizer) {
-                console.warn(`Synchronizer '${id}' not found`);
+                return false; // getSynchronizer already logs the warning
+            }
+            
+            if (typeof synchronizer.enabled === 'undefined') {
+                console.warn(`Synchronizer '${id}' does not support enabled property`);
                 return false;
             }
 
@@ -388,19 +461,23 @@ export class OfficialToolsManager {
             console.log(`✓ Enabled synchronizer '${id}'`);
             return true;
         } catch (error) {
-            console.error(`❌ Error enabling synchronizer:`, error);
+            console.error(`❌ Error enabling synchronizer '${id}':`, error);
             return false;
         }
     }
 
     /**
-     * Disable synchronizer
+     * Disable synchronizer with enhanced safety checks
      */
     public disableSynchronizer(id: string): boolean {
         try {
             const synchronizer = this.getSynchronizer(id);
             if (!synchronizer) {
-                console.warn(`Synchronizer '${id}' not found`);
+                return false; // getSynchronizer already logs the warning
+            }
+            
+            if (typeof synchronizer.enabled === 'undefined') {
+                console.warn(`Synchronizer '${id}' does not support enabled property`);
                 return false;
             }
 
@@ -408,40 +485,62 @@ export class OfficialToolsManager {
             console.log(`✓ Disabled synchronizer '${id}'`);
             return true;
         } catch (error) {
-            console.error(`❌ Error disabling synchronizer:`, error);
+            console.error(`❌ Error disabling synchronizer '${id}':`, error);
             return false;
         }
     }
 
     /**
-     * Destroy tool group
+     * Destroy tool group with enhanced error handling
      */
     public destroyToolGroup(id: string): boolean {
         try {
+            const toolGroup = ToolGroupManager.getToolGroup(id);
+            if (!toolGroup) {
+                console.warn(`Tool group '${id}' not found for destruction`);
+                this.toolGroups.delete(id); // Clean up local reference anyway
+                return true; // Consider it "successfully" removed
+            }
+            
             ToolGroupManager.destroyToolGroup(id);
             this.toolGroups.delete(id);
             console.log(`✓ Destroyed tool group '${id}'`);
             return true;
         } catch (error) {
-            console.error(`❌ Error destroying tool group:`, error);
+            console.error(`❌ Error destroying tool group '${id}':`, error);
             return false;
         }
     }
 
     /**
-     * Destroy synchronizer
+     * Destroy synchronizer with enhanced safety checks
      */
     public destroySynchronizer(id: string): boolean {
         try {
-            const synchronizer = this.getSynchronizer(id);
-            if (synchronizer && synchronizer.destroy) {
-                synchronizer.destroy();
+            if (!id || typeof id !== 'string') {
+                console.warn('Invalid synchronizer ID provided for destruction');
+                return false;
             }
-            this.synchronizers.delete(id);
-            console.log(`✓ Destroyed synchronizer '${id}'`);
+            
+            const synchronizer = this.getSynchronizer(id);
+            if (synchronizer) {
+                if (typeof synchronizer.destroy === 'function') {
+                    synchronizer.destroy();
+                } else {
+                    console.warn(`Synchronizer '${id}' does not have a destroy method`);
+                }
+            }
+            
+            // Always clean up the local reference
+            const wasDeleted = this.synchronizers.delete(id);
+            if (wasDeleted || synchronizer) {
+                console.log(`✓ Destroyed synchronizer '${id}'`);
+            } else {
+                console.log(`✓ Synchronizer '${id}' was already destroyed or not found`);
+            }
             return true;
         } catch (error) {
-            console.error(`❌ Error destroying synchronizer:`, error);
+            console.error(`❌ Error destroying synchronizer '${id}':`, error);
             return false;
         }
     }
