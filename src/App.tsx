@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Layout, Settings, Grid, FileText } from 'lucide-react';
+import { Upload, Layout, Settings, Grid, FileText, Terminal } from 'lucide-react';
+import { DicomRenderer } from './components/DicomRenderer';
+import { debugLogger } from './utils/debug-logger';
 import './App.css';
 
 /**
@@ -14,6 +16,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [layoutType, setLayoutType] = useState<'1x1' | '2x2'>('1x1');
   const [activeTool, setActiveTool] = useState<string>('Pan');
+  const [renderingSuccess, setRenderingSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,15 +50,16 @@ function App() {
     try {
       setIsLoading(true);
       setError(null);
+      setRenderingSuccess(false);
       setLoadedFiles(dicomFiles);
       
-      // 여기서 실제 DICOM 처리를 할 수 있습니다
-      console.log(`${dicomFiles.length}개의 DICOM 파일이 로드되었습니다.`);
+      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
       
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
+      // DicomRenderer에서 실제 렌더링이 수행됩니다
+      // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
+      
     } catch (error) {
+      console.error('❌ 파일 처리 중 오류:', error);
       setError('파일 로드 중 오류가 발생했습니다.');
       setIsLoading(false);
     }
@@ -77,6 +81,28 @@ function App() {
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
+  };
+
+  // DICOM 렌더링 성공 핸들러
+  const handleRenderingSuccess = (message: string) => {
+    debugLogger.success('App: 렌더링 성공', message);
+    setRenderingSuccess(true);
+    setIsLoading(false);
+    setError(null);
+  };
+
+  // DICOM 렌더링 실패 핸들러
+  const handleRenderingError = (errorMessage: string) => {
+    debugLogger.error('App: 렌더링 실패', errorMessage);
+    setRenderingSuccess(false);
+    setIsLoading(false);
+    setError(errorMessage);
+  };
+
+  // 디버그 콘솔 표시/숨김
+  const showDebugConsole = () => {
+    debugLogger.dumpLogs();
+    alert('디버그 로그가 개발자 도구 콘솔에 출력되었습니다. F12를 눌러 확인하세요.');
   };
 
   return (
@@ -121,6 +147,14 @@ function App() {
                     <div className="info-item">
                       <label>로드된 파일:</label>
                       <span>{loadedFiles.length}개</span>
+                    </div>
+                    <div className="info-item">
+                      <label>렌더링 상태:</label>
+                      <span style={{ 
+                        color: renderingSuccess ? '#10b981' : (isLoading ? '#f59e0b' : '#ef4444') 
+                      }}>
+                        {renderingSuccess ? '✅ 완료' : (isLoading ? '⏳ 진행중' : '❌ 실패')}
+                      </span>
                     </div>
                     {loadedFiles.slice(0, 3).map((file, index) => (
                       <div key={index} className="info-item">
@@ -224,6 +258,21 @@ function App() {
                 ))}
               </div>
             </div>
+
+            {/* Debug Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">디버그</label>
+              <div className="toolbar-group">
+                <button
+                  className="toolbar-button"
+                  onClick={showDebugConsole}
+                  title="디버그 로그 보기 (개발자 도구 콘솔)"
+                >
+                  <Terminal size={16} />
+                  <span className="toolbar-button-text">디버그 로그</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Error Display */}
@@ -275,18 +324,39 @@ function App() {
                 </div>
               )}
 
-              {/* Content Area */}
-              {!isLoading && !error && (
+              {/* DICOM 렌더러 */}
+              {loadedFiles.length > 0 && !isDragging && (
+                <DicomRenderer 
+                  files={loadedFiles}
+                  onError={handleRenderingError}
+                  onSuccess={handleRenderingSuccess}
+                />
+              )}
+
+              {/* Content Area - Empty State */}
+              {!isLoading && !error && loadedFiles.length === 0 && (
                 <div className="empty-state">
                   <Layout className="empty-icon" />
                   <h3>DICOM 이미지가 로드되지 않았습니다</h3>
                   <p>파일을 드래그하거나 "파일 불러오기" 버튼을 클릭하세요</p>
                   <small>지원 형식: .dcm</small>
-                  {loadedFiles.length > 0 && (
-                    <div style={{ marginTop: '20px', color: '#10b981' }}>
-                      ✓ {loadedFiles.length}개 파일이 로드되었습니다
-                    </div>
-                  )}
+                </div>
+              )}
+
+              {/* 렌더링 성공 표시 */}
+              {renderingSuccess && !isDragging && (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: '20px', 
+                  right: '20px', 
+                  background: 'rgba(16, 185, 129, 0.9)',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  zIndex: 1000
+                }}>
+                  ✓ {loadedFiles.length}개 파일 렌더링 완료
                 </div>
               )}
             </div>
