@@ -109,6 +109,7 @@ export const useDicomStore = create<DicomViewerState>()(
         const annotationTools = [
           'Length', 'Angle', 'CobbAngle', 'Bidirectional',
           'RectangleROI', 'EllipticalROI', 'CircleROI',
+          'PlanarFreehandROI', 'SplineROI',
           'ArrowAnnotate', 'Probe'
         ];
         const basicTools = ['Pan', 'Zoom', 'WindowLevel', 'StackScroll', 'Magnify'];
@@ -312,6 +313,7 @@ export const useDicomStore = create<DicomViewerState>()(
               'WindowLevel', 'Pan', 'Zoom', 'StackScroll', 'Magnify',
               'Length', 'Angle', 'CobbAngle', 'Bidirectional',
               'RectangleROI', 'EllipticalROI', 'CircleROI',
+              'PlanarFreehandROI', 'SplineROI',
               'ArrowAnnotate', 'Probe'
             ];
             allToolNames.forEach(tool => {

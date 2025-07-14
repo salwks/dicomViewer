@@ -22,6 +22,8 @@ import {
   CircleROITool,
   BidirectionalTool,
   MagnifyTool,
+  PlanarFreehandROITool,
+  SplineROITool,
   annotation,
   Enums as ToolsEnums
 } from '@cornerstonejs/tools';
@@ -266,6 +268,10 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
           EllipticalROITool.toolName,
           CircleROITool.toolName,
           
+          // Advanced ROI Tools
+          PlanarFreehandROITool.toolName,
+          SplineROITool.toolName,
+          
           // Annotation Tools
           ArrowAnnotateTool.toolName,
           ProbeTool.toolName
@@ -281,6 +287,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
           'WindowLevel', 'Pan', 'Zoom', 'StackScroll', 'Magnify',
           'Length', 'Angle', 'CobbAngle', 'Bidirectional',
           'RectangleROI', 'EllipticalROI', 'CircleROI',
+          'PlanarFreehandROI', 'SplineROI',
           'ArrowAnnotate', 'Probe'
         ];
         

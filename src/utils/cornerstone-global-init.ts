@@ -18,7 +18,9 @@ import {
   ProbeTool,
   CircleROITool,
   BidirectionalTool,
-  MagnifyTool
+  MagnifyTool,
+  PlanarFreehandROITool,
+  SplineROITool
 } from '@cornerstonejs/tools';
 import cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';
 import dicomParser from 'dicom-parser';
@@ -123,6 +125,10 @@ async function performGlobalInitialization(): Promise<boolean> {
       { tool: RectangleROITool, name: 'RectangleROI' },
       { tool: EllipticalROITool, name: 'EllipticalROI' },
       { tool: CircleROITool, name: 'CircleROI' },
+      
+      // Advanced ROI Tools
+      { tool: PlanarFreehandROITool, name: 'PlanarFreehandROI' },
+      { tool: SplineROITool, name: 'SplineROI' },
       
       // Annotation Tools
       { tool: ArrowAnnotateTool, name: 'ArrowAnnotate' },

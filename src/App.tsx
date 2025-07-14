@@ -209,6 +209,52 @@ function App() {
         {sidebarOpen && (
           <aside className="sidebar">
             <div className="sidebar-content">
+              {/* File Upload Section - Moved from Toolbar */}
+              <div className="sidebar-section">
+                <h3 className="sidebar-section-title">
+                  <Upload size={16} />
+                  파일 관리
+                </h3>
+                <div className="file-upload-section">
+                  <button
+                    className="file-upload-button"
+                    onClick={handleFileUpload}
+                    disabled={isLoading}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'background-color 0.2s',
+                      opacity: isLoading ? 0.6 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoading) {
+                        e.currentTarget.style.backgroundColor = '#2563eb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isLoading) {
+                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                      }
+                    }}
+                    title="DICOM 파일 업로드 (.dcm)"
+                  >
+                    <Upload size={16} />
+                    <span>DICOM 파일 불러오기</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Series Information */}
               <div className="sidebar-section">
                 <h3 className="sidebar-section-title">
@@ -253,9 +299,31 @@ function App() {
                   주석 목록 ({annotations.length}개)
                 </h3>
                 {annotations.length > 0 ? (
-                  <div className="annotations-list">
-                    {annotations.slice(0, 5).map((annotation, index) => (
-                      <div key={annotation.annotationUID} className="annotation-item">
+                  <div 
+                    className="annotations-list"
+                    style={{
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      border: annotations.length > 4 ? '1px solid #e5e7eb' : 'none',
+                      borderRadius: '6px',
+                      padding: annotations.length > 4 ? '8px' : '0',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#cbd5e1 #f1f5f9'
+                    }}
+                  >
+                    {annotations.map((annotation, index) => (
+                      <div 
+                        key={annotation.annotationUID} 
+                        className="annotation-item"
+                        style={{
+                          marginBottom: '8px',
+                          padding: '8px',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0'
+                        }}
+                      >
                         <div className="annotation-header" style={{
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -267,17 +335,8 @@ function App() {
                             flexDirection: 'column',
                             flex: 1
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span className="annotation-tool" style={{ fontSize: '12px', color: '#888' }}>
-                                {annotation.toolName}
-                              </span>
-                              <span className="annotation-id" style={{ fontSize: '12px', color: '#888' }}>
-                                #{index + 1}
-                              </span>
-                            </div>
-                            
-                            {/* 편집 가능한 주석 이름 */}
-                            <div style={{ marginTop: '2px' }}>
+                            {/* 편집 가능한 주석 이름만 표시 */}
+                            <div style={{ marginBottom: '2px' }}>
                               {editingAnnotationId === annotation.annotationUID ? (
                                 <input
                                   type="text"
@@ -289,11 +348,12 @@ function App() {
                                   style={{
                                     border: '1px solid #3b82f6',
                                     borderRadius: '4px',
-                                    padding: '2px 6px',
-                                    fontSize: '13px',
+                                    padding: '4px 8px',
+                                    fontSize: '14px',
                                     width: '100%',
                                     background: '#fff',
-                                    outline: 'none'
+                                    outline: 'none',
+                                    fontWeight: '500'
                                   }}
                                   placeholder="주석 이름 입력..."
                                 />
@@ -306,15 +366,16 @@ function App() {
                                   )}
                                   style={{
                                     cursor: 'pointer',
-                                    fontSize: '13px',
+                                    fontSize: '14px',
                                     fontWeight: '500',
                                     color: '#333',
-                                    padding: '2px 4px',
+                                    padding: '4px 6px',
                                     borderRadius: '4px',
                                     transition: 'background-color 0.2s',
                                     display: 'inline-block',
-                                    minHeight: '20px',
-                                    minWidth: '50px'
+                                    minHeight: '24px',
+                                    minWidth: '60px',
+                                    width: '100%'
                                   }}
                                   onMouseEnter={(e) => {
                                     e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
@@ -327,6 +388,16 @@ function App() {
                                   {annotation.data?.label || annotation.data?.text || `${annotation.toolName} #${index + 1}`}
                                 </span>
                               )}
+                            </div>
+                            
+                            {/* 도구 정보는 작은 텍스트로 하단에 표시 */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className="annotation-tool" style={{ fontSize: '11px', color: '#888' }}>
+                                {annotation.toolName}
+                              </span>
+                              <span className="annotation-id" style={{ fontSize: '11px', color: '#888' }}>
+                                #{index + 1}
+                              </span>
                             </div>
                           </div>
                           
@@ -375,18 +446,38 @@ function App() {
                         )}
                       </div>
                     ))}
-                    {annotations.length > 5 && (
-                      <div className="info-item">
-                        <span>... 및 {annotations.length - 5}개 더</span>
-                      </div>
-                    )}
-                    <button 
-                      onClick={clearAllAnnotations}
-                      className="toolbar-button"
-                      style={{ marginTop: '8px', fontSize: '12px' }}
-                    >
-                      모든 주석 지우기
-                    </button>
+                    
+                    {/* 모든 주석 지우기 버튼 */}
+                    <div style={{ 
+                      marginTop: '12px', 
+                      paddingTop: '12px', 
+                      borderTop: annotations.length > 0 ? '1px solid #e5e7eb' : 'none',
+                      textAlign: 'center'
+                    }}>
+                      <button 
+                        onClick={clearAllAnnotations}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '8px 16px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#dc2626';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#ef4444';
+                        }}
+                        title="모든 주석을 삭제합니다"
+                      >
+                        모든 주석 지우기
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <p className="no-data">주석이 없습니다</p>
@@ -448,22 +539,6 @@ function App() {
         <main className={`main-content ${sidebarOpen ? 'with-sidebar' : ''}`}>
           {/* Toolbar */}
           <div className="toolbar">
-            {/* File Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">파일</label>
-              <div className="toolbar-group">
-                <button
-                  className="toolbar-button"
-                  onClick={handleFileUpload}
-                  disabled={isLoading}
-                  title="DICOM 파일 업로드"
-                >
-                  <Upload size={16} />
-                  <span className="toolbar-button-text">파일 불러오기</span>
-                </button>
-              </div>
-            </div>
-
             {/* Basic Tools Section */}
             <div className="toolbar-section">
               <label className="toolbar-label">기본 도구</label>
@@ -472,7 +547,7 @@ function App() {
                   { tool: 'Pan', abbrev: 'P', tooltip: 'Pan Tool - 화면 이동' },
                   { tool: 'Zoom', abbrev: 'Z', tooltip: 'Zoom Tool - 확대/축소' },
                   { tool: 'WindowLevel', abbrev: 'W', tooltip: 'Window Level Tool - 창 레벨 조정' },
-                  { tool: 'Magnify', abbrev: 'M', tooltip: 'Magnify Tool - 돋보기' },
+                  { tool: 'Magnify', abbrev: 'G', tooltip: 'Magnify Tool - 돋보기' },
                 ].map(({ tool, abbrev, tooltip }) => (
                   <button
                     key={tool}
@@ -532,13 +607,34 @@ function App() {
               </div>
             </div>
 
+            {/* Advanced Drawing Tools Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">고급 그리기</label>
+              <div className="toolbar-group">
+                {[
+                  { tool: 'PlanarFreehandROI', abbrev: 'F', tooltip: 'Freehand ROI - 자유곡선 그리기' },
+                  { tool: 'SplineROI', abbrev: 'S', tooltip: 'Spline ROI - 스플라인 곡선' },
+                ].map(({ tool, abbrev, tooltip }) => (
+                  <button
+                    key={tool}
+                    className={`toolbar-button ${activeTool === tool ? 'active' : ''}`}
+                    onClick={() => setActiveTool(tool)}
+                    disabled={isLoading}
+                    title={tooltip}
+                  >
+                    <span className="toolbar-button-text">{abbrev}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Annotation Tools Section */}
             <div className="toolbar-section">
               <label className="toolbar-label">주석 도구</label>
               <div className="toolbar-group">
                 {[
-                  { tool: 'ArrowAnnotate', abbrev: 'Ar', tooltip: 'Arrow Annotate - 화살표 주석' },
-                  { tool: 'Probe', abbrev: 'Pr', tooltip: 'Probe Tool - 탐침 도구' },
+                  { tool: 'ArrowAnnotate', abbrev: 'T', tooltip: 'Arrow Annotate - 화살표 주석' },
+                  { tool: 'Probe', abbrev: 'I', tooltip: 'Probe Tool - 정보 탐침' },
                 ].map(({ tool, abbrev, tooltip }) => (
                   <button
                     key={tool}
@@ -554,21 +650,7 @@ function App() {
             </div>
 
             {/* Layout Section Removed for Stability */}
-
-            {/* Debug Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">디버그</label>
-              <div className="toolbar-group">
-                <button
-                  className="toolbar-button"
-                  onClick={showDebugConsole}
-                  title="디버그 로그 보기 (개발자 도구 콘솔)"
-                >
-                  <Terminal size={16} />
-                  <span className="toolbar-button-text">디버그 로그</span>
-                </button>
-              </div>
-            </div>
+            {/* Debug Section Removed for Production */}
           </div>
 
           {/* Error Display */}
