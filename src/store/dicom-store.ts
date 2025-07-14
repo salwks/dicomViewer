@@ -299,93 +299,10 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 제어
+    // 주석 가시성 제어 (상태만 변경, 실제 CornerstoneJS 제어는 DicomViewport에서 처리)
     setAnnotationsVisible: (visible: boolean) => {
       set({ annotationsVisible: visible });
-      console.log(`🔧 주석 가시성 설정: ${visible ? '표시' : '숨김'}`);
-      
-      // CornerstoneJS 주석 가시성 제어
-      try {
-        // 방법 1: 모든 주석의 isVisible 속성을 직접 설정
-        const annotationManager = annotation.state.getAllAnnotations();
-        let totalAnnotations = 0;
-        let processedAnnotations = 0;
-        
-        if (annotationManager) {
-          Object.keys(annotationManager).forEach(toolName => {
-            const toolAnnotations = annotationManager[toolName];
-            if (toolAnnotations && Array.isArray(toolAnnotations)) {
-              toolAnnotations.forEach(ann => {
-                totalAnnotations++;
-                if (ann && typeof ann === 'object') {
-                  ann.isVisible = visible;
-                  processedAnnotations++;
-                }
-              });
-            }
-          });
-        }
-        
-        // 방법 2: 툴 그룹에서 주석 도구들을 활성화/비활성화
-        const toolGroupRef = (window as any).cornerstoneToolGroupRef;
-        if (toolGroupRef?.current) {
-          const annotationTools = [
-            'Length', 'Angle', 'CobbAngle', 'Bidirectional',
-            'RectangleROI', 'EllipticalROI', 'CircleROI',
-            'PlanarFreehandROI', 'SplineROI',
-            'ArrowAnnotate', 'Probe'
-          ];
-          
-          if (visible) {
-            // 주석을 표시할 때는 도구들을 enabled 상태로 유지
-            console.log('🔧 주석 도구들을 표시 가능 상태로 설정');
-          } else {
-            // 주석을 숨길 때는 특별한 처리 없음 (isVisible만으로 충분)
-            console.log('🔧 주석 도구들의 가시성을 숨김으로 설정');
-          }
-        }
-        
-        console.log(`👁️ CornerstoneJS: ${processedAnnotations}/${totalAnnotations}개 주석 ${visible ? '표시' : '숨김'} 설정 완료`);
-        
-        // 뷰포트 즉시 새로고침
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (renderingEngine) {
-          const viewport = renderingEngine.getViewport('dicom-viewport');
-          if (viewport) {
-            viewport.render();
-            console.log('✅ 뷰포트 새로고침 완료');
-          }
-        }
-        
-        // 추가: 강제 재렌더링을 위한 이벤트 트리거
-        setTimeout(() => {
-          if (renderingEngine) {
-            const viewport = renderingEngine.getViewport('dicom-viewport');
-            if (viewport) {
-              viewport.render();
-              console.log('🔄 추가 뷰포트 새로고침 완료');
-            }
-          }
-          
-          // 추가: annotation state를 다시 한 번 강제 설정
-          const annotationManager2 = annotation.state.getAllAnnotations();
-          if (annotationManager2) {
-            Object.keys(annotationManager2).forEach(toolName => {
-              const toolAnnotations = annotationManager2[toolName];
-              if (toolAnnotations && Array.isArray(toolAnnotations)) {
-                toolAnnotations.forEach(ann => {
-                  if (ann && typeof ann === 'object') {
-                    ann.isVisible = visible;
-                  }
-                });
-              }
-            });
-          }
-        }, 100);
-        
-      } catch (error) {
-        console.error('❌ 주석 가시성 제어 실패:', error);
-      }
+      console.log(`🔧 주석 가시성 상태 변경: ${visible ? '표시' : '숨김'}`);
     },
 
     // 팬/줌 모드 토글

@@ -114,7 +114,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         // 처리 완료 표시
         processedAnnotations.add(annotation.annotationUID);
 
-        // 주석 가시성은 스토어에서 전역적으로 관리됨
+        // 새로 생성된 주석의 가시성을 현재 설정에 맞게 조정
+        annotation.isVisible = annotationsVisible;
+        debugLogger.log(`📝 새 주석 가시성 설정: ${annotationsVisible ? '표시' : '숨김'}`);
 
         const annotationData = {
           annotationUID: annotation.annotationUID,
@@ -329,7 +331,57 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     }
   }, [activeTool, activateToolInViewport]);
 
-  // 주석 가시성은 스토어의 setAnnotationsVisible 함수에서 CornerstoneJS API로 직접 제어됨
+  // 주석 가시성 상태 변화 감지 및 CornerstoneJS 연동
+  useEffect(() => {
+    if (!isViewportInitialized.current) return;
+    
+    debugLogger.log(`🔄 주석 가시성 상태 변화 감지: ${annotationsVisible ? '표시' : '숨김'}`);
+    
+    try {
+      // CornerstoneJS에서 모든 주석의 isVisible 속성을 직접 제어
+      const annotationManager = annotation.state.getAllAnnotations();
+      let processedCount = 0;
+      
+      if (annotationManager) {
+        Object.keys(annotationManager).forEach(toolName => {
+          const toolAnnotations = annotationManager[toolName];
+          if (toolAnnotations && Array.isArray(toolAnnotations)) {
+            toolAnnotations.forEach(ann => {
+              if (ann && typeof ann === 'object') {
+                ann.isVisible = annotationsVisible;
+                processedCount++;
+              }
+            });
+          }
+        });
+      }
+      
+      debugLogger.log(`👁️ ${processedCount}개 주석의 가시성을 ${annotationsVisible ? '표시' : '숨김'}로 설정`);
+      
+      // 뷰포트 즉시 새로고침
+      if (renderingEngineRef.current) {
+        const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
+        if (viewport) {
+          viewport.render();
+          debugLogger.success('✅ 주석 가시성 변경 후 뷰포트 새로고침 완료');
+        }
+      }
+      
+      // 추가 안전장치: 100ms 후 재렌더링
+      setTimeout(() => {
+        if (renderingEngineRef.current) {
+          const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
+          if (viewport) {
+            viewport.render();
+            debugLogger.log('🔄 주석 가시성 변경 후 추가 뷰포트 새로고침 완료');
+          }
+        }
+      }, 100);
+      
+    } catch (error) {
+      debugLogger.error('❌ 주석 가시성 제어 실패:', error);
+    }
+  }, [annotationsVisible]); // annotationsVisible 상태가 변경될 때마다 실행
 
   // 정리
   useEffect(() => {
