@@ -322,9 +322,12 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation, annotationsVisible]);
 
-  // 주석 가시성 상태 변화 감지 및 실제 뷰포트 제어 (최종 단순화 버전)
+  // useRef를 사용하여 이전 상태를 기억합니다 (StrictMode 대응)
+  const isVisibleRef = useRef(annotationsVisible);
+
+  // 주석 가시성 상태 변화 감지 및 실제 뷰포트 제어 (StrictMode 견고 버전)
   useEffect(() => {
-    // 뷰포트가 준비된 상태인지 먼저 확인합니다.
+    // 뷰포트가 준비되지 않았으면 아무것도 하지 않습니다.
     if (!renderingEngineRef.current) return;
     
     const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
@@ -333,64 +336,83 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       return;
     }
 
-    console.log(`🔄 주석 가시성 상태 변화: ${annotationsVisible ? '표시' : '숨김'}`);
-
-    // 스토어의 상태값에 따라 실제 뷰포트의 동작을 제어합니다.
-    if (annotationsVisible) {
-      console.log('✅ 뷰포트의 모든 주석을 표시합니다.');
-      debugLogger.log('✅ 뷰포트의 모든 주석을 표시합니다.');
+    // 이전 상태와 현재 상태가 다를 때만 아래 코드를 실행합니다.
+    if (isVisibleRef.current !== annotationsVisible) {
+      console.log(`🔄 주석 가시성 상태 실제 변화 감지: ${isVisibleRef.current} → ${annotationsVisible}`);
       
-      // CornerstoneJS 공식 API 시도
-      try {
-        if (typeof annotation.state.showAnnotations === 'function') {
-          annotation.state.showAnnotations();
+      if (annotationsVisible) {
+        console.log('✅ 뷰포트의 모든 주석을 표시합니다.');
+        debugLogger.log('✅ 뷰포트의 모든 주석을 표시합니다.');
+        
+        // CornerstoneJS 공식 API 시도
+        try {
+          if (typeof annotation.state.showAnnotations === 'function') {
+            annotation.state.showAnnotations();
+            console.log('📡 annotation.state.showAnnotations() 호출 완료');
+          } else {
+            console.log('⚠️ showAnnotations API를 사용할 수 없음');
+          }
+        } catch (e) {
+          console.warn('showAnnotations API 실행 오류:', e);
         }
-      } catch (e) {
-        console.log('showAnnotations API 없음, 개별 제어 사용');
+      } else {
+        console.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
+        debugLogger.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
+        
+        // CornerstoneJS 공식 API 시도
+        try {
+          if (typeof annotation.state.hideAnnotations === 'function') {
+            annotation.state.hideAnnotations();
+            console.log('📡 annotation.state.hideAnnotations() 호출 완료');
+          } else {
+            console.log('⚠️ hideAnnotations API를 사용할 수 없음');
+          }
+        } catch (e) {
+          console.warn('hideAnnotations API 실행 오류:', e);
+        }
       }
-    } else {
-      console.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
-      debugLogger.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
+
+      // 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
+      const annotationManager = annotation.state.getAllAnnotations();
+      let processedCount = 0;
       
-      // CornerstoneJS 공식 API 시도
-      try {
-        if (typeof annotation.state.hideAnnotations === 'function') {
-          annotation.state.hideAnnotations();
-        }
-      } catch (e) {
-        console.log('hideAnnotations API 없음, 개별 제어 사용');
+      if (annotationManager) {
+        Object.keys(annotationManager).forEach(toolName => {
+          const toolAnnotations = annotationManager[toolName];
+          if (toolAnnotations && Array.isArray(toolAnnotations)) {
+            toolAnnotations.forEach(ann => {
+              if (ann && typeof ann === 'object') {
+                ann.isVisible = annotationsVisible;
+                processedCount++;
+              }
+            });
+          }
+        });
       }
-    }
 
-    // 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
-    const annotationManager = annotation.state.getAllAnnotations();
-    let processedCount = 0;
-    
-    if (annotationManager) {
-      Object.keys(annotationManager).forEach(toolName => {
-        const toolAnnotations = annotationManager[toolName];
-        if (toolAnnotations && Array.isArray(toolAnnotations)) {
-          toolAnnotations.forEach(ann => {
-            if (ann && typeof ann === 'object') {
-              ann.isVisible = annotationsVisible;
-              processedCount++;
-            }
-          });
-        }
-      });
-    }
+      console.log(`👁️ ${processedCount}개 주석의 가시성을 ${annotationsVisible ? '표시' : '숨김'}로 설정`);
 
-    console.log(`👁️ ${processedCount}개 주석의 가시성을 ${annotationsVisible ? '표시' : '숨김'}로 설정`);
-
-    // 뷰포트 새로고침
-    viewport.render();
-    console.log('✅ 뷰포트 새로고침 완료');
-
-    // 추가 안전장치: 100ms 후 재렌더링
-    setTimeout(() => {
+      // 뷰포트 새로고침
       viewport.render();
-      console.log('🔄 추가 뷰포트 새로고침 완료');
-    }, 100);
+      console.log('✅ 뷰포트 새로고침 완료');
+
+      // 추가 안전장치: 100ms 후 재렌더링
+      setTimeout(() => {
+        if (renderingEngineRef.current) {
+          const currentViewport = renderingEngineRef.current.getViewport('dicom-viewport');
+          if (currentViewport) {
+            currentViewport.render();
+            console.log('🔄 추가 뷰포트 새로고침 완료');
+          }
+        }
+      }, 100);
+
+      // 상태를 업데이트하여 다음 변경을 대비합니다.
+      isVisibleRef.current = annotationsVisible;
+      
+    } else {
+      console.log(`ℹ️ 주석 가시성 상태 변화 없음: ${annotationsVisible} (StrictMode 중복 실행 방지)`);
+    }
 
   }, [annotationsVisible]); // annotationsVisible 상태가 바뀔 때마다 이 코드가 실행됩니다.
 
