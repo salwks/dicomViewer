@@ -52,13 +52,15 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     activateToolInViewport, 
     addAnnotation, 
     updateAnnotation, 
-    removeAnnotation
+    removeAnnotation,
+    annotationsVisible
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     activateToolInViewport: state.activateToolInViewport,
     addAnnotation: state.addAnnotation,
     updateAnnotation: state.updateAnnotation,
-    removeAnnotation: state.removeAnnotation
+    removeAnnotation: state.removeAnnotation,
+    annotationsVisible: state.annotationsVisible
   }));
 
   // Tool activation through Zustand store
@@ -320,7 +322,40 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation]);
 
-  // 주석 가시성 제어는 Zustand 스토어에서 직접 처리됨 (DicomViewport는 이벤트 리스너만 담당)
+  // 주석 가시성 제어 - frameOfReferenceUID를 사용하는 올바른 방식
+  useEffect(() => {
+    if (!isViewportInitialized.current) return;
+
+    const viewportId = 'dicom-viewport';
+    const renderingEngine = getRenderingEngine('dicom-rendering-engine');
+    const viewport = renderingEngine?.getViewport(viewportId);
+
+    if (!viewport) return;
+
+    try {
+      // 1. 뷰포트에서 올바른 좌표계 ID를 가져옵니다. (이것이 핵심입니다!)
+      const frameOfReferenceUID = viewport.getFrameOfReferenceUID();
+
+      // 2. 올바른 식별자로 해당 좌표계의 모든 주석을 가져옵니다.
+      const annotations = annotation.state.getAnnotations(undefined, frameOfReferenceUID);
+      
+      if (annotations && annotations.length > 0) {
+        // 3. 각 주석의 가시성을 직접 변경합니다.
+        annotations.forEach(ann => {
+          ann.visibility = annotationsVisible;
+        });
+      }
+      
+      // 4. 변경사항을 뷰포트에 즉시 반영합니다.
+      viewport.render();
+      
+      debugLogger.success(`✅ 주석 가시성 변경 완료: ${annotationsVisible ? '표시' : '숨김'} (FrameOfReference: ${frameOfReferenceUID})`);
+      
+    } catch (error) {
+      debugLogger.error('❌ 주석 가시성 변경 중 오류 발생', error);
+    }
+    
+  }, [annotationsVisible, isViewportInitialized.current]); // 상태가 바뀔 때마다 실행
 
   // 정리
   useEffect(() => {
