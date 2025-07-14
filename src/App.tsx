@@ -488,8 +488,8 @@ function App() {
                         type="checkbox" 
                         checked={annotationsVisible}
                         onChange={() => {
-                          console.log('🔧 주석 표시 체크박스 클릭됨');
-                          toggleAnnotationsVisibility();
+                          console.log('🔧 주석 표시 체크박스 클릭됨 - 최종 완성 버전');
+                          toggleAnnotationsVisibility('dicom-viewport');
                         }}
                       />
                       주석 표시

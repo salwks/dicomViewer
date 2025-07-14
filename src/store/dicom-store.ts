@@ -183,7 +183,7 @@ export const useDicomStore = create<DicomViewerState>()(
       // 새 주석 추가 후, 만약 주석이 숨김 상태였다면 보이도록 변경
       const { getState } = useDicomStore;
       if (!getState().annotationsVisible) {
-        getState().toggleAnnotationsVisibility();
+        getState().setAnnotationsVisible(true);
       }
     },
 
@@ -300,9 +300,37 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 토글 - 순수하게 상태만 관리
-    toggleAnnotationsVisibility: () => {
-      set((state) => ({ annotationsVisible: !state.annotationsVisible }));
+    // 주석 가시성 토글 - 안전장치가 추가된 최종 완성 버전
+    toggleAnnotationsVisibility: (viewportId: string) => {
+      const newVisibility = !useDicomStore.getState().annotationsVisible;
+
+      try {
+        const allAnnotations = annotation.state.getAnnotations(undefined, viewportId);
+
+        // ⬇️ 이 부분이 가장 중요합니다! ⬇️
+        // 주석이 실제로 존재하는지, 그리고 배열이 맞는지 먼저 확인합니다.
+        if (Array.isArray(allAnnotations) && allAnnotations.length > 0) {
+          allAnnotations.forEach(ann => {
+            ann.visibility = newVisibility;
+          });
+        }
+
+        // 뷰포트를 다시 그려서 변경사항을 즉시 반영합니다.
+        getRenderingEngine('dicom-rendering-engine')?.render();
+
+        // 모든 동작이 성공한 후에만 상태를 업데이트합니다.
+        set({ annotationsVisible: newVisibility });
+
+        console.log(`✅ 주석 가시성 변경 완료: ${newVisibility ? '표시' : '숨김'} (뷰포트: ${viewportId})`);
+        
+      } catch (error) {
+        console.error('❌ 주석 가시성 변경 중 오류 발생', error);
+      }
+    },
+
+    // setAnnotationsVisible 함수를 단순화
+    setAnnotationsVisible: (visible: boolean) => {
+      set({ annotationsVisible: visible });
     },
 
     // 팬/줌 모드 토글

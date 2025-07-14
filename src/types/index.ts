@@ -198,7 +198,8 @@ export interface DicomViewerState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   toggleSidebar: () => void;
-  toggleAnnotationsVisibility: () => void;
+  toggleAnnotationsVisibility: (viewportId: string) => void;
+  setAnnotationsVisible: (visible: boolean) => void;
   setPanZoomEnabled: (enabled: boolean, toolGroupRef?: any) => void;
   clearAllAnnotations: () => void;
 }
