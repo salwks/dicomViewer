@@ -57,6 +57,7 @@ export const useDicomStore = create<DicomViewerState>()(
     isFlippedHorizontal: false,
     isFlippedVertical: false,
     currentDicomDataSet: null,
+    isLicenseModalOpen: false,
 
     // Actions
     setActiveViewport: (viewportId: string) => {
@@ -496,6 +497,11 @@ export const useDicomStore = create<DicomViewerState>()(
     setDicomDataSet: (dataSet: any) => {
       set({ currentDicomDataSet: dataSet });
       console.log("💾 DICOM 데이터셋 저장 완료");
+    },
+
+    // 라이선스 모달 토글
+    toggleLicenseModal: () => {
+      set((state) => ({ isLicenseModalOpen: !state.isLicenseModalOpen }));
     },
 
   }))

@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { DicomRenderer } from "./components/DicomRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
+import { LicenseModal } from "./components/LicenseModal";
 import { useDicomStore } from "./store/dicom-store";
 import "./App.css";
 
@@ -90,6 +91,8 @@ function App() {
     isFlippedHorizontal,
     isFlippedVertical,
     currentDicomDataSet,
+    isLicenseModalOpen,
+    toggleLicenseModal,
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
@@ -104,6 +107,8 @@ function App() {
     isFlippedHorizontal: state.isFlippedHorizontal,
     isFlippedVertical: state.isFlippedVertical,
     currentDicomDataSet: state.currentDicomDataSet,
+    isLicenseModalOpen: state.isLicenseModalOpen,
+    toggleLicenseModal: state.toggleLicenseModal,
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -287,804 +292,885 @@ function App() {
   };
 
   return (
-    <div className="app">
-      {/* Header */}
-      <header className="app-header">
-        <div className="header-content">
-          <div className="header-left">
-            <Layout className="header-icon" />
-            <h1>Clarity</h1>
-            <span className="version">Alpha</span>
+    <>
+      <div className="app">
+        {/* Header */}
+        <header className="app-header">
+          <div className="header-content">
+            <div className="header-left">
+              <Layout className="header-icon" />
+              <h1>Clarity</h1>
+              <span className="version">Alpha</span>
+            </div>
+
+            <div className="header-right">
+              <span className="status-ready">Ready</span>
+            </div>
           </div>
+        </header>
 
-          <div className="header-right">
-            <span className="status-ready">Ready</span>
-          </div>
-        </div>
-      </header>
+        {/* Main Content */}
+        <div className="app-content">
+          {/* Sidebar Toggle */}
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={commonButtonStyle}
+          >
+            {sidebarOpen ? "◀" : "▶"}
+          </button>
 
-      {/* Main Content */}
-      <div className="app-content">
-        {/* Sidebar Toggle */}
-        <button
-          className="sidebar-toggle"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          style={commonButtonStyle}
-        >
-          {sidebarOpen ? "◀" : "▶"}
-        </button>
-
-        {/* Sidebar */}
-        {sidebarOpen && (
-          <aside className="sidebar">
-            <div className="sidebar-content">
-              {/* File Upload Section - Moved from Toolbar */}
-              <div className="sidebar-section">
-                <h3 className="sidebar-section-title">
-                  <Upload size={16} />
-                  파일 관리
-                </h3>
-                <div className="file-upload-section">
-                  <button
-                    className="file-upload-button"
-                    onClick={handleFileUpload}
-                    disabled={isLoading}
-                    style={{
-                      ...commonButtonStyle,
-                      width: "100%",
-                      padding: "12px 16px",
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: isLoading ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      transition: "background-color 0.2s",
-                      opacity: isLoading ? 0.6 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isLoading) {
-                        e.currentTarget.style.backgroundColor = "#2563eb";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isLoading) {
-                        e.currentTarget.style.backgroundColor = "#3b82f6";
-                      }
-                    }}
-                    title="DICOM 파일 업로드 (.dcm)"
-                  >
+          {/* Sidebar */}
+          {sidebarOpen && (
+            <aside className="sidebar">
+              <div className="sidebar-content">
+                {/* File Upload Section - Moved from Toolbar */}
+                <div className="sidebar-section">
+                  <h3 className="sidebar-section-title">
                     <Upload size={16} />
-                    <span>DICOM 파일 불러오기</span>
-                  </button>
+                    파일 관리
+                  </h3>
+                  <div className="file-upload-section">
+                    <button
+                      className="file-upload-button"
+                      onClick={handleFileUpload}
+                      disabled={isLoading}
+                      style={{
+                        ...commonButtonStyle,
+                        width: "100%",
+                        padding: "12px 16px",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: isLoading ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        transition: "background-color 0.2s",
+                        opacity: isLoading ? 0.6 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isLoading) {
+                          e.currentTarget.style.backgroundColor = "#2563eb";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isLoading) {
+                          e.currentTarget.style.backgroundColor = "#3b82f6";
+                        }
+                      }}
+                      title="DICOM 파일 업로드 (.dcm)"
+                    >
+                      <Upload size={16} />
+                      <span>DICOM 파일 불러오기</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Series Information */}
-              <div className="sidebar-section">
-                <h3 className="sidebar-section-title">
-                  <FileText size={16} />
-                  파일 정보
-                </h3>
-                {loadedFiles.length > 0 ? (
-                  <div className="series-info">
-                    <div className="info-item">
-                      <label>로드된 파일:</label>
-                      <span>{loadedFiles.length}개</span>
-                    </div>
-                    <div className="info-item">
-                      <label>렌더링 상태:</label>
-                      <span
-                        style={{
-                          color: renderingSuccess
-                            ? "#10b981"
+                {/* Series Information */}
+                <div className="sidebar-section">
+                  <h3 className="sidebar-section-title">
+                    <FileText size={16} />
+                    파일 정보
+                  </h3>
+                  {loadedFiles.length > 0 ? (
+                    <div className="series-info">
+                      <div className="info-item">
+                        <label>로드된 파일:</label>
+                        <span>{loadedFiles.length}개</span>
+                      </div>
+                      <div className="info-item">
+                        <label>렌더링 상태:</label>
+                        <span
+                          style={{
+                            color: renderingSuccess
+                              ? "#10b981"
+                              : isLoading
+                              ? "#f59e0b"
+                              : "#ef4444",
+                          }}
+                        >
+                          {renderingSuccess
+                            ? "✅ 완료"
                             : isLoading
-                            ? "#f59e0b"
-                            : "#ef4444",
+                            ? "⏳ 진행중"
+                            : "❌ 실패"}
+                        </span>
+                      </div>
+                      {loadedFiles.slice(0, 3).map((file, index) => (
+                        <div key={index} className="info-item">
+                          <label>파일 {index + 1}:</label>
+                          <span>{file.name}</span>
+                        </div>
+                      ))}
+                      {loadedFiles.length > 3 && (
+                        <div className="info-item">
+                          <span>... 및 {loadedFiles.length - 3}개 더</span>
+                        </div>
+                      )}
+
+                      {/* Meta Tag 토글 버튼 */}
+                      {renderingSuccess && currentDicomDataSet && (
+                        <div
+                          className="info-item"
+                          style={{ marginTop: "12px" }}
+                        >
+                          <button
+                            onClick={() => setIsMetaModalOpen(!isMetaModalOpen)}
+                            style={{
+                              ...commonButtonStyle,
+                              width: "100%",
+                              padding: "8px 12px",
+                              backgroundColor: isMetaModalOpen
+                                ? "#dc2626"
+                                : "#059669",
+                              color: "white",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "8px",
+                              transition: "background-color 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isMetaModalOpen ? "#b91c1c" : "#047857";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                isMetaModalOpen ? "#dc2626" : "#059669";
+                            }}
+                            title={
+                              isMetaModalOpen
+                                ? "Meta Tag 창 닫기"
+                                : "DICOM 파일의 모든 메타 태그 정보를 확인합니다"
+                            }
+                          >
+                            <Tag size={14} />
+                            <span>
+                              {isMetaModalOpen
+                                ? "Meta Tag 닫기"
+                                : "Meta Tag 보기"}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="no-data">파일이 로드되지 않았습니다</p>
+                  )}
+                </div>
+
+                {/* 주석 정보 */}
+                <div
+                  className="sidebar-section"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "400px", // 고정 높이 설정
+                  }}
+                >
+                  <h3 className="sidebar-section-title">
+                    <FileText size={16} />
+                    주석 목록 ({annotations.length}개)
+                  </h3>
+
+                  {annotations.length > 0 ? (
+                    <>
+                      {/* 스크롤 가능한 주석 목록 */}
+                      <div
+                        className="annotations-list"
+                        style={{
+                          flexGrow: 1,
+                          overflowY: "auto",
+                          overflowX: "hidden",
+                          padding: "8px",
+                          marginBottom: "12px",
+                          scrollbarWidth: "thin",
+                          scrollbarColor: "#cbd5e1 #f1f5f9",
                         }}
                       >
-                        {renderingSuccess
-                          ? "✅ 완료"
-                          : isLoading
-                          ? "⏳ 진행중"
-                          : "❌ 실패"}
-                      </span>
-                    </div>
-                    {loadedFiles.slice(0, 3).map((file, index) => (
-                      <div key={index} className="info-item">
-                        <label>파일 {index + 1}:</label>
-                        <span>{file.name}</span>
-                      </div>
-                    ))}
-                    {loadedFiles.length > 3 && (
-                      <div className="info-item">
-                        <span>... 및 {loadedFiles.length - 3}개 더</span>
-                      </div>
-                    )}
-
-                    {/* Meta Tag 토글 버튼 */}
-                    {renderingSuccess && currentDicomDataSet && (
-                      <div className="info-item" style={{ marginTop: "12px" }}>
-                        <button
-                          onClick={() => setIsMetaModalOpen(!isMetaModalOpen)}
-                          style={{
-                            ...commonButtonStyle,
-                            width: "100%",
-                            padding: "8px 12px",
-                            backgroundColor: isMetaModalOpen
-                              ? "#dc2626"
-                              : "#059669",
-                            color: "white",
-                            borderRadius: "6px",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "8px",
-                            transition: "background-color 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              isMetaModalOpen ? "#b91c1c" : "#047857";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              isMetaModalOpen ? "#dc2626" : "#059669";
-                          }}
-                          title={
-                            isMetaModalOpen
-                              ? "Meta Tag 창 닫기"
-                              : "DICOM 파일의 모든 메타 태그 정보를 확인합니다"
-                          }
-                        >
-                          <Tag size={14} />
-                          <span>
-                            {isMetaModalOpen
-                              ? "Meta Tag 닫기"
-                              : "Meta Tag 보기"}
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="no-data">파일이 로드되지 않았습니다</p>
-                )}
-              </div>
-
-              {/* 주석 정보 */}
-              <div
-                className="sidebar-section"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "400px", // 고정 높이 설정
-                }}
-              >
-                <h3 className="sidebar-section-title">
-                  <FileText size={16} />
-                  주석 목록 ({annotations.length}개)
-                </h3>
-
-                {annotations.length > 0 ? (
-                  <>
-                    {/* 스크롤 가능한 주석 목록 */}
-                    <div
-                      className="annotations-list"
-                      style={{
-                        flexGrow: 1,
-                        overflowY: "auto",
-                        overflowX: "hidden",
-                        padding: "8px",
-                        marginBottom: "12px",
-                        scrollbarWidth: "thin",
-                        scrollbarColor: "#cbd5e1 #f1f5f9",
-                      }}
-                    >
-                      {annotations.map((annotation, index) => (
-                        <div
-                          key={annotation.annotationUID}
-                          className="annotation-item"
-                          style={{
-                            marginBottom: "4px",
-                            padding: "4px 4px 0px 4px",
-                            backgroundColor: "#242424",
-                          }}
-                        >
+                        {annotations.map((annotation, index) => (
                           <div
-                            className="annotation-header"
+                            key={annotation.annotationUID}
+                            className="annotation-item"
                             style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
                               marginBottom: "4px",
+                              padding: "4px 4px 0px 4px",
+                              backgroundColor: "#242424",
                             }}
                           >
                             <div
-                              className="annotation-info"
+                              className="annotation-header"
                               style={{
                                 display: "flex",
-                                flexDirection: "column",
-                                flex: 1,
-                              }}
-                            >
-                              {/* 편집 가능한 주석 이름만 표시 */}
-                              <div style={{ marginBottom: "2px" }}>
-                                {editingAnnotationId ===
-                                annotation.annotationUID ? (
-                                  <input
-                                    type="text"
-                                    value={editingValue}
-                                    onChange={(e) =>
-                                      setEditingValue(e.target.value)
-                                    }
-                                    onKeyPress={handleAnnotationKeyPress}
-                                    onBlur={saveAnnotationEdit}
-                                    autoFocus
-                                    style={{
-                                      border: "1px solid #3b82f6",
-                                      borderRadius: "4px",
-                                      padding: "4px 8px",
-                                      fontSize: "14px",
-                                      width: "100%",
-                                      background: "#fff",
-                                      outline: "none",
-                                      fontWeight: "500",
-                                    }}
-                                    placeholder="주석 이름 입력..."
-                                  />
-                                ) : (
-                                  <span
-                                    className="annotation-name"
-                                    onClick={() =>
-                                      startEditingAnnotation(
-                                        annotation.annotationUID,
-                                        annotation.data?.label ||
-                                          annotation.data?.text ||
-                                          `${annotation.toolName} #${index + 1}`
-                                      )
-                                    }
-                                    style={{
-                                      cursor: "pointer",
-                                      fontSize: "14px",
-                                      fontWeight: "500",
-                                      color: "rgb(16, 185, 129)",
-                                      padding: "4px 6px",
-                                      transition: "background-color 0.2s",
-                                      display: "inline-block",
-                                      minHeight: "24px",
-                                      minWidth: "60px",
-                                      width: "100%",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "rgba(16, 185, 129, 0.1)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "transparent";
-                                    }}
-                                    title="클릭하여 이름 편집"
-                                  >
-                                    {annotation.data?.label ||
-                                      annotation.data?.text ||
-                                      `${annotation.toolName} #${index + 1}`}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* 도구 정보 div 숨김 처리 */}
-                              <div style={{ display: "none" }}>
-                                <span
-                                  className="annotation-tool"
-                                  style={{ fontSize: "11px", color: "#888" }}
-                                >
-                                  {annotation.toolName}
-                                </span>
-                                <span
-                                  className="annotation-id"
-                                  style={{ fontSize: "11px", color: "#888" }}
-                                >
-                                  #{index + 1}
-                                </span>
-                              </div>
-                            </div>
-
-                            <button
-                              className="annotation-delete-btn"
-                              onClick={() => {
-                                console.log(
-                                  `🗑️ 주석 삭제 요청: ${annotation.annotationUID}`
-                                );
-                                removeAnnotation(annotation.annotationUID);
-                              }}
-                              title="주석 삭제"
-                              style={{
-                                ...commonButtonStyle,
-                                color: "#ef4444",
-                                padding: "4px",
-                                borderRadius: "4px",
-                                display: "flex",
+                                justifyContent: "space-between",
                                 alignItems: "center",
-                                justifyContent: "center",
-                                transition: "background-color 0.2s",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor =
-                                  "rgba(239, 68, 68, 0.1)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor =
-                                  "transparent";
+                                marginBottom: "4px",
                               }}
                             >
-                              <X size={14} />
-                            </button>
+                              <div
+                                className="annotation-info"
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  flex: 1,
+                                }}
+                              >
+                                {/* 편집 가능한 주석 이름만 표시 */}
+                                <div style={{ marginBottom: "2px" }}>
+                                  {editingAnnotationId ===
+                                  annotation.annotationUID ? (
+                                    <input
+                                      type="text"
+                                      value={editingValue}
+                                      onChange={(e) =>
+                                        setEditingValue(e.target.value)
+                                      }
+                                      onKeyPress={handleAnnotationKeyPress}
+                                      onBlur={saveAnnotationEdit}
+                                      autoFocus
+                                      style={{
+                                        border: "1px solid #3b82f6",
+                                        borderRadius: "4px",
+                                        padding: "4px 8px",
+                                        fontSize: "14px",
+                                        width: "100%",
+                                        background: "#fff",
+                                        outline: "none",
+                                        fontWeight: "500",
+                                      }}
+                                      placeholder="주석 이름 입력..."
+                                    />
+                                  ) : (
+                                    <span
+                                      className="annotation-name"
+                                      onClick={() =>
+                                        startEditingAnnotation(
+                                          annotation.annotationUID,
+                                          annotation.data?.label ||
+                                            annotation.data?.text ||
+                                            `${annotation.toolName} #${
+                                              index + 1
+                                            }`
+                                        )
+                                      }
+                                      style={{
+                                        cursor: "pointer",
+                                        fontSize: "14px",
+                                        fontWeight: "500",
+                                        color: "rgb(16, 185, 129)",
+                                        padding: "4px 6px",
+                                        transition: "background-color 0.2s",
+                                        display: "inline-block",
+                                        minHeight: "24px",
+                                        minWidth: "60px",
+                                        width: "100%",
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "rgba(16, 185, 129, 0.1)";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "transparent";
+                                      }}
+                                      title="클릭하여 이름 편집"
+                                    >
+                                      {annotation.data?.label ||
+                                        annotation.data?.text ||
+                                        `${annotation.toolName} #${index + 1}`}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* 도구 정보 div 숨김 처리 */}
+                                <div style={{ display: "none" }}>
+                                  <span
+                                    className="annotation-tool"
+                                    style={{ fontSize: "11px", color: "#888" }}
+                                  >
+                                    {annotation.toolName}
+                                  </span>
+                                  <span
+                                    className="annotation-id"
+                                    style={{ fontSize: "11px", color: "#888" }}
+                                  >
+                                    #{index + 1}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                className="annotation-delete-btn"
+                                onClick={() => {
+                                  console.log(
+                                    `🗑️ 주석 삭제 요청: ${annotation.annotationUID}`
+                                  );
+                                  removeAnnotation(annotation.annotationUID);
+                                }}
+                                title="주석 삭제"
+                                style={{
+                                  ...commonButtonStyle,
+                                  color: "#ef4444",
+                                  padding: "4px",
+                                  borderRadius: "4px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  transition: "background-color 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "rgba(239, 68, 68, 0.1)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
+                                }}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
 
-                    {/* 하단 고정 버튼 */}
-                    <div
-                      style={{
-                        paddingTop: "8px",
-                        borderTop: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        flexShrink: 0, // 버튼이 축소되지 않도록
-                      }}
-                    >
-                      <button
-                        onClick={clearAllAnnotations}
+                      {/* 하단 고정 버튼 */}
+                      <div
                         style={{
-                          ...commonButtonStyle,
-                          background: "#ef4444",
-                          color: "white",
-                          borderRadius: "6px",
-                          padding: "8px 16px",
-                          fontSize: "12px",
-                          fontWeight: "500",
-                          cursor: "pointer",
-                          transition: "background-color 0.2s",
-                          width: "100%",
+                          paddingTop: "8px",
+                          borderTop: "1px solid #e5e7eb",
+                          textAlign: "center",
+                          flexShrink: 0, // 버튼이 축소되지 않도록
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#dc2626";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#ef4444";
-                        }}
-                        title="모든 주석을 삭제합니다"
                       >
-                        모든 주석 지우기
-                      </button>
+                        <button
+                          onClick={clearAllAnnotations}
+                          style={{
+                            ...commonButtonStyle,
+                            background: "#ef4444",
+                            color: "white",
+                            borderRadius: "6px",
+                            padding: "8px 16px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s",
+                            width: "100%",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#dc2626";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ef4444";
+                          }}
+                          title="모든 주석을 삭제합니다"
+                        >
+                          모든 주석 지우기
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="no-data">주석이 없습니다</p>
+                  )}
+                </div>
+
+                {/* Settings */}
+                <div className="sidebar-section">
+                  <h3 className="sidebar-section-title">
+                    <Settings size={16} />
+                    설정
+                  </h3>
+                  <div className="settings-list">
+                    <div className="setting-item">
+                      <label>
+                        활성 도구: <strong>{activeTool || "None"}</strong>
+                      </label>
                     </div>
-                  </>
-                ) : (
-                  <p className="no-data">주석이 없습니다</p>
-                )}
-              </div>
-
-              {/* Settings */}
-              <div className="sidebar-section">
-                <h3 className="sidebar-section-title">
-                  <Settings size={16} />
-                  설정
-                </h3>
-                <div className="settings-list">
-                  <div className="setting-item">
-                    <label>
-                      활성 도구: <strong>{activeTool || "None"}</strong>
-                    </label>
                   </div>
                 </div>
               </div>
-            </div>
-          </aside>
-        )}
 
-        {/* Main Viewer Area */}
-        <main className={`main-content ${sidebarOpen ? "with-sidebar" : ""}`}>
-          {/* Toolbar */}
-          <div className="toolbar">
-            {/* Basic Tools Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">기본 도구</label>
-              <div className="toolbar-group">
-                {[
-                  {
-                    tool: "Pan",
-                    icon: MousePointer,
-                    tooltip: "Pan Tool - 화면 이동",
-                  },
-                  {
-                    tool: "Zoom",
-                    icon: ZoomIn,
-                    tooltip: "Zoom Tool - 확대/축소",
-                  },
-                  {
-                    tool: "WindowLevel",
-                    icon: Contrast,
-                    tooltip: "Window Level Tool - 창 레벨 조정",
-                  },
-                  {
-                    tool: "Magnify",
-                    icon: SearchIcon,
-                    tooltip: "Magnify Tool - 돋보기",
-                  },
-                ].map(({ tool, icon: Icon, tooltip }) => (
-                  <button
-                    key={tool}
-                    className={`toolbar-button ${
-                      activeTool === tool ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTool(tool)}
-                    disabled={isLoading}
-                    title={tooltip}
-                    style={commonButtonStyle}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Measurement Tools Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">측정 도구</label>
-              <div className="toolbar-group">
-                {[
-                  {
-                    tool: "Length",
-                    icon: Ruler,
-                    tooltip: "Length Tool - 길이 측정",
-                  },
-                  {
-                    tool: "Angle",
-                    icon: Triangle,
-                    tooltip: "Angle Tool - 각도 측정",
-                  },
-                  {
-                    tool: "CobbAngle",
-                    icon: Navigation,
-                    tooltip: "Cobb Angle Tool - 콥 각도",
-                  },
-                  {
-                    tool: "Bidirectional",
-                    icon: Move3D,
-                    tooltip: "Bidirectional Tool - 양방향 측정",
-                  },
-                ].map(({ tool, icon: Icon, tooltip }) => (
-                  <button
-                    key={tool}
-                    className={`toolbar-button ${
-                      activeTool === tool ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTool(tool)}
-                    disabled={isLoading}
-                    title={tooltip}
-                    style={commonButtonStyle}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ROI Tools Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">ROI 도구</label>
-              <div className="toolbar-group">
-                {[
-                  {
-                    tool: "RectangleROI",
-                    icon: Square,
-                    tooltip: "Rectangle ROI - 사각형 관심영역",
-                  },
-                  {
-                    tool: "EllipticalROI",
-                    icon: CircleEllipsis,
-                    tooltip: "Elliptical ROI - 타원형 관심영역",
-                  },
-                  {
-                    tool: "CircleROI",
-                    icon: Circle,
-                    tooltip: "Circle ROI - 원형 관심영역",
-                  },
-                ].map(({ tool, icon: Icon, tooltip }) => (
-                  <button
-                    key={tool}
-                    className={`toolbar-button ${
-                      activeTool === tool ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTool(tool)}
-                    disabled={isLoading}
-                    title={tooltip}
-                    style={commonButtonStyle}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Advanced Drawing Tools Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">고급 그리기</label>
-              <div className="toolbar-group">
-                {[
-                  {
-                    tool: "PlanarFreehandROI",
-                    icon: Brush,
-                    tooltip: "Freehand ROI - 자유곡선 그리기",
-                  },
-                  {
-                    tool: "SplineROI",
-                    icon: Spline,
-                    tooltip: "Spline ROI - 스플라인 곡선",
-                  },
-                ].map(({ tool, icon: Icon, tooltip }) => (
-                  <button
-                    key={tool}
-                    className={`toolbar-button ${
-                      activeTool === tool ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTool(tool)}
-                    disabled={isLoading}
-                    title={tooltip}
-                    style={commonButtonStyle}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Annotation Tools Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">주석 도구</label>
-              <div className="toolbar-group">
-                {[
-                  {
-                    tool: "ArrowAnnotate",
-                    icon: ArrowUpRight,
-                    tooltip: "Text Annotation - 텍스트 주석 (화살표 + 텍스트)",
-                  },
-                  {
-                    tool: "Probe",
-                    icon: Target,
-                    tooltip: "Probe Tool - 정보 탐침",
-                  },
-                ].map(({ tool, icon: Icon, tooltip }) => (
-                  <button
-                    key={tool}
-                    className={`toolbar-button ${
-                      activeTool === tool ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTool(tool)}
-                    disabled={isLoading}
-                    title={tooltip}
-                    style={commonButtonStyle}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Image Manipulation Section */}
-            <div className="toolbar-section">
-              <label className="toolbar-label">이미지 조작</label>
-              <div className="toolbar-group">
-                <button
-                  className={`toolbar-button ${
-                    isFlippedHorizontal ? "active" : ""
-                  }`}
-                  onClick={() => flipImage("horizontal")}
-                  disabled={isLoading}
-                  title="수평 뒤집기 (Flip Horizontal)"
-                  style={commonButtonStyle}
-                >
-                  <FlipHorizontal size={16} />
-                </button>
-                <button
-                  className={`toolbar-button ${
-                    isFlippedVertical ? "active" : ""
-                  }`}
-                  onClick={() => flipImage("vertical")}
-                  disabled={isLoading}
-                  title="수직 뒤집기 (Flip Vertical)"
-                  style={commonButtonStyle}
-                >
-                  <FlipVertical size={16} />
-                </button>
-                <button
-                  className="toolbar-button"
-                  onClick={() => rotateImage("left")}
-                  disabled={isLoading}
-                  title="왼쪽으로 90도 회전 (Rotate Left)"
-                  style={commonButtonStyle}
-                >
-                  <RotateCcw size={16} />
-                </button>
-                <button
-                  className="toolbar-button"
-                  onClick={() => rotateImage("right")}
-                  disabled={isLoading}
-                  title="오른쪽으로 90도 회전 (Rotate Right)"
-                  style={commonButtonStyle}
-                >
-                  <RotateCw size={16} />
-                </button>
-                <button
-                  className="toolbar-button"
-                  onClick={resetImageTransform}
-                  disabled={isLoading}
-                  title={`이미지 변환 리셋 (현재: ${currentRotation}도, H:${isFlippedHorizontal}, V:${isFlippedVertical})`}
-                  style={commonButtonStyle}
-                >
-                  <Reset size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* Layout Section Removed for Stability */}
-            {/* Debug Section Removed for Production */}
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="error-banner">
-              <span>⚠️ {error}</span>
-              <button
-                onClick={() => setError(null)}
-                className="error-close"
-                style={commonButtonStyle}
+              {/* Footer */}
+              <div
+                style={{
+                  borderTop: "1px solid #404040",
+                  padding: "12px 16px",
+                  marginTop: "auto",
+                  backgroundColor: "#2d2d2d",
+                }}
               >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Loading Overlay */}
-          {isLoading && (
-            <div className="loading-overlay">
-              <div className="loading-content">
-                <div className="loading-spinner">⟳</div>
-                <p>로딩 중...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Viewport Container */}
-          <div
-            ref={containerRef}
-            className={`viewport-container ${isDragging ? "dragging" : ""}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <div className="viewport-container-inner">
-              {/* Viewport info */}
-              <div className="viewport-info">
-                <span className="engine-indicator">Tool: {activeTool}</span>
-              </div>
-
-              {/* Drop Zone Overlay */}
-              {isDragging && (
-                <div className="drop-overlay">
-                  <div className="drop-message">
-                    <Layout className="drop-icon" />
-                    <p>DICOM 파일을 여기에 드롭하세요</p>
-                    <small>.dcm 파일을 지원합니다</small>
-                  </div>
-                </div>
-              )}
-
-              {/* DICOM 렌더러 - Meta Tag 모달이 열려있지 않을 때만 표시 */}
-              {loadedFiles.length > 0 && !isDragging && !isMetaModalOpen && (
-                <DicomRenderer
-                  files={loadedFiles}
-                  onError={handleRenderingError}
-                  onSuccess={handleRenderingSuccess}
-                />
-              )}
-
-              {/* Meta Tag 창 - 뷰포트와 같은 위치에 표시 */}
-              {isMetaModalOpen && (
                 <div
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "#222222",
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    overflow: "hidden",
-                  }}
-                >
-                  <DicomMetaModal
-                    isOpen={true}
-                    onClose={() => setIsMetaModalOpen(false)}
-                    dataSet={currentDicomDataSet}
-                    inline={true}
-                  />
-                </div>
-              )}
-
-              {/* Content Area - Empty State */}
-              {!isLoading && !error && loadedFiles.length === 0 && (
-                <div className="empty-state">
-                  <Layout className="empty-icon" />
-                  <h3>DICOM 이미지가 로드되지 않았습니다</h3>
-                  <p>파일을 드래그하거나 "파일 불러오기" 버튼을 클릭하세요</p>
-                  <small>지원 형식: .dcm</small>
-                </div>
-              )}
-
-              {/* Toast 알림 */}
-              {showToast && (
-                <div
-                  style={{
-                    position: "fixed",
-                    bottom: "20px",
-                    right: "20px",
-                    background: "rgba(16, 185, 129, 0.95)",
-                    color: "white",
-                    padding: "12px 20px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                    zIndex: 1001,
-                    animation: "fadeInUp 0.3s ease-out",
-                    backdropFilter: "blur(8px)",
                     display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
                     alignItems: "center",
-                    gap: "12px",
+                    textAlign: "center",
                   }}
                 >
-                  <span>{toastMessage}</span>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "#a1a1aa",
+                      margin: 0,
+                    }}
+                  >
+                    Clarity v0.1.0
+                  </p>
                   <button
-                    onClick={() => setShowToast(false)}
+                    onClick={() => {
+                      console.log(
+                        "🔗 라이선스 버튼 클릭됨, 현재 상태:",
+                        isLicenseModalOpen
+                      );
+                      toggleLicenseModal();
+                      console.log("🔗 토글 후 상태 변경 요청됨");
+                    }}
                     style={{
                       ...commonButtonStyle,
-                      color: "rgba(255, 255, 255, 0.8)",
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "16px",
-                      lineHeight: "1",
+                      color: "#3b82f6",
+                      fontSize: "8px",
+                      textDecoration: "underline",
+                      padding: "2px 0",
+                      transition: "color 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        "rgba(255, 255, 255, 0.2)";
+                      e.currentTarget.style.color = "#2563eb";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "#3b82f6";
                     }}
-                    title="닫기"
+                    title="오픈소스 라이선스 정보 보기"
                   >
-                    ×
+                    오픈소스 라이선스
                   </button>
                 </div>
-              )}
+              </div>
+            </aside>
+          )}
+
+          {/* Main Viewer Area */}
+          <main className={`main-content ${sidebarOpen ? "with-sidebar" : ""}`}>
+            {/* Toolbar */}
+            <div className="toolbar">
+              {/* Basic Tools Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">기본 도구</label>
+                <div className="toolbar-group">
+                  {[
+                    {
+                      tool: "Pan",
+                      icon: MousePointer,
+                      tooltip: "Pan Tool - 화면 이동",
+                    },
+                    {
+                      tool: "Zoom",
+                      icon: ZoomIn,
+                      tooltip: "Zoom Tool - 확대/축소",
+                    },
+                    {
+                      tool: "WindowLevel",
+                      icon: Contrast,
+                      tooltip: "Window Level Tool - 창 레벨 조정",
+                    },
+                    {
+                      tool: "Magnify",
+                      icon: SearchIcon,
+                      tooltip: "Magnify Tool - 돋보기",
+                    },
+                  ].map(({ tool, icon: Icon, tooltip }) => (
+                    <button
+                      key={tool}
+                      className={`toolbar-button ${
+                        activeTool === tool ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTool(tool)}
+                      disabled={isLoading}
+                      title={tooltip}
+                      style={commonButtonStyle}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Measurement Tools Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">측정 도구</label>
+                <div className="toolbar-group">
+                  {[
+                    {
+                      tool: "Length",
+                      icon: Ruler,
+                      tooltip: "Length Tool - 길이 측정",
+                    },
+                    {
+                      tool: "Angle",
+                      icon: Triangle,
+                      tooltip: "Angle Tool - 각도 측정",
+                    },
+                    {
+                      tool: "CobbAngle",
+                      icon: Navigation,
+                      tooltip: "Cobb Angle Tool - 콥 각도",
+                    },
+                    {
+                      tool: "Bidirectional",
+                      icon: Move3D,
+                      tooltip: "Bidirectional Tool - 양방향 측정",
+                    },
+                  ].map(({ tool, icon: Icon, tooltip }) => (
+                    <button
+                      key={tool}
+                      className={`toolbar-button ${
+                        activeTool === tool ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTool(tool)}
+                      disabled={isLoading}
+                      title={tooltip}
+                      style={commonButtonStyle}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ROI Tools Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">ROI 도구</label>
+                <div className="toolbar-group">
+                  {[
+                    {
+                      tool: "RectangleROI",
+                      icon: Square,
+                      tooltip: "Rectangle ROI - 사각형 관심영역",
+                    },
+                    {
+                      tool: "EllipticalROI",
+                      icon: CircleEllipsis,
+                      tooltip: "Elliptical ROI - 타원형 관심영역",
+                    },
+                    {
+                      tool: "CircleROI",
+                      icon: Circle,
+                      tooltip: "Circle ROI - 원형 관심영역",
+                    },
+                  ].map(({ tool, icon: Icon, tooltip }) => (
+                    <button
+                      key={tool}
+                      className={`toolbar-button ${
+                        activeTool === tool ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTool(tool)}
+                      disabled={isLoading}
+                      title={tooltip}
+                      style={commonButtonStyle}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Advanced Drawing Tools Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">고급 그리기</label>
+                <div className="toolbar-group">
+                  {[
+                    {
+                      tool: "PlanarFreehandROI",
+                      icon: Brush,
+                      tooltip: "Freehand ROI - 자유곡선 그리기",
+                    },
+                    {
+                      tool: "SplineROI",
+                      icon: Spline,
+                      tooltip: "Spline ROI - 스플라인 곡선",
+                    },
+                  ].map(({ tool, icon: Icon, tooltip }) => (
+                    <button
+                      key={tool}
+                      className={`toolbar-button ${
+                        activeTool === tool ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTool(tool)}
+                      disabled={isLoading}
+                      title={tooltip}
+                      style={commonButtonStyle}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Annotation Tools Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">주석 도구</label>
+                <div className="toolbar-group">
+                  {[
+                    {
+                      tool: "ArrowAnnotate",
+                      icon: ArrowUpRight,
+                      tooltip:
+                        "Text Annotation - 텍스트 주석 (화살표 + 텍스트)",
+                    },
+                    {
+                      tool: "Probe",
+                      icon: Target,
+                      tooltip: "Probe Tool - 정보 탐침",
+                    },
+                  ].map(({ tool, icon: Icon, tooltip }) => (
+                    <button
+                      key={tool}
+                      className={`toolbar-button ${
+                        activeTool === tool ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTool(tool)}
+                      disabled={isLoading}
+                      title={tooltip}
+                      style={commonButtonStyle}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Image Manipulation Section */}
+              <div className="toolbar-section">
+                <label className="toolbar-label">이미지 조작</label>
+                <div className="toolbar-group">
+                  <button
+                    className={`toolbar-button ${
+                      isFlippedHorizontal ? "active" : ""
+                    }`}
+                    onClick={() => flipImage("horizontal")}
+                    disabled={isLoading}
+                    title="수평 뒤집기 (Flip Horizontal)"
+                    style={commonButtonStyle}
+                  >
+                    <FlipHorizontal size={16} />
+                  </button>
+                  <button
+                    className={`toolbar-button ${
+                      isFlippedVertical ? "active" : ""
+                    }`}
+                    onClick={() => flipImage("vertical")}
+                    disabled={isLoading}
+                    title="수직 뒤집기 (Flip Vertical)"
+                    style={commonButtonStyle}
+                  >
+                    <FlipVertical size={16} />
+                  </button>
+                  <button
+                    className="toolbar-button"
+                    onClick={() => rotateImage("left")}
+                    disabled={isLoading}
+                    title="왼쪽으로 90도 회전 (Rotate Left)"
+                    style={commonButtonStyle}
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button
+                    className="toolbar-button"
+                    onClick={() => rotateImage("right")}
+                    disabled={isLoading}
+                    title="오른쪽으로 90도 회전 (Rotate Right)"
+                    style={commonButtonStyle}
+                  >
+                    <RotateCw size={16} />
+                  </button>
+                  <button
+                    className="toolbar-button"
+                    onClick={resetImageTransform}
+                    disabled={isLoading}
+                    title={`이미지 변환 리셋 (현재: ${currentRotation}도, H:${isFlippedHorizontal}, V:${isFlippedVertical})`}
+                    style={commonButtonStyle}
+                  >
+                    <Reset size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Layout Section Removed for Stability */}
+              {/* Debug Section Removed for Production */}
             </div>
-          </div>
-        </main>
+
+            {/* Error Display */}
+            {error && (
+              <div className="error-banner">
+                <span>⚠️ {error}</span>
+                <button
+                  onClick={() => setError(null)}
+                  className="error-close"
+                  style={commonButtonStyle}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Loading Overlay */}
+            {isLoading && (
+              <div className="loading-overlay">
+                <div className="loading-content">
+                  <div className="loading-spinner">⟳</div>
+                  <p>로딩 중...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Viewport Container */}
+            <div
+              ref={containerRef}
+              className={`viewport-container ${isDragging ? "dragging" : ""}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <div className="viewport-container-inner">
+                {/* Viewport info */}
+                <div className="viewport-info">
+                  <span className="engine-indicator">Tool: {activeTool}</span>
+                </div>
+
+                {/* Drop Zone Overlay */}
+                {isDragging && (
+                  <div className="drop-overlay">
+                    <div className="drop-message">
+                      <Layout className="drop-icon" />
+                      <p>DICOM 파일을 여기에 드롭하세요</p>
+                      <small>.dcm 파일을 지원합니다</small>
+                    </div>
+                  </div>
+                )}
+
+                {/* DICOM 렌더러 - Meta Tag 모달이 열려있지 않을 때만 표시 */}
+                {loadedFiles.length > 0 && !isDragging && !isMetaModalOpen && (
+                  <DicomRenderer
+                    files={loadedFiles}
+                    onError={handleRenderingError}
+                    onSuccess={handleRenderingSuccess}
+                  />
+                )}
+
+                {/* Meta Tag 창 - 뷰포트와 같은 위치에 표시 */}
+                {isMetaModalOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "#222222",
+                      borderRadius: "8px",
+                      border: "1px solid #e5e7eb",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <DicomMetaModal
+                      isOpen={true}
+                      onClose={() => setIsMetaModalOpen(false)}
+                      dataSet={currentDicomDataSet}
+                      inline={true}
+                    />
+                  </div>
+                )}
+
+                {/* Content Area - Empty State */}
+                {!isLoading && !error && loadedFiles.length === 0 && (
+                  <div className="empty-state">
+                    <Layout className="empty-icon" />
+                    <h3>DICOM 이미지가 로드되지 않았습니다</h3>
+                    <p>파일을 드래그하거나 "파일 불러오기" 버튼을 클릭하세요</p>
+                    <small>지원 형식: .dcm</small>
+                  </div>
+                )}
+
+                {/* Toast 알림 */}
+                {showToast && (
+                  <div
+                    style={{
+                      position: "fixed",
+                      bottom: "20px",
+                      right: "20px",
+                      background: "rgba(16, 185, 129, 0.95)",
+                      color: "white",
+                      padding: "12px 20px",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      zIndex: 1001,
+                      animation: "fadeInUp 0.3s ease-out",
+                      backdropFilter: "blur(8px)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <span>{toastMessage}</span>
+                    <button
+                      onClick={() => setShowToast(false)}
+                      style={{
+                        ...commonButtonStyle,
+                        color: "rgba(255, 255, 255, 0.8)",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "16px",
+                        lineHeight: "1",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "rgba(255, 255, 255, 0.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                      title="닫기"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+
+      {/* License Modal Popup - 완전히 독립적인 오버레이 */}
+      {console.log(
+        "🎯 모달 렌더 체크, isLicenseModalOpen:",
+        isLicenseModalOpen
+      )}
+      {isLicenseModalOpen && (
+        <LicenseModal
+          isOpen={isLicenseModalOpen}
+          onClose={() => {
+            console.log("🎯 모달 닫기 클릭됨");
+            toggleLicenseModal();
+          }}
+          inline={false}
+        />
+      )}
+    </>
   );
 }
 
