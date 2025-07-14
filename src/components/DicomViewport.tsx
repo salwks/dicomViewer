@@ -322,130 +322,77 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation, annotationsVisible]);
 
-  // 주석 가시성 상태 변화 감지 및 CornerstoneJS 연동
+  // 주석 가시성 상태 변화 감지 및 실제 뷰포트 제어 (최종 단순화 버전)
   useEffect(() => {
-    if (!isViewportInitialized.current || !renderingEngineRef.current) return;
+    // 뷰포트가 준비된 상태인지 먼저 확인합니다.
+    if (!renderingEngineRef.current) return;
     
     const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
     if (!viewport) {
-      debugLogger.warn('뷰포트를 찾을 수 없음');
+      console.log('⚠️ 뷰포트를 찾을 수 없음');
       return;
     }
-    
-    debugLogger.log(`🔄 주석 가시성 상태 변화 감지: ${annotationsVisible ? '표시' : '숨김'}`);
-    
-    try {
-      // 방법 1: CornerstoneJS annotation state API 사용 (가능한 경우)
+
+    console.log(`🔄 주석 가시성 상태 변화: ${annotationsVisible ? '표시' : '숨김'}`);
+
+    // 스토어의 상태값에 따라 실제 뷰포트의 동작을 제어합니다.
+    if (annotationsVisible) {
+      console.log('✅ 뷰포트의 모든 주석을 표시합니다.');
+      debugLogger.log('✅ 뷰포트의 모든 주석을 표시합니다.');
+      
+      // CornerstoneJS 공식 API 시도
       try {
-        if (annotationsVisible) {
-          debugLogger.log('✅ 뷰포트의 모든 주석을 표시합니다.');
-          if (typeof annotation.state.showAnnotations === 'function') {
-            annotation.state.showAnnotations();
-          }
-        } else {
-          debugLogger.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
-          if (typeof annotation.state.hideAnnotations === 'function') {
-            annotation.state.hideAnnotations();
-          }
+        if (typeof annotation.state.showAnnotations === 'function') {
+          annotation.state.showAnnotations();
         }
-      } catch (apiError) {
-        debugLogger.warn('CornerstoneJS API showAnnotations/hideAnnotations 사용 불가:', apiError);
+      } catch (e) {
+        console.log('showAnnotations API 없음, 개별 제어 사용');
       }
+    } else {
+      console.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
+      debugLogger.log('🚫 뷰포트의 모든 주석을 숨깁니다.');
       
-      // 방법 2: 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
-      const annotationManager = annotation.state.getAllAnnotations();
-      let processedCount = 0;
-      
-      if (annotationManager) {
-        Object.keys(annotationManager).forEach(toolName => {
-          const toolAnnotations = annotationManager[toolName];
-          if (toolAnnotations && Array.isArray(toolAnnotations)) {
-            toolAnnotations.forEach(ann => {
-              if (ann && typeof ann === 'object') {
-                ann.isVisible = annotationsVisible;
-                // 추가: highlighted 속성도 함께 제어
-                ann.highlighted = annotationsVisible;
-                processedCount++;
-              }
-            });
-          }
-        });
-      }
-      
-      // 방법 3: 툴 그룹에서 주석 도구들의 렌더링 설정 제어
-      if (toolGroupRef.current) {
-        const annotationTools = [
-          'Length', 'Angle', 'CobbAngle', 'Bidirectional',
-          'RectangleROI', 'EllipticalROI', 'CircleROI',
-          'PlanarFreehandROI', 'SplineROI',
-          'ArrowAnnotate', 'Probe'
-        ];
-        
-        annotationTools.forEach(toolName => {
-          try {
-            const toolInstance = toolGroupRef.current.getToolInstance(toolName);
-            if (toolInstance && toolInstance.configuration) {
-              // 주석 도구의 설정 업데이트
-              toolInstance.configuration.visibility = annotationsVisible;
-              toolInstance.configuration.hideAnnotations = !annotationsVisible;
-            }
-          } catch (e) {
-            // 도구가 없는 경우 무시
-          }
-        });
-      }
-      
-      debugLogger.log(`👁️ ${processedCount}개 주석의 가시성을 ${annotationsVisible ? '표시' : '숨김'}로 설정`);
-      
-      // 방법 4: 뷰포트의 주석 렌더링 활성화/비활성화 (가장 강력한 방법)
+      // CornerstoneJS 공식 API 시도
       try {
-        if (viewport.setProperties) {
-          viewport.setProperties({
-            suppressEvents: false,
-            // 뷰포트 렌더링 옵션 강제 설정
-            renderAnnotations: annotationsVisible
-          });
+        if (typeof annotation.state.hideAnnotations === 'function') {
+          annotation.state.hideAnnotations();
         }
-        
-        // Element의 CSS 스타일로도 제어
-        const element = viewport.element;
-        if (element) {
-          const annotationLayers = element.querySelectorAll('.annotation-layer, .cornerstone-annotation');
-          annotationLayers.forEach(layer => {
-            if (layer instanceof HTMLElement) {
-              layer.style.display = annotationsVisible ? 'block' : 'none';
-              layer.style.visibility = annotationsVisible ? 'visible' : 'hidden';
-            }
-          });
-        }
-      } catch (viewportError) {
-        debugLogger.warn('뷰포트 속성 설정 실패:', viewportError);
+      } catch (e) {
+        console.log('hideAnnotations API 없음, 개별 제어 사용');
       }
-      
-      // 뷰포트 강제 새로고침 (여러 번 시도로 확실한 반영)
-      viewport.render();
-      debugLogger.success('✅ 주석 가시성 변경 후 뷰포트 새로고침 완료');
-      
-      // 추가 안전장치: 50ms, 150ms, 300ms 후 재렌더링
-      setTimeout(() => {
-        viewport.render();
-        debugLogger.log('🔄 주석 가시성 변경 후 추가 뷰포트 새로고침 (50ms)');
-      }, 50);
-      
-      setTimeout(() => {
-        viewport.render();
-        debugLogger.log('🔄 주석 가시성 변경 후 추가 뷰포트 새로고침 (150ms)');
-      }, 150);
-      
-      setTimeout(() => {
-        viewport.render();
-        debugLogger.log('🔄 주석 가시성 변경 후 최종 뷰포트 새로고침 (300ms)');
-      }, 300);
-      
-    } catch (error) {
-      debugLogger.error('❌ 주석 가시성 제어 실패:', error);
     }
-  }, [annotationsVisible]); // annotationsVisible 상태가 변경될 때마다 실행
+
+    // 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
+    const annotationManager = annotation.state.getAllAnnotations();
+    let processedCount = 0;
+    
+    if (annotationManager) {
+      Object.keys(annotationManager).forEach(toolName => {
+        const toolAnnotations = annotationManager[toolName];
+        if (toolAnnotations && Array.isArray(toolAnnotations)) {
+          toolAnnotations.forEach(ann => {
+            if (ann && typeof ann === 'object') {
+              ann.isVisible = annotationsVisible;
+              processedCount++;
+            }
+          });
+        }
+      });
+    }
+
+    console.log(`👁️ ${processedCount}개 주석의 가시성을 ${annotationsVisible ? '표시' : '숨김'}로 설정`);
+
+    // 뷰포트 새로고침
+    viewport.render();
+    console.log('✅ 뷰포트 새로고침 완료');
+
+    // 추가 안전장치: 100ms 후 재렌더링
+    setTimeout(() => {
+      viewport.render();
+      console.log('🔄 추가 뷰포트 새로고침 완료');
+    }, 100);
+
+  }, [annotationsVisible]); // annotationsVisible 상태가 바뀔 때마다 이 코드가 실행됩니다.
 
   // 정리
   useEffect(() => {
