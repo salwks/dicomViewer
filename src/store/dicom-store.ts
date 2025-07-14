@@ -176,14 +176,12 @@ export const useDicomStore = create<DicomViewerState>()(
         selectedAnnotationUID: annotationWithUID.annotationUID
       }));
       
-      console.log(`Added annotation: ${annotationWithUID.annotationUID}`);
+      console.log(`📝 새 주석 추가: ${annotationWithUID.annotationUID}`);
       
-      // 새로운 주석이 추가되면 자동으로 주석 표시 활성화
-      const currentState = get();
-      if (!currentState.annotationsVisible) {
-        console.log('📝 새 주석 추가로 인한 자동 표시 활성화');
-        currentState.setAnnotationsVisible(true);
-      }
+      // 새 주석 추가 후, 무조건 주석을 보이도록 상태를 변경하고 실행
+      console.log('🔄 새 주석 추가로 인한 자동 표시 활성화');
+      const store = useDicomStore.getState();
+      store.setAnnotationsVisible(true);
     },
 
     updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => {
@@ -299,10 +297,57 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 제어 (상태만 변경, 실제 CornerstoneJS 제어는 DicomViewport에서 처리)
+    // 주석 가시성 제어 (상태 변경과 실제 동작을 동시에 실행)
     setAnnotationsVisible: (visible: boolean) => {
       set({ annotationsVisible: visible });
-      console.log(`🔧 주석 가시성 상태 변경: ${visible ? '표시' : '숨김'}`);
+      console.log(`🔧 주석 가시성 제어: ${visible ? '표시' : '숨김'}`);
+      
+      try {
+        if (visible) {
+          console.log('✅ annotation.state.showAnnotations() 호출');
+          if (typeof annotation.state.showAnnotations === 'function') {
+            annotation.state.showAnnotations();
+          }
+        } else {
+          console.log('🚫 annotation.state.hideAnnotations() 호출');
+          if (typeof annotation.state.hideAnnotations === 'function') {
+            annotation.state.hideAnnotations();
+          }
+        }
+
+        // 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
+        const annotationManager = annotation.state.getAllAnnotations();
+        let processedCount = 0;
+        
+        if (annotationManager) {
+          Object.keys(annotationManager).forEach(toolName => {
+            const toolAnnotations = annotationManager[toolName];
+            if (toolAnnotations && Array.isArray(toolAnnotations)) {
+              toolAnnotations.forEach(ann => {
+                if (ann && typeof ann === 'object') {
+                  ann.isVisible = visible;
+                  processedCount++;
+                }
+              });
+            }
+          });
+        }
+
+        console.log(`👁️ ${processedCount}개 주석의 가시성을 ${visible ? '표시' : '숨김'}로 설정 완료`);
+
+        // 뷰포트 새로고침
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewport = renderingEngine.getViewport('dicom-viewport');
+          if (viewport) {
+            viewport.render();
+            console.log('✅ 뷰포트 새로고침 완료');
+          }
+        }
+
+      } catch (error) {
+        console.error('❌ 주석 가시성 제어 실패:', error);
+      }
     },
 
     // 팬/줌 모드 토글
