@@ -166,11 +166,11 @@ export const useDicomStore = create<DicomViewerState>()(
       }
     },
 
-    addAnnotation: (annotation: RequiredAnnotationData) => {
+    addAnnotation: (newAnnotation: RequiredAnnotationData) => {
       // Ensure annotationUID is always present - fix for TS2345
       const annotationWithUID: AnnotationData = {
-        ...annotation,
-        annotationUID: annotation.annotationUID || uuidv4(),
+        ...newAnnotation,
+        annotationUID: newAnnotation.annotationUID || uuidv4(),
       };
 
       set((state) => ({
@@ -180,10 +180,11 @@ export const useDicomStore = create<DicomViewerState>()(
       
       console.log(`📝 새 주석 추가: ${annotationWithUID.annotationUID}`);
       
-      // 새 주석 추가 후, 무조건 주석을 보이도록 상태를 변경하고 실행
-      console.log('🔄 새 주석 추가로 인한 자동 표시 활성화');
-      const store = useDicomStore.getState();
-      store.setAnnotationsVisible(true);
+      // 새 주석 추가 후, 만약 주석이 숨김 상태였다면 보이도록 변경
+      const { getState } = useDicomStore;
+      if (!getState().annotationsVisible) {
+        getState().toggleAnnotationsVisibility('dicom-viewport');
+      }
     },
 
     updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => {
@@ -301,28 +302,29 @@ export const useDicomStore = create<DicomViewerState>()(
 
     // 주석 가시성 토글 - viewportId를 지정하는 최종 수정 버전
     toggleAnnotationsVisibility: (viewportId: string) => {
-      const visible = !useDicomStore.getState().annotationsVisible;
-      set({ annotationsVisible: visible });
+      const newVisibility = !useDicomStore.getState().annotationsVisible;
 
       try {
         // viewportId를 사용하여 해당 뷰포트의 주석만 가져옵니다.
-        const allAnnotations = annotation.state.getAnnotations(undefined, viewportId);
+        const annotations = annotation.state.getAnnotations(undefined, viewportId);
 
-        if (allAnnotations && allAnnotations.length > 0) {
-          allAnnotations.forEach(ann => {
-            ann.visibility = visible;
+        if (annotations && annotations.length > 0) {
+          annotations.forEach(ann => {
+            ann.visibility = newVisibility;
           });
         }
 
         getRenderingEngine('dicom-rendering-engine')?.render();
-        
-        console.log(`✅ 주석 가시성 변경 완료: ${visible ? '표시' : '숨김'} (뷰포트: ${viewportId})`);
-        
+
+        // 모든 동작이 성공한 후에만 상태를 업데이트합니다.
+        set({ annotationsVisible: newVisibility });
+
+        console.log(`✅ 주석 가시성 변경 완료: ${newVisibility ? '표시' : '숨김'} (뷰포트: ${viewportId})`);
+
       } catch (error) {
-        debugLogger.error('❌ 주석 가시성 변경 중 오류 발생', error);
+        console.error('❌ 주석 가시성 변경 중 오류 발생', error);
       }
     },
-
 
     // 팬/줌 모드 토글
     setPanZoomEnabled: (enabled: boolean, toolGroupRef?: any) => {

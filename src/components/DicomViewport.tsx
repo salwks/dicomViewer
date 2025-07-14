@@ -52,15 +52,13 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     activateToolInViewport, 
     addAnnotation, 
     updateAnnotation, 
-    removeAnnotation,
-    annotationsVisible
+    removeAnnotation
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     activateToolInViewport: state.activateToolInViewport,
     addAnnotation: state.addAnnotation,
     updateAnnotation: state.updateAnnotation,
-    removeAnnotation: state.removeAnnotation,
-    annotationsVisible: state.annotationsVisible
+    removeAnnotation: state.removeAnnotation
   }));
 
   // Tool activation through Zustand store
@@ -233,8 +231,8 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         console.log('📝 주석 UID:', annotation.annotationUID);
         console.log('🔧 도구 이름:', annotation.metadata?.toolName);
 
-        // 새로 생성된 주석의 가시성을 현재 설정에 맞게 조정
-        annotation.isVisible = annotationsVisible;
+        // 새로 생성된 주석은 기본적으로 보이도록 설정
+        annotation.isVisible = true;
 
         // 스토어에 추가할 주석 데이터 구성
         const annotationData = {
@@ -320,7 +318,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       
       debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
     };
-  }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation, annotationsVisible]);
+  }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation]);
 
   // 주석 가시성 제어는 Zustand 스토어에서 직접 처리됨 (DicomViewport는 이벤트 리스너만 담당)
 
