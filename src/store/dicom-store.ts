@@ -299,29 +299,38 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 제어 - 올바른 CornerstoneJS API 사용
-    setAnnotationsVisible: (visible: boolean) => {
-      debugLogger.log(`[명령] 주석을 ${visible ? '보이도록' : '숨기도록'} 변경합니다.`);
+    // 주석 가시성 토글 - 표준적이고 확실한 방식
+    toggleAnnotationsVisibility: () => {
+      // 1. 현재 상태의 반대값으로 설정
+      const visible = !useDicomStore.getState().annotationsVisible;
       
-      // 1. 스토어 상태 업데이트
-      set({ annotationsVisible: visible });
-
-      // 2. 올바른 API인 setAnnotationsVisibility를 사용하여 모든 주석의 가시성을 직접 제어
       try {
-        debugLogger.log(`▶️ annotation.state.setAnnotationsVisibility(${visible}) 실행 시도...`);
-        annotation.state.setAnnotationsVisibility(visible);
-        debugLogger.success(`✅ setAnnotationsVisibility(${visible}) 실행 완료.`);
-
-        // 3. 뷰포트 강제 렌더링
-        const renderingEngine = getRenderingEngine('dicom-rendering-engine');
-        if (renderingEngine) {
-          renderingEngine.render();
-          debugLogger.success('✅ 뷰포트 렌더링 완료.');
-        }
+        // 2. 모든 주석 가져오기
+        const allAnnotations = annotation.state.getAnnotations();
+        
+        // 3. 각 주석의 visibility 속성 변경
+        Object.keys(allAnnotations).forEach(frameOfReferenceUID => {
+          Object.keys(allAnnotations[frameOfReferenceUID]).forEach(toolName => {
+            const toolAnnotations = allAnnotations[frameOfReferenceUID][toolName];
+            toolAnnotations.forEach(ann => {
+              ann.isVisible = visible;
+            });
+          });
+        });
+        
+        // 4. 뷰포트 강제 렌더링
+        getRenderingEngine('dicom-rendering-engine')?.render();
+        
+        // 5. 스토어 상태 업데이트
+        set({ annotationsVisible: visible });
+        
+        console.log(`✅ 주석 가시성 변경 완료: ${visible ? '표시' : '숨김'}`);
+        
       } catch (error) {
-        debugLogger.error('❌ 주석 가시성 변경 중 오류 발생', error);
+        console.error('❌ 주석 가시성 변경 실패:', error);
       }
     },
+
 
     // 팬/줌 모드 토글
     setPanZoomEnabled: (enabled: boolean, toolGroupRef?: any) => {

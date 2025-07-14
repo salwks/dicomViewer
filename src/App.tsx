@@ -28,7 +28,7 @@ function App() {
     annotations, 
     annotationsVisible, 
     panZoomEnabled,
-    setAnnotationsVisible,
+    toggleAnnotationsVisibility,
     setPanZoomEnabled,
     clearAllAnnotations,
     removeAnnotation,
@@ -39,7 +39,7 @@ function App() {
     annotations: state.annotations,
     annotationsVisible: state.annotationsVisible,
     panZoomEnabled: state.panZoomEnabled,
-    setAnnotationsVisible: state.setAnnotationsVisible,
+    toggleAnnotationsVisibility: state.toggleAnnotationsVisibility,
     setPanZoomEnabled: state.setPanZoomEnabled,
     clearAllAnnotations: state.clearAllAnnotations,
     removeAnnotation: state.removeAnnotation,
@@ -487,9 +487,9 @@ function App() {
                       <input 
                         type="checkbox" 
                         checked={annotationsVisible}
-                        onChange={(e) => {
-                          debugLogger.log(`🔧 주석 표시 토글: ${e.target.checked}`);
-                          setAnnotationsVisible(e.target.checked);
+                        onChange={() => {
+                          console.log('🔧 주석 표시 체크박스 클릭됨');
+                          toggleAnnotationsVisibility();
                         }}
                       />
                       주석 표시
