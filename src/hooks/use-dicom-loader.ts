@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Types, getRenderingEngine } from '@cornerstonejs/core';
 import dicomParser from 'dicom-parser';
 import { debugLogger } from '../utils/debug-logger';
+import { useDicomStore } from '../store/dicom-store';
 
 interface UseDicomLoaderProps {
   files: File[];
@@ -71,6 +72,13 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
             // DICOM 파싱 검증
             try {
               const dataSet = dicomParser.parseDicom(byteArray);
+              
+              // 🔥 첫 번째 파일의 dataSet을 스토어에 저장 (Meta Tag 표시용)
+              if (i === 0) {
+                const { setDicomDataSet } = useDicomStore.getState();
+                setDicomDataSet(dataSet);
+                debugLogger.log('💾 첫 번째 파일의 DICOM 데이터셋 스토어에 저장');
+              }
               
               const dicomInfo = {
                 sopInstanceUID: dataSet.string('x00080018'),

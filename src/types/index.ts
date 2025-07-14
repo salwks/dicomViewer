@@ -180,6 +180,12 @@ export interface DicomViewerState {
   error: string | null;
   sidebarOpen: boolean;
   
+  // Image manipulation state
+  currentRotation: number;
+  isFlippedHorizontal: boolean;
+  isFlippedVertical: boolean;
+  currentDicomDataSet: any;
+  
   // Actions
   setActiveViewport: (viewportId: string) => void;
   setLayout: (layout: LayoutType) => void;
@@ -195,4 +201,10 @@ export interface DicomViewerState {
   setError: (error: string | null) => void;
   toggleSidebar: () => void;
   clearAllAnnotations: () => void;
+  
+  // Image manipulation actions
+  rotateImage: (direction: 'left' | 'right') => void;
+  flipImage: (direction: 'horizontal' | 'vertical') => void;
+  resetImageTransform: () => void;
+  setDicomDataSet: (dataSet: any) => void;
 }

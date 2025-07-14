@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Layout, Settings, Grid, FileText, Terminal, X } from 'lucide-react';
+import { Upload, Layout, Settings, Grid, FileText, Terminal, X, FlipHorizontal, FlipVertical, RotateCw, RotateCcw, RotateCcw as Reset, Tag } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
+import { DicomMetaModal } from './components/DicomMetaModal';
 import { useDicomStore } from './store/dicom-store';
 import './App.css';
 
@@ -17,6 +18,7 @@ function App() {
   const [renderingSuccess, setRenderingSuccess] = useState(false);
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
+  const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -27,14 +29,28 @@ function App() {
     annotations, 
     clearAllAnnotations,
     removeAnnotation,
-    updateAnnotationLabel
+    updateAnnotationLabel,
+    rotateImage,
+    flipImage,
+    resetImageTransform,
+    currentRotation,
+    isFlippedHorizontal,
+    isFlippedVertical,
+    currentDicomDataSet
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
     annotations: state.annotations,
     clearAllAnnotations: state.clearAllAnnotations,
     removeAnnotation: state.removeAnnotation,
-    updateAnnotationLabel: state.updateAnnotationLabel
+    updateAnnotationLabel: state.updateAnnotationLabel,
+    rotateImage: state.rotateImage,
+    flipImage: state.flipImage,
+    resetImageTransform: state.resetImageTransform,
+    currentRotation: state.currentRotation,
+    isFlippedHorizontal: state.isFlippedHorizontal,
+    isFlippedVertical: state.isFlippedVertical,
+    currentDicomDataSet: state.currentDicomDataSet
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -304,6 +320,41 @@ function App() {
                     {loadedFiles.length > 3 && (
                       <div className="info-item">
                         <span>... 및 {loadedFiles.length - 3}개 더</span>
+                      </div>
+                    )}
+                    
+                    {/* Meta Tag 보기 버튼 */}
+                    {renderingSuccess && currentDicomDataSet && (
+                      <div className="info-item" style={{ marginTop: '12px' }}>
+                        <button
+                          onClick={() => setIsMetaModalOpen(true)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#047857';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#059669';
+                          }}
+                          title="DICOM 파일의 모든 메타 태그 정보를 확인합니다"
+                        >
+                          <Tag size={14} />
+                          <span>Meta Tag 보기</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -627,6 +678,53 @@ function App() {
               </div>
             </div>
 
+            {/* Image Manipulation Section */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">이미지 조작</label>
+              <div className="toolbar-group">
+                <button
+                  className={`toolbar-button ${isFlippedHorizontal ? 'active' : ''}`}
+                  onClick={() => flipImage('horizontal')}
+                  disabled={isLoading}
+                  title="수평 뒤집기 (Flip Horizontal)"
+                >
+                  <FlipHorizontal size={16} />
+                </button>
+                <button
+                  className={`toolbar-button ${isFlippedVertical ? 'active' : ''}`}
+                  onClick={() => flipImage('vertical')}
+                  disabled={isLoading}
+                  title="수직 뒤집기 (Flip Vertical)"
+                >
+                  <FlipVertical size={16} />
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => rotateImage('left')}
+                  disabled={isLoading}
+                  title="왼쪽으로 90도 회전 (Rotate Left)"
+                >
+                  <RotateCcw size={16} />
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => rotateImage('right')}
+                  disabled={isLoading}
+                  title="오른쪽으로 90도 회전 (Rotate Right)"
+                >
+                  <RotateCw size={16} />
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={resetImageTransform}
+                  disabled={isLoading}
+                  title={`이미지 변환 리셋 (현재: ${currentRotation}도, H:${isFlippedHorizontal}, V:${isFlippedVertical})`}
+                >
+                  <Reset size={16} />
+                </button>
+              </div>
+            </div>
+
             {/* Layout Section Removed for Stability */}
             {/* Debug Section Removed for Production */}
           </div>
@@ -718,6 +816,13 @@ function App() {
           </div>
         </main>
       </div>
+
+      {/* DICOM Meta Tag 모달 */}
+      <DicomMetaModal
+        isOpen={isMetaModalOpen}
+        onClose={() => setIsMetaModalOpen(false)}
+        dataSet={currentDicomDataSet}
+      />
     </div>
   );
 }

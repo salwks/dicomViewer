@@ -52,6 +52,12 @@ export const useDicomStore = create<DicomViewerState>()(
     error: null,
     sidebarOpen: true,
 
+    // Image manipulation state
+    currentRotation: 0,
+    isFlippedHorizontal: false,
+    isFlippedVertical: false,
+    currentDicomDataSet: null,
+
     // Actions
     setActiveViewport: (viewportId: string) => {
       set({ activeViewportId: viewportId });
@@ -72,7 +78,12 @@ export const useDicomStore = create<DicomViewerState>()(
         annotations: [], 
         currentSeries: null,
         selectedAnnotationUID: null,
-        currentImageIndex: 0
+        currentImageIndex: 0,
+        // 🔥 새 파일 로드 시 이미지 변환 상태도 리셋
+        currentRotation: 0,
+        isFlippedHorizontal: false,
+        isFlippedVertical: false,
+        currentDicomDataSet: null
       });
 
       // 그 다음에 실제 로딩 로직을 실행합니다.
@@ -332,6 +343,88 @@ export const useDicomStore = create<DicomViewerState>()(
     clearAllAnnotations: () => {
       set({ annotations: [], selectedAnnotationUID: null });
       console.log("🗑️ 모든 주석 지움");
+    },
+
+    // 이미지 회전 기능
+    rotateImage: (direction: 'left' | 'right') => {
+      const { currentRotation } = get();
+      const rotationChange = direction === 'right' ? 90 : -90;
+      const newRotation = (currentRotation + rotationChange) % 360;
+      
+      set({ currentRotation: newRotation });
+      
+      try {
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewport = renderingEngine.getViewport("dicom-viewport");
+          if (viewport) {
+            viewport.setRotation(newRotation);
+            renderingEngine.render();
+            console.log(`🔄 이미지 회전: ${direction} (${newRotation}도)`);
+          }
+        }
+      } catch (error) {
+        console.error("이미지 회전 실패:", error);
+      }
+    },
+
+    // 이미지 뒤집기 기능
+    flipImage: (direction: 'horizontal' | 'vertical') => {
+      const state = get();
+      const isHorizontal = direction === 'horizontal';
+      const newFlipState = {
+        isFlippedHorizontal: isHorizontal ? !state.isFlippedHorizontal : state.isFlippedHorizontal,
+        isFlippedVertical: !isHorizontal ? !state.isFlippedVertical : state.isFlippedVertical
+      };
+      
+      set(newFlipState);
+      
+      try {
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewport = renderingEngine.getViewport("dicom-viewport");
+          if (viewport) {
+            viewport.flip({
+              horizontal: newFlipState.isFlippedHorizontal,
+              vertical: newFlipState.isFlippedVertical
+            });
+            renderingEngine.render();
+            console.log(`🔄 이미지 뒤집기: ${direction}`);
+          }
+        }
+      } catch (error) {
+        console.error("이미지 뒤집기 실패:", error);
+      }
+    },
+
+    // 이미지 변환 리셋
+    resetImageTransform: () => {
+      set({
+        currentRotation: 0,
+        isFlippedHorizontal: false,
+        isFlippedVertical: false
+      });
+      
+      try {
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewport = renderingEngine.getViewport("dicom-viewport");
+          if (viewport) {
+            viewport.setRotation(0);
+            viewport.flip({ horizontal: false, vertical: false });
+            renderingEngine.render();
+            console.log("🔄 이미지 변환 리셋");
+          }
+        }
+      } catch (error) {
+        console.error("이미지 변환 리셋 실패:", error);
+      }
+    },
+
+    // DICOM 데이터셋 저장
+    setDicomDataSet: (dataSet: any) => {
+      set({ currentDicomDataSet: dataSet });
+      console.log("💾 DICOM 데이터셋 저장 완료");
     },
 
   }))
