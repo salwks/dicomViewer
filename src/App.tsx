@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Layout, Settings, Grid, FileText, Terminal, X } from 'lucide-react';
+import { Upload, Layout, Settings, Grid, FileText, Terminal, X, Save, FolderOpen } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
-import { debugLogger } from './utils/debug-logger';
 import { useDicomStore } from './store/dicom-store';
 import './App.css';
 
@@ -26,24 +25,20 @@ function App() {
     activeTool, 
     setActiveTool, 
     annotations, 
-    annotationsVisible, 
-    panZoomEnabled,
-    toggleAnnotationsVisibility,
-    setPanZoomEnabled,
     clearAllAnnotations,
     removeAnnotation,
-    updateAnnotationLabel
+    updateAnnotationLabel,
+    saveAnnotations,
+    loadAnnotations
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
     annotations: state.annotations,
-    annotationsVisible: state.annotationsVisible,
-    panZoomEnabled: state.panZoomEnabled,
-    toggleAnnotationsVisibility: state.toggleAnnotationsVisibility,
-    setPanZoomEnabled: state.setPanZoomEnabled,
     clearAllAnnotations: state.clearAllAnnotations,
     removeAnnotation: state.removeAnnotation,
-    updateAnnotationLabel: state.updateAnnotationLabel
+    updateAnnotationLabel: state.updateAnnotationLabel,
+    saveAnnotations: state.saveAnnotations,
+    loadAnnotations: state.loadAnnotations
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -52,13 +47,13 @@ function App() {
   const startEditingAnnotation = (annotationUID: string, currentLabel: string) => {
     setEditingAnnotationId(annotationUID);
     setEditingValue(currentLabel || `${annotations.find(a => a.annotationUID === annotationUID)?.toolName} #${annotations.findIndex(a => a.annotationUID === annotationUID) + 1}`);
-    debugLogger.log(`📝 주석 편집 시작: ${annotationUID}`, currentLabel);
+    console.log(`📝 주석 편집 시작: ${annotationUID}`, currentLabel);
   };
 
   const saveAnnotationEdit = () => {
     if (editingAnnotationId && editingValue.trim()) {
       updateAnnotationLabel(editingAnnotationId, editingValue.trim());
-      debugLogger.log(`💾 주석 라벨 저장: ${editingAnnotationId} -> "${editingValue.trim()}"`);
+      console.log(`💾 주석 라벨 저장: ${editingAnnotationId} -> "${editingValue.trim()}"`);
     }
     setEditingAnnotationId(null);
     setEditingValue('');
@@ -67,7 +62,7 @@ function App() {
   const cancelAnnotationEdit = () => {
     setEditingAnnotationId(null);
     setEditingValue('');
-    debugLogger.log('❌ 주석 편집 취소');
+    console.log('❌ 주석 편집 취소');
   };
 
   const handleAnnotationKeyPress = (event: React.KeyboardEvent) => {
@@ -82,15 +77,10 @@ function App() {
   useEffect(() => {
     if (!activeTool) {
       setActiveTool('WindowLevel'); // Set default tool to WindowLevel
-      debugLogger.log('기본 도구로 WindowLevel 설정');
+      console.log('기본 도구로 WindowLevel 설정');
     }
   }, [activeTool, setActiveTool]);
 
-  // 팬/줌 토글 핸들러 (toolGroupRef 접근을 위해)
-  const handlePanZoomToggle = (enabled: boolean) => {
-    const toolGroupRef = (window as any).cornerstoneToolGroupRef; // DicomViewport에서 설정
-    setPanZoomEnabled(enabled, toolGroupRef);
-  };
 
   // 파일 업로드 핸들러
   const handleFileUpload = () => {
@@ -126,13 +116,13 @@ function App() {
       clearAllAnnotations(); // 새 파일 로드 시 주석 초기화  
       setLoadedFiles(dicomFiles);
       
-      debugLogger.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
+      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
       
       // DicomRenderer에서 실제 렌더링이 수행됩니다
       // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
       
     } catch (error) {
-      debugLogger.error('❌ 파일 처리 중 오류:', error);
+      console.error('❌ 파일 처리 중 오류:', error);
       setError('파일 로드 중 오류가 발생했습니다.');
       setIsLoading(false);
     }
@@ -158,7 +148,7 @@ function App() {
 
   // DICOM 렌더링 성공 핸들러
   const handleRenderingSuccess = (message: string) => {
-    debugLogger.success('App: 렌더링 성공', message);
+    console.log('App: 렌더링 성공', message);
     setRenderingSuccess(true);
     setIsLoading(false);
     setError(null);
@@ -166,17 +156,12 @@ function App() {
 
   // DICOM 렌더링 실패 핸들러
   const handleRenderingError = (errorMessage: string) => {
-    debugLogger.error('App: 렌더링 실패', errorMessage);
+    console.error('App: 렌더링 실패', errorMessage);
     setRenderingSuccess(false);
     setIsLoading(false);
     setError(errorMessage);
   };
 
-  // 디버그 콘솔 표시/숨김
-  const showDebugConsole = () => {
-    debugLogger.dumpLogs();
-    alert('디버그 로그가 개발자 도구 콘솔에 출력되었습니다. F12를 눌러 확인하세요.');
-  };
 
   return (
     <div className="app">
@@ -298,10 +283,66 @@ function App() {
                 flexDirection: 'column',
                 height: '400px' // 고정 높이 설정
               }}>
-                <h3 className="sidebar-section-title">
-                  <FileText size={16} />
-                  주석 목록 ({annotations.length}개)
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h3 className="sidebar-section-title" style={{ margin: 0 }}>
+                    <FileText size={16} />
+                    주석 목록 ({annotations.length}개)
+                  </h3>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      onClick={saveAnnotations}
+                      title="주석 저장"
+                      style={{
+                        background: 'none',
+                        border: '1px solid #3b82f6',
+                        color: '#3b82f6',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#3b82f6';
+                      }}
+                    >
+                      <Save size={14} />
+                    </button>
+                    <button
+                      onClick={loadAnnotations}
+                      title="주석 불러오기"
+                      style={{
+                        background: 'none',
+                        border: '1px solid #10b981',
+                        color: '#10b981',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#10b981';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#10b981';
+                      }}
+                    >
+                      <FolderOpen size={14} />
+                    </button>
+                  </div>
+                </div>
                 
                 {annotations.length > 0 ? (
                   <>
@@ -407,7 +448,7 @@ function App() {
                             <button
                               className="annotation-delete-btn"
                               onClick={() => {
-                                debugLogger.log(`🗑️ 주석 삭제 요청: ${annotation.annotationUID}`);
+                                console.log(`🗑️ 주석 삭제 요청: ${annotation.annotationUID}`);
                                 removeAnnotation(annotation.annotationUID);
                               }}
                               title="주석 삭제"
@@ -484,42 +525,9 @@ function App() {
                 <div className="settings-list">
                   <div className="setting-item">
                     <label>
-                      <input 
-                        type="checkbox" 
-                        checked={annotationsVisible}
-                        onChange={() => {
-                          console.log('🔧 주석 표시 체크박스 클릭됨 - 최종 완성 버전');
-                          toggleAnnotationsVisibility('dicom-viewport');
-                        }}
-                      />
-                      주석 표시
-                    </label>
-                  </div>
-                  <div className="setting-item">
-                    <label>
-                      <input 
-                        type="checkbox" 
-                        checked={panZoomEnabled}
-                        onChange={(e) => {
-                          debugLogger.log(`🔧 팬/줌 모드 토글: ${e.target.checked}`);
-                          handlePanZoomToggle(e.target.checked);
-                        }}
-                      />
-                      팬/줌 활성화
-                    </label>
-                  </div>
-                  <div className="setting-item">
-                    <label>
                       활성 도구: <strong>{activeTool || 'None'}</strong>
                     </label>
                   </div>
-                  {panZoomEnabled && (
-                    <div className="setting-item">
-                      <small style={{ color: '#888', fontSize: '12px' }}>
-                        💡 왼쪽 버튼: Pan, 오른쪽 버튼: Zoom
-                      </small>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
