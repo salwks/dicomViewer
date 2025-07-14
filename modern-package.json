@@ -1,5 +1,5 @@
 {
-  "name": "modern-dicom-viewer",
+  "name": "Clarity:modern-dicom-viewer",
   "version": "2.0.0",
   "description": "Modern React-based DICOM viewer using Cornerstone3D",
   "main": "dist/index.js",

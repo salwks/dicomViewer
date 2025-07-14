@@ -339,10 +339,43 @@ export const useDicomStore = create<DicomViewerState>()(
 
 
 
-    // 모든 주석 지우기
+    // 모든 주석 지우기 (Cornerstone에서도 완전히 삭제)
     clearAllAnnotations: () => {
+      const currentAnnotations = get().annotations;
+      console.log(`🗑️ 모든 주석 지우기 시작: ${currentAnnotations.length}개`);
+
+      // 🔥 Cornerstone에서 모든 주석 제거
+      try {
+        // 각 주석을 개별적으로 Cornerstone에서 제거
+        currentAnnotations.forEach((annotationData) => {
+          try {
+            annotation.state.removeAnnotation(annotationData.annotationUID);
+            console.log(`✅ Cornerstone에서 주석 제거: ${annotationData.annotationUID}`);
+          } catch (error) {
+            console.error(`❌ 주석 제거 실패: ${annotationData.annotationUID}`, error);
+          }
+        });
+
+        // 뷰포트 새로고침
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          try {
+            const viewport = renderingEngine.getViewport("dicom-viewport");
+            if (viewport) {
+              viewport.render();
+              console.log("✅ 뷰포트 새로고침 완료");
+            }
+          } catch (e) {
+            console.warn("뷰포트 새로고침 실패:", e);
+          }
+        }
+      } catch (error) {
+        console.error("Cornerstone 주석 제거 실패:", error);
+      }
+
+      // 🔥 Zustand 스토어에서 모든 주석 제거
       set({ annotations: [], selectedAnnotationUID: null });
-      console.log("🗑️ 모든 주석 지움");
+      console.log("✅ 모든 주석 지우기 완료");
     },
 
     // 이미지 회전 기능
@@ -368,7 +401,7 @@ export const useDicomStore = create<DicomViewerState>()(
       }
     },
 
-    // 이미지 뒤집기 기능
+    // 이미지 뒤집기 기능 (CornerstoneJS 3D 올바른 API 사용)
     flipImage: (direction: 'horizontal' | 'vertical') => {
       const state = get();
       const isHorizontal = direction === 'horizontal';
@@ -384,21 +417,40 @@ export const useDicomStore = create<DicomViewerState>()(
         if (renderingEngine) {
           const viewport = renderingEngine.getViewport("dicom-viewport");
           if (viewport) {
-            viewport.flip({
-              horizontal: newFlipState.isFlippedHorizontal,
-              vertical: newFlipState.isFlippedVertical
-            });
+            // 🔥 핵심 수정: CornerstoneJS 3D의 올바른 flip API 사용
+            // FlipDirection 객체를 매개변수로 사용
+            if (isHorizontal) {
+              viewport.flip({ flipHorizontal: true });
+              console.log("🔄 수평 뒤집기 실행");
+            } else {
+              viewport.flip({ flipVertical: true });
+              console.log("🔄 수직 뒤집기 실행");
+            }
+            
+            // 🔥 핵심: 렌더링 엔진에서 변경사항 즉시 반영
             renderingEngine.render();
-            console.log(`🔄 이미지 뒤집기: ${direction}`);
+            
+            console.log(`✅ 이미지 뒤집기 성공: ${direction} (H:${newFlipState.isFlippedHorizontal}, V:${newFlipState.isFlippedVertical})`);
+          } else {
+            console.error("❌ 뷰포트를 찾을 수 없습니다");
           }
+        } else {
+          console.error("❌ 렌더링 엔진을 찾을 수 없습니다");
         }
       } catch (error) {
-        console.error("이미지 뒤집기 실패:", error);
+        console.error("❌ 이미지 뒤집기 실패:", error);
+        // 오류 발생 시 상태 롤백
+        set({
+          isFlippedHorizontal: state.isFlippedHorizontal,
+          isFlippedVertical: state.isFlippedVertical
+        });
       }
     },
 
-    // 이미지 변환 리셋
+    // 이미지 변환 리셋 (CornerstoneJS 3D 올바른 API 사용)
     resetImageTransform: () => {
+      const oldState = get();
+      
       set({
         currentRotation: 0,
         isFlippedHorizontal: false,
@@ -410,14 +462,33 @@ export const useDicomStore = create<DicomViewerState>()(
         if (renderingEngine) {
           const viewport = renderingEngine.getViewport("dicom-viewport");
           if (viewport) {
+            // 🔥 수정: 회전 리셋
             viewport.setRotation(0);
-            viewport.flip({ horizontal: false, vertical: false });
+            
+            // 🔥 수정: 뒤집기 상태 리셋 - 현재 상태에 따라 다시 뒤집어서 원상복구
+            if (oldState.isFlippedHorizontal) {
+              viewport.flip({ flipHorizontal: true });
+              console.log("🔄 수평 뒤집기 리셋");
+            }
+            if (oldState.isFlippedVertical) {
+              viewport.flip({ flipVertical: true });
+              console.log("🔄 수직 뒤집기 리셋");
+            }
+            
+            // 🔥 핵심: 렌더링 엔진에서 변경사항 즉시 반영
             renderingEngine.render();
-            console.log("🔄 이미지 변환 리셋");
+            
+            console.log("✅ 이미지 변환 리셋 완료");
           }
         }
       } catch (error) {
-        console.error("이미지 변환 리셋 실패:", error);
+        console.error("❌ 이미지 변환 리셋 실패:", error);
+        // 오류 발생 시 상태 롤백
+        set({
+          currentRotation: oldState.currentRotation,
+          isFlippedHorizontal: oldState.isFlippedHorizontal,
+          isFlippedVertical: oldState.isFlippedVertical
+        });
       }
     },
 

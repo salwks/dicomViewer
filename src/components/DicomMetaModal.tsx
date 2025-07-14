@@ -5,6 +5,7 @@ interface DicomMetaModalProps {
   isOpen: boolean;
   onClose: () => void;
   dataSet: any;
+  inline?: boolean; // inline 모드 추가
 }
 
 interface DicomTag {
@@ -143,11 +144,52 @@ const dicomTagNames: Record<string, string> = {
   'x00880140': 'Storage Media File-set UID'
 };
 
-export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet }) => {
+// 공통 버튼 스타일 - 브라우저 간 통일된 디자인
+const commonButtonStyle = {
+  background: 'transparent',
+  border: 'none',
+  padding: '0',
+  margin: '0',
+  cursor: 'pointer',
+  outline: 'none',
+  WebkitAppearance: 'none' as const,
+  MozAppearance: 'none' as const,
+  appearance: 'none' as const,
+  boxSizing: 'border-box' as const,
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  lineHeight: 'inherit'
+};
+
+export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet, inline = false }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [copiedTag, setCopiedTag] = React.useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // 스크롤바 스타일링을 위한 CSS (어두운 테마)
+  const scrollContainerStyle = `
+    .meta-tag-scroll-container {
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #4a5568 #2d3748;
+    }
+    .meta-tag-scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .meta-tag-scroll-container::-webkit-scrollbar-track {
+      background: #2d3748;
+      border-radius: 4px;
+    }
+    .meta-tag-scroll-container::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 4px;
+    }
+    .meta-tag-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: #718096;
+    }
+  `;
 
   // DICOM 데이터셋에서 모든 태그 추출
   const extractDicomTags = (): DicomTag[] => {
@@ -224,21 +266,52 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-11/12 h-5/6 max-w-6xl flex flex-col">
+  // inline 모드인 경우 컨테이너 없이 직접 렌더링
+  const modalContent = (
+    <>
+      {/* 스크롤바 스타일 추가 */}
+      <style>{scrollContainerStyle}</style>
+      
+      <div className="rounded-lg shadow-xl flex flex-col" style={{
+        width: '100%',
+        height: '100%',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        minWidth: inline ? 'auto' : '600px',
+        minHeight: inline ? 'auto' : '500px',
+        backgroundColor: '#222222',
+        color: '#ffffff',
+        padding: '40px'
+      }}>
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <FileText className="text-blue-600" size={24} />
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">DICOM Meta Tags</h2>
-              <p className="text-sm text-gray-600">총 {dicomTags.length}개의 태그 정보</p>
-            </div>
+        <div className="border-b" style={{ borderColor: '#374151', paddingBottom: '16px', marginBottom: '16px', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FileText className="text-blue-400" size={24} />
+            <h2 className="text-xl font-semibold text-white">DICOM Meta Tags</h2>
+            <span className="text-sm text-gray-300">(총 {dicomTags.length}개의 태그)</span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 rounded-full transition-colors"
+            style={{
+              ...commonButtonStyle,
+              position: 'absolute',
+              top: '0',
+              right: '0',
+              color: '#9ca3af',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#374151';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
             title="모달 닫기"
           >
             <X size={20} />
@@ -246,66 +319,97 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
         </div>
 
         {/* 검색 바 */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+        <div className="border-b" style={{ borderColor: '#374151', paddingBottom: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Search className="text-gray-400" size={16} />
             <input
               type="text"
               placeholder="태그 ID, 이름, 값으로 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none px-3"
+              style={{
+                width: '300px',
+                height: '36px',
+                backgroundColor: '#374151',
+                borderColor: '#4b5563',
+                color: '#ffffff'
+              }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-400 mt-2">
             {filteredTags.length}개의 태그가 표시됨 
             {searchTerm && ` (전체 ${dicomTags.length}개 중 검색 결과)`}
           </p>
         </div>
 
-        {/* 테이블 컨테이너 */}
-        <div className="flex-1 overflow-auto">
+        {/* 테이블 컨테이너 - 완벽한 스크롤 구현 */}
+        <div 
+          className="flex-1 meta-tag-scroll-container" 
+          style={{
+            height: 'calc(100% - 120px)', // 헤더와 검색바만 제외한 높이 계산
+            minHeight: '200px' // 최소 높이 보장
+          }}
+        >
           <table className="w-full border-collapse">
-            <thead className="bg-gray-50 sticky top-0">
+            <thead className="sticky top-0" style={{ backgroundColor: '#1f2937' }}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   Tag ID
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   VR
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   Tag Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   Value
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   Copy
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y" style={{ divideColor: '#374151' }}>
               {filteredTags.map((tag, index) => (
-                <tr key={tag.tag} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-900">
+                <tr key={tag.tag} style={{ 
+                  backgroundColor: index % 2 === 0 ? '#2d3748' : '#374151',
+                  borderBottomColor: '#4a5568'
+                }}>
+                  <td className="px-4 py-3 text-sm font-mono text-gray-200">
                     ({tag.tag.substring(0, 4)},{tag.tag.substring(4, 8)})
                   </td>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-600">
+                  <td className="px-4 py-3 text-sm font-mono text-gray-300">
                     {tag.vr}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-gray-200">
                     {tag.name}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 max-w-md">
+                  <td className="px-4 py-3 text-sm text-gray-300 max-w-md">
                     <div className="break-words">{tag.value}</div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => copyToClipboard(`${tag.name}: ${tag.value}`, tag.tag)}
-                      className={`p-1 rounded hover:bg-gray-200 transition-colors ${
-                        copiedTag === tag.tag ? 'text-green-600' : 'text-gray-400'
+                      className={`rounded transition-colors ${
+                        copiedTag === tag.tag ? 'text-green-400' : 'text-gray-400'
                       }`}
+                      style={{
+                        ...commonButtonStyle,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#4a5568';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                       title="클립보드에 복사"
                     >
                       <Copy size={14} />
@@ -318,30 +422,36 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
           
           {filteredTags.length === 0 && (
             <div className="text-center py-12">
-              <FileText className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-gray-500">
+              <FileText className="mx-auto text-gray-500 mb-4" size={48} />
+              <p className="text-gray-400">
                 {searchTerm ? '검색 결과가 없습니다.' : 'DICOM 태그 정보가 없습니다.'}
               </p>
             </div>
           )}
         </div>
-
-        {/* 모달 푸터 */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              DICOM 파일의 메타데이터 정보입니다. 
-              <span className="font-medium">VR</span>은 Value Representation을 의미합니다.
-            </div>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
       </div>
+    </>
+  );
+
+  // inline 모드에서는 직접 콘텐츠만 반환, 일반 모드에서는 고정 위치 컨테이너로 감싸서 반환
+  if (inline) {
+    return modalContent;
+  }
+
+  return (
+    <div className="fixed z-50" style={{
+      // 기존 모달 모드 (사용하지 않음)
+      left: '280px',
+      top: '70px', 
+      right: '0',
+      bottom: '0',
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      {modalContent}
     </div>
   );
 };
