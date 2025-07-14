@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Layout, Settings, Grid, FileText, Terminal, X, Save, FolderOpen } from 'lucide-react';
+import { Upload, Layout, Settings, Grid, FileText, Terminal, X } from 'lucide-react';
 import { DicomRenderer } from './components/DicomRenderer';
 import { useDicomStore } from './store/dicom-store';
 import './App.css';
@@ -27,18 +27,14 @@ function App() {
     annotations, 
     clearAllAnnotations,
     removeAnnotation,
-    updateAnnotationLabel,
-    saveAnnotations,
-    loadAnnotations
+    updateAnnotationLabel
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
     annotations: state.annotations,
     clearAllAnnotations: state.clearAllAnnotations,
     removeAnnotation: state.removeAnnotation,
-    updateAnnotationLabel: state.updateAnnotationLabel,
-    saveAnnotations: state.saveAnnotations,
-    loadAnnotations: state.loadAnnotations
+    updateAnnotationLabel: state.updateAnnotationLabel
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -97,8 +93,16 @@ function App() {
     input.click();
   };
 
-  // 파일 처리
+  // 파일 처리 (무한 로딩 방지 강화)
   const handleFiles = async (files: File[]) => {
+    console.log("🔄 파일 처리 시작 - 상태 초기화");
+    
+    // 🔥 핵심: 새 파일 처리 시작 전 모든 상태 초기화
+    setIsLoading(false); // 먼저 기존 로딩 상태 해제
+    setError(null);
+    setRenderingSuccess(false);
+    clearAllAnnotations(); // 새 파일 로드 시 주석 초기화
+    
     const dicomFiles = files.filter(file => 
       file.name.toLowerCase().endsWith('.dcm') || 
       file.type === 'application/dicom'
@@ -110,10 +114,7 @@ function App() {
     }
 
     try {
-      setIsLoading(true);
-      setError(null);
-      setRenderingSuccess(false);
-      clearAllAnnotations(); // 새 파일 로드 시 주석 초기화  
+      setIsLoading(true); // 검증 완료 후 로딩 시작
       setLoadedFiles(dicomFiles);
       
       console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
@@ -283,66 +284,10 @@ function App() {
                 flexDirection: 'column',
                 height: '400px' // 고정 높이 설정
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <h3 className="sidebar-section-title" style={{ margin: 0 }}>
-                    <FileText size={16} />
-                    주석 목록 ({annotations.length}개)
-                  </h3>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      onClick={saveAnnotations}
-                      title="주석 저장"
-                      style={{
-                        background: 'none',
-                        border: '1px solid #3b82f6',
-                        color: '#3b82f6',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#3b82f6';
-                        e.currentTarget.style.color = 'white';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#3b82f6';
-                      }}
-                    >
-                      <Save size={14} />
-                    </button>
-                    <button
-                      onClick={loadAnnotations}
-                      title="주석 불러오기"
-                      style={{
-                        background: 'none',
-                        border: '1px solid #10b981',
-                        color: '#10b981',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#10b981';
-                        e.currentTarget.style.color = 'white';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#10b981';
-                      }}
-                    >
-                      <FolderOpen size={14} />
-                    </button>
-                  </div>
-                </div>
+                <h3 className="sidebar-section-title">
+                  <FileText size={16} />
+                  주석 목록 ({annotations.length}개)
+                </h3>
                 
                 {annotations.length > 0 ? (
                   <>

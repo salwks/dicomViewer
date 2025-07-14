@@ -195,6 +195,4 @@ export interface DicomViewerState {
   setError: (error: string | null) => void;
   toggleSidebar: () => void;
   clearAllAnnotations: () => void;
-  saveAnnotations: () => void;
-  loadAnnotations: () => void;
 }
