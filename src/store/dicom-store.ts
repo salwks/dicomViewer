@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { annotation } from '@cornerstonejs/tools';
+import { getRenderingEngine } from '@cornerstonejs/core';
+import { debugLogger } from '../utils/debug-logger';
 import type { 
   DicomViewerState, 
   ViewportConfig, 
@@ -297,56 +299,27 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 제어 (상태 변경과 실제 동작을 동시에 실행)
+    // 주석 가시성 제어 - 올바른 CornerstoneJS API 사용
     setAnnotationsVisible: (visible: boolean) => {
-      set({ annotationsVisible: visible });
-      console.log(`🔧 주석 가시성 제어: ${visible ? '표시' : '숨김'}`);
+      debugLogger.log(`[명령] 주석을 ${visible ? '보이도록' : '숨기도록'} 변경합니다.`);
       
+      // 1. 스토어 상태 업데이트
+      set({ annotationsVisible: visible });
+
+      // 2. 올바른 API인 setAnnotationsVisibility를 사용하여 모든 주석의 가시성을 직접 제어
       try {
-        if (visible) {
-          console.log('✅ annotation.state.showAnnotations() 호출');
-          if (typeof annotation.state.showAnnotations === 'function') {
-            annotation.state.showAnnotations();
-          }
-        } else {
-          console.log('🚫 annotation.state.hideAnnotations() 호출');
-          if (typeof annotation.state.hideAnnotations === 'function') {
-            annotation.state.hideAnnotations();
-          }
-        }
+        debugLogger.log(`▶️ annotation.state.setAnnotationsVisibility(${visible}) 실행 시도...`);
+        annotation.state.setAnnotationsVisibility(visible);
+        debugLogger.success(`✅ setAnnotationsVisibility(${visible}) 실행 완료.`);
 
-        // 모든 개별 주석의 isVisible 속성 직접 제어 (확실한 방법)
-        const annotationManager = annotation.state.getAllAnnotations();
-        let processedCount = 0;
-        
-        if (annotationManager) {
-          Object.keys(annotationManager).forEach(toolName => {
-            const toolAnnotations = annotationManager[toolName];
-            if (toolAnnotations && Array.isArray(toolAnnotations)) {
-              toolAnnotations.forEach(ann => {
-                if (ann && typeof ann === 'object') {
-                  ann.isVisible = visible;
-                  processedCount++;
-                }
-              });
-            }
-          });
-        }
-
-        console.log(`👁️ ${processedCount}개 주석의 가시성을 ${visible ? '표시' : '숨김'}로 설정 완료`);
-
-        // 뷰포트 새로고침
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        // 3. 뷰포트 강제 렌더링
+        const renderingEngine = getRenderingEngine('dicom-rendering-engine');
         if (renderingEngine) {
-          const viewport = renderingEngine.getViewport('dicom-viewport');
-          if (viewport) {
-            viewport.render();
-            console.log('✅ 뷰포트 새로고침 완료');
-          }
+          renderingEngine.render();
+          debugLogger.success('✅ 뷰포트 렌더링 완료.');
         }
-
       } catch (error) {
-        console.error('❌ 주석 가시성 제어 실패:', error);
+        debugLogger.error('❌ 주석 가시성 변경 중 오류 발생', error);
       }
     },
 
