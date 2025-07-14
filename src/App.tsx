@@ -489,7 +489,7 @@ function App() {
                         checked={annotationsVisible}
                         onChange={() => {
                           console.log('🔧 주석 표시 체크박스 클릭됨');
-                          toggleAnnotationsVisibility();
+                          toggleAnnotationsVisibility('dicom-viewport');
                         }}
                       />
                       주석 표시

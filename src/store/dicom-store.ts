@@ -299,35 +299,27 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
 
-    // 주석 가시성 토글 - 표준적이고 확실한 방식
-    toggleAnnotationsVisibility: () => {
-      // 1. 현재 상태의 반대값으로 설정
+    // 주석 가시성 토글 - viewportId를 지정하는 최종 수정 버전
+    toggleAnnotationsVisibility: (viewportId: string) => {
       const visible = !useDicomStore.getState().annotationsVisible;
-      
+      set({ annotationsVisible: visible });
+
       try {
-        // 2. 모든 주석 가져오기
-        const allAnnotations = annotation.state.getAnnotations();
-        
-        // 3. 각 주석의 visibility 속성 변경
-        Object.keys(allAnnotations).forEach(frameOfReferenceUID => {
-          Object.keys(allAnnotations[frameOfReferenceUID]).forEach(toolName => {
-            const toolAnnotations = allAnnotations[frameOfReferenceUID][toolName];
-            toolAnnotations.forEach(ann => {
-              ann.isVisible = visible;
-            });
+        // viewportId를 사용하여 해당 뷰포트의 주석만 가져옵니다.
+        const allAnnotations = annotation.state.getAnnotations(undefined, viewportId);
+
+        if (allAnnotations && allAnnotations.length > 0) {
+          allAnnotations.forEach(ann => {
+            ann.visibility = visible;
           });
-        });
-        
-        // 4. 뷰포트 강제 렌더링
+        }
+
         getRenderingEngine('dicom-rendering-engine')?.render();
         
-        // 5. 스토어 상태 업데이트
-        set({ annotationsVisible: visible });
-        
-        console.log(`✅ 주석 가시성 변경 완료: ${visible ? '표시' : '숨김'}`);
+        console.log(`✅ 주석 가시성 변경 완료: ${visible ? '표시' : '숨김'} (뷰포트: ${viewportId})`);
         
       } catch (error) {
-        console.error('❌ 주석 가시성 변경 실패:', error);
+        debugLogger.error('❌ 주석 가시성 변경 중 오류 발생', error);
       }
     },
 
