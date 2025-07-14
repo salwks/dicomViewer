@@ -155,6 +155,7 @@ export interface DicomViewerState {
   viewports: Map<string, ViewportConfig>;
   activeViewportId: string | null;
   layoutType: LayoutType;
+  viewportConfigs: Map<string, any>;
   
   // Series state
   loadedSeries: SeriesInfo[];
@@ -168,6 +169,11 @@ export interface DicomViewerState {
   // Annotation state
   annotations: AnnotationData[];
   selectedAnnotationUID: string | null;
+  
+  // Sidebar control state
+  annotationsVisible: boolean;
+  panZoomEnabled: boolean;
+  lastActiveTool: string | null;
   
   // Window level state
   windowLevelPresets: WindowLevelPreset[];
@@ -183,11 +189,16 @@ export interface DicomViewerState {
   setLayout: (layout: LayoutType) => void;
   loadSeries: (series: SeriesInfo) => void;
   setActiveTool: (toolName: string) => void;
+  activateToolInViewport: (toolName: string, toolGroupRef?: any) => boolean;
   addAnnotation: (annotation: RequiredAnnotationData) => void;
   updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => void;
+  updateAnnotationLabel: (annotationUID: string, newLabel: string) => void;
   removeAnnotation: (annotationUID: string) => void;
   setWindowLevel: (config: WindowLevelConfig) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   toggleSidebar: () => void;
+  setAnnotationsVisible: (visible: boolean) => void;
+  setPanZoomEnabled: (enabled: boolean, toolGroupRef?: any) => void;
+  clearAllAnnotations: () => void;
 }

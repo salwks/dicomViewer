@@ -29,6 +29,7 @@ export const useDicomStore = create<DicomViewerState>()(
     // Initial state
     viewports: new Map(),
     activeViewportId: null,
+    layoutType: '1x1' as LayoutType,
     viewportConfigs: new Map(), // 뷰포트별 설정 저장
     
     loadedSeries: [],
@@ -56,6 +57,10 @@ export const useDicomStore = create<DicomViewerState>()(
     // Actions
     setActiveViewport: (viewportId: string) => {
       set({ activeViewportId: viewportId });
+    },
+
+    setLayout: (layout: LayoutType) => {
+      set({ layoutType: layout });
     },
 
     // Layout functionality completely removed for single viewport stability
@@ -172,6 +177,13 @@ export const useDicomStore = create<DicomViewerState>()(
       }));
       
       console.log(`Added annotation: ${annotationWithUID.annotationUID}`);
+      
+      // 새로운 주석이 추가되면 자동으로 주석 표시 활성화
+      const currentState = get();
+      if (!currentState.annotationsVisible) {
+        console.log('📝 새 주석 추가로 인한 자동 표시 활성화');
+        currentState.setAnnotationsVisible(true);
+      }
     },
 
     updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => {
@@ -290,36 +302,38 @@ export const useDicomStore = create<DicomViewerState>()(
     // 주석 가시성 제어
     setAnnotationsVisible: (visible: boolean) => {
       set({ annotationsVisible: visible });
-      console.log(`주석 가시성 설정: ${visible ? '표시' : '숨김'}`);
+      console.log(`🔧 주석 가시성 설정: ${visible ? '표시' : '숨김'}`);
       
-      // 즉시 주석 가시성 적용
+      // CornerstoneJS의 실제 API를 사용하여 주석 가시성 제어
       try {
+        // 모든 주석의 isVisible 속성을 설정
+        const annotationManager = annotation.state.getAllAnnotations();
+        if (annotationManager) {
+          Object.keys(annotationManager).forEach(toolName => {
+            const toolAnnotations = annotationManager[toolName];
+            if (toolAnnotations && Array.isArray(toolAnnotations)) {
+              toolAnnotations.forEach(ann => {
+                if (ann && ann.annotationUID) {
+                  ann.isVisible = visible;
+                }
+              });
+            }
+          });
+        }
+        
+        console.log(`👁️ CornerstoneJS: 모든 주석 ${visible ? '표시' : '숨김'} 설정 완료`);
+        
+        // 뷰포트 새로고침
         const renderingEngine = (window as any).cornerstoneRenderingEngine;
         if (renderingEngine) {
           const viewport = renderingEngine.getViewport('dicom-viewport');
           if (viewport) {
-            // 모든 기존 주석들의 가시성 제어
-            const annotationManager = annotation.state.getAllAnnotations();
-            if (annotationManager) {
-              Object.keys(annotationManager).forEach(toolName => {
-                const toolAnnotations = annotationManager[toolName];
-                if (toolAnnotations && Array.isArray(toolAnnotations)) {
-                  toolAnnotations.forEach(ann => {
-                    if (ann && ann.annotationUID) {
-                      ann.isVisible = visible;
-                    }
-                  });
-                }
-              });
-            }
-            
-            // 뷰포트 새로고침
             viewport.render();
-            console.log(`✅ 주석 가시성 즉시 적용: ${visible ? '표시' : '숨김'}`);
+            console.log('✅ 뷰포트 새로고침 완료');
           }
         }
       } catch (error) {
-        console.error('주석 가시성 즉시 적용 실패:', error);
+        console.error('❌ 주석 가시성 제어 실패:', error);
       }
     },
 

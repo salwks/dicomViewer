@@ -114,9 +114,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         // 처리 완료 표시
         processedAnnotations.add(annotation.annotationUID);
 
-        // 새로 생성된 주석의 가시성을 현재 설정에 맞게 조정
-        const currentState = useDicomStore.getState();
-        annotation.isVisible = currentState.annotationsVisible;
+        // 주석 가시성은 스토어에서 전역적으로 관리됨
 
         const annotationData = {
           annotationUID: annotation.annotationUID,
@@ -128,13 +126,6 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
 
         debugLogger.success('📝 새 주석을 스토어에 추가', annotationData);
         addAnnotation(annotationData);
-        
-        // 주석이 추가되면 자동으로 주석 표시를 활성화
-        const currentState = useDicomStore.getState();
-        if (!currentState.annotationsVisible) {
-          debugLogger.log('📝 주석 추가로 인한 자동 표시 활성화');
-          currentState.setAnnotationsVisible(true);
-        }
 
       } catch (error) {
         debugLogger.error('주석 완료 이벤트 처리 실패', error);
@@ -338,41 +329,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     }
   }, [activeTool, activateToolInViewport]);
 
-  // 주석 가시성 제어
-  useEffect(() => {
-    if (isViewportInitialized.current && renderingEngineRef.current) {
-      try {
-        const viewport = renderingEngineRef.current.getViewport('dicom-viewport');
-        if (viewport) {
-          // 모든 기존 주석들의 가시성 제어
-          const annotationManager = annotation.state.getAllAnnotations();
-          if (annotationManager) {
-            Object.keys(annotationManager).forEach(toolName => {
-              const toolAnnotations = annotationManager[toolName];
-              if (toolAnnotations && Array.isArray(toolAnnotations)) {
-                toolAnnotations.forEach(ann => {
-                  if (ann && ann.annotationUID) {
-                    ann.isVisible = annotationsVisible;
-                  }
-                });
-              }
-            });
-          }
-          
-          if (annotationsVisible) {
-            debugLogger.log('👁️ 모든 주석 표시');
-          } else {
-            debugLogger.log('🙈 모든 주석 숨김');
-          }
-          
-          // 뷰포트 새로고침
-          viewport.render();
-        }
-      } catch (error) {
-        debugLogger.error('주석 가시성 제어 실패', error);
-      }
-    }
-  }, [annotationsVisible]);
+  // 주석 가시성은 스토어의 setAnnotationsVisible 함수에서 CornerstoneJS API로 직접 제어됨
 
   // 정리
   useEffect(() => {

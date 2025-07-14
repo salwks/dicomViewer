@@ -77,7 +77,7 @@ async function performGlobalInitialization(): Promise<boolean> {
 
     debugLogger.log('🔧 웹 워커 경로 설정', { 
       webWorkerPath,
-      isDev: import.meta.env.DEV 
+      isDev: import.meta.env?.DEV 
     });
 
     // 이미지 로더 웹 워커 설정

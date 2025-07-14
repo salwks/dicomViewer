@@ -143,11 +143,11 @@ export class DebugLogger {
 
   // 메모리 사용량 로깅
   logMemoryUsage() {
-    if (performance.memory) {
+    if ((performance as any).memory) {
       const memory = {
-        used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
-        total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
-        limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+        used: Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024),
+        total: Math.round((performance as any).memory.totalJSHeapSize / 1024 / 1024),
+        limit: Math.round((performance as any).memory.jsHeapSizeLimit / 1024 / 1024)
       };
       
       this.log('메모리 사용량', memory);
