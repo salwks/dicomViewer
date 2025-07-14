@@ -77,125 +77,6 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     }
   };
 
-  // 🔥 단순화된 주석 이벤트 리스너 (중복 방지)
-  const setupAnnotationEventListeners = () => {
-    debugLogger.log('🎯 단순화된 주석 이벤트 리스너 설정 시작');
-
-    // 중복 방지를 위한 Set
-    const processedAnnotations = new Set<string>();
-
-    // 주석 완료 이벤트 핸들러 (단 한 번만 처리)
-    const handleAnnotationCompleted = (event: any) => {
-      debugLogger.log('🎉 주석 완료 이벤트 수신', event.detail);
-      
-      try {
-        const annotation = event.detail?.annotation;
-        if (!annotation || !annotation.annotationUID) {
-          debugLogger.warn('주석 데이터가 없거나 UID가 없음');
-          return;
-        }
-
-        // 🔥 중복 처리 방지
-        if (processedAnnotations.has(annotation.annotationUID)) {
-          debugLogger.log(`이미 처리된 주석: ${annotation.annotationUID}`);
-          return;
-        }
-
-        // 스토어에서도 중복 확인
-        const existingAnnotation = useDicomStore.getState().annotations.find(
-          a => a.annotationUID === annotation.annotationUID
-        );
-        
-        if (existingAnnotation) {
-          debugLogger.log(`스토어에 이미 존재하는 주석: ${annotation.annotationUID}`);
-          return;
-        }
-
-        // 처리 완료 표시
-        processedAnnotations.add(annotation.annotationUID);
-
-        // 새로 생성된 주석의 가시성을 현재 설정에 맞게 조정
-        annotation.isVisible = annotationsVisible;
-        debugLogger.log(`📝 새 주석 가시성 설정: ${annotationsVisible ? '표시' : '숨김'}`);
-
-        const annotationData = {
-          annotationUID: annotation.annotationUID,
-          toolName: annotation.metadata?.toolName || annotation.data?.label || 'Unknown',
-          data: annotation.data,
-          metadata: annotation.metadata,
-          viewportId: 'dicom-viewport'
-        };
-
-        debugLogger.success('📝 새 주석을 스토어에 추가', annotationData);
-        addAnnotation(annotationData);
-
-      } catch (error) {
-        debugLogger.error('주석 완료 이벤트 처리 실패', error);
-      }
-    };
-
-    // 주석 수정 이벤트 핸들러
-    const handleAnnotationModified = (event: any) => {
-      debugLogger.log('✏️ 주석 수정 이벤트 수신', event.detail);
-      
-      try {
-        const annotation = event.detail?.annotation;
-        if (annotation && annotation.annotationUID) {
-          const updates = {
-            data: annotation.data,
-            metadata: annotation.metadata
-          };
-
-          debugLogger.log('📝 주석 업데이트', { uid: annotation.annotationUID, updates });
-          updateAnnotation(annotation.annotationUID, updates);
-        }
-      } catch (error) {
-        debugLogger.error('주석 수정 이벤트 처리 실패', error);
-      }
-    };
-
-    // 주석 삭제 이벤트 핸들러
-    const handleAnnotationRemoved = (event: any) => {
-      debugLogger.log('🗑️ 주석 삭제 이벤트 수신', event.detail);
-      
-      try {
-        const annotation = event.detail?.annotation;
-        if (annotation && annotation.annotationUID) {
-          debugLogger.log('🗑️ 스토어에서 주석 제거', annotation.annotationUID);
-          removeAnnotation(annotation.annotationUID);
-          processedAnnotations.delete(annotation.annotationUID);
-        }
-      } catch (error) {
-        debugLogger.error('주석 삭제 이벤트 처리 실패', error);
-      }
-    };
-
-    // 🔥 공식 Cornerstone3D 이벤트만 사용
-    const events = {
-      completed: ToolsEnums.Events.ANNOTATION_COMPLETED,
-      modified: ToolsEnums.Events.ANNOTATION_MODIFIED,
-      removed: ToolsEnums.Events.ANNOTATION_REMOVED
-    };
-
-    debugLogger.log('🎯 공식 이벤트 등록', events);
-
-    // 이벤트 리스너 등록 (공식 이벤트만)
-    eventTarget.addEventListener(events.completed, handleAnnotationCompleted);
-    eventTarget.addEventListener(events.modified, handleAnnotationModified);
-    eventTarget.addEventListener(events.removed, handleAnnotationRemoved);
-
-    debugLogger.success('✅ 주석 이벤트 리스너 등록 완료');
-
-    // 정리 함수
-    return () => {
-      eventTarget.removeEventListener(events.completed, handleAnnotationCompleted);
-      eventTarget.removeEventListener(events.modified, handleAnnotationModified);
-      eventTarget.removeEventListener(events.removed, handleAnnotationRemoved);
-      
-      processedAnnotations.clear();
-      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
-    };
-  };
 
   // 🔧 한 번만 실행되는 뷰포트 초기화
   useEffect(() => {
@@ -307,8 +188,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         isViewportInitialized.current = true;
         onSuccess('뷰포트 초기화 완료');
 
-        // 🔥 주석 이벤트 리스너 설정 (핵심!)
-        setupAnnotationEventListeners();
+        // 주석 이벤트 리스너는 별도 useEffect에서 관리
 
         // 초기 도구 활성화
         if (activeTool) {
@@ -330,6 +210,117 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       handleToolActivation(activeTool);
     }
   }, [activeTool, activateToolInViewport]);
+
+  // CornerstoneJS 표준 주석 이벤트 리스너 설정 (컴포넌트 마운트 시 한 번만)
+  useEffect(() => {
+    if (!isViewportInitialized.current) return;
+
+    debugLogger.log('🎯 CornerstoneJS 표준 주석 이벤트 리스너 설정 시작');
+
+    // ANNOTATION_COMPLETED 이벤트 핸들러 - 주석 그리기 완료 시 호출
+    const handleAnnotationCompleted = (event: any) => {
+      console.log('🎉 [ANNOTATION_COMPLETED] 이벤트 수신!', event.detail);
+      debugLogger.log('🎉 ANNOTATION_COMPLETED 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail?.annotation;
+        if (!annotation || !annotation.annotationUID) {
+          console.warn('❌ 주석 데이터가 유효하지 않음:', annotation);
+          debugLogger.warn('❌ 주석 데이터가 유효하지 않음:', annotation);
+          return;
+        }
+
+        console.log('📝 주석 UID:', annotation.annotationUID);
+        console.log('🔧 도구 이름:', annotation.metadata?.toolName);
+
+        // 새로 생성된 주석의 가시성을 현재 설정에 맞게 조정
+        annotation.isVisible = annotationsVisible;
+
+        // 스토어에 추가할 주석 데이터 구성
+        const annotationData = {
+          annotationUID: annotation.annotationUID,
+          toolName: annotation.metadata?.toolName || 'Unknown',
+          data: annotation.data,
+          metadata: annotation.metadata,
+          viewportId: 'dicom-viewport'
+        };
+
+        console.log('✅ 새 주석을 스토어에 추가:', annotationData);
+        debugLogger.success('✅ 새 주석을 스토어에 추가:', annotationData);
+        addAnnotation(annotationData);
+
+      } catch (error) {
+        console.error('❌ 주석 완료 이벤트 처리 실패:', error);
+        debugLogger.error('❌ 주석 완료 이벤트 처리 실패:', error);
+      }
+    };
+
+    // ANNOTATION_MODIFIED 이벤트 핸들러 - 주석 수정 시 호출
+    const handleAnnotationModified = (event: any) => {
+      debugLogger.log('✏️ ANNOTATION_MODIFIED 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail?.annotation;
+        if (annotation && annotation.annotationUID) {
+          const updates = {
+            data: annotation.data,
+            metadata: annotation.metadata
+          };
+
+          updateAnnotation(annotation.annotationUID, updates);
+        }
+      } catch (error) {
+        debugLogger.error('❌ 주석 수정 이벤트 처리 실패:', error);
+      }
+    };
+
+    // ANNOTATION_REMOVED 이벤트 핸들러 - 주석 삭제 시 호출
+    const handleAnnotationRemoved = (event: any) => {
+      debugLogger.log('🗑️ ANNOTATION_REMOVED 이벤트 수신', event.detail);
+      
+      try {
+        const annotation = event.detail?.annotation;
+        if (annotation && annotation.annotationUID) {
+          removeAnnotation(annotation.annotationUID);
+        }
+      } catch (error) {
+        debugLogger.error('❌ 주석 삭제 이벤트 처리 실패:', error);
+      }
+    };
+
+    // CornerstoneJS 공식 이벤트 등록
+    const ANNOTATION_COMPLETED = ToolsEnums.Events.ANNOTATION_COMPLETED;
+    const ANNOTATION_MODIFIED = ToolsEnums.Events.ANNOTATION_MODIFIED;
+    const ANNOTATION_REMOVED = ToolsEnums.Events.ANNOTATION_REMOVED;
+
+    console.log('🎯 CornerstoneJS 이벤트 등록:', {
+      ANNOTATION_COMPLETED,
+      ANNOTATION_MODIFIED,
+      ANNOTATION_REMOVED
+    });
+    debugLogger.log('🎯 CornerstoneJS 이벤트 등록:', {
+      ANNOTATION_COMPLETED,
+      ANNOTATION_MODIFIED,
+      ANNOTATION_REMOVED
+    });
+
+    // 이벤트 리스너 등록
+    eventTarget.addEventListener(ANNOTATION_COMPLETED, handleAnnotationCompleted);
+    eventTarget.addEventListener(ANNOTATION_MODIFIED, handleAnnotationModified);
+    eventTarget.addEventListener(ANNOTATION_REMOVED, handleAnnotationRemoved);
+
+    console.log('✅ CornerstoneJS 주석 이벤트 리스너 등록 완료!');
+    debugLogger.success('✅ 모든 주석 이벤트 리스너 등록 완료');
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 정리
+    return () => {
+      eventTarget.removeEventListener(ANNOTATION_COMPLETED, handleAnnotationCompleted);
+      eventTarget.removeEventListener(ANNOTATION_MODIFIED, handleAnnotationModified);
+      eventTarget.removeEventListener(ANNOTATION_REMOVED, handleAnnotationRemoved);
+      
+      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
+    };
+  }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation, annotationsVisible]);
 
   // 주석 가시성 상태 변화 감지 및 CornerstoneJS 연동
   useEffect(() => {
