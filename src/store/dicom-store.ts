@@ -291,6 +291,36 @@ export const useDicomStore = create<DicomViewerState>()(
     setAnnotationsVisible: (visible: boolean) => {
       set({ annotationsVisible: visible });
       console.log(`주석 가시성 설정: ${visible ? '표시' : '숨김'}`);
+      
+      // 즉시 주석 가시성 적용
+      try {
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (renderingEngine) {
+          const viewport = renderingEngine.getViewport('dicom-viewport');
+          if (viewport) {
+            // 모든 기존 주석들의 가시성 제어
+            const annotationManager = annotation.state.getAllAnnotations();
+            if (annotationManager) {
+              Object.keys(annotationManager).forEach(toolName => {
+                const toolAnnotations = annotationManager[toolName];
+                if (toolAnnotations && Array.isArray(toolAnnotations)) {
+                  toolAnnotations.forEach(ann => {
+                    if (ann && ann.annotationUID) {
+                      ann.isVisible = visible;
+                    }
+                  });
+                }
+              });
+            }
+            
+            // 뷰포트 새로고침
+            viewport.render();
+            console.log(`✅ 주석 가시성 즉시 적용: ${visible ? '표시' : '숨김'}`);
+          }
+        }
+      } catch (error) {
+        console.error('주석 가시성 즉시 적용 실패:', error);
+      }
     },
 
     // 팬/줌 모드 토글

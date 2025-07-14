@@ -13,13 +13,13 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'node_modules/@cornerstonejs/dicom-image-loader/dist/index.worker.bundle.min.worker.js',
-          dest: 'workers',
+          src: './node_modules/@cornerstonejs/dicom-image-loader/dist/index.worker.bundle.min.worker.js',
+          dest: 'cornerstone-dicom-image-loader',
           rename: 'cornerstoneDICOMImageLoaderWebWorker.min.js'
         },
         {
-          src: 'node_modules/@cornerstonejs/dicom-image-loader/dist/dynamic-import/*.worker.js',
-          dest: 'workers'
+          src: './node_modules/@cornerstonejs/dicom-image-loader/dist/dynamic-import/*.worker.js',
+          dest: 'cornerstone-dicom-image-loader',
         }
       ]
     })

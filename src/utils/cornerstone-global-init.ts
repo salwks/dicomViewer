@@ -73,7 +73,7 @@ async function performGlobalInitialization(): Promise<boolean> {
     cornerstoneDICOMImageLoader.external.dicomParser = dicomParser;
 
     // 🔧 웹 워커 경로 명시적 설정 (핵심!)
-    const webWorkerPath = '/workers/cornerstoneDICOMImageLoaderWebWorker.min.js';
+    const webWorkerPath = '/cornerstone-dicom-image-loader/cornerstoneDICOMImageLoaderWebWorker.min.js';
 
     debugLogger.log('🔧 웹 워커 경로 설정', { 
       webWorkerPath,
