@@ -89,19 +89,33 @@ function App() {
       if (files.length > 0) {
         handleFiles(files);
       }
+      // 🔥 핵심: input 요소 초기화로 같은 파일 재선택 허용
+      (e.target as HTMLInputElement).value = '';
     };
     input.click();
   };
 
-  // 파일 처리 (무한 로딩 방지 강화)
+  // 파일 처리 (무한 로딩 완전 해결)
   const handleFiles = async (files: File[]) => {
-    console.log("🔄 파일 처리 시작 - 상태 초기화");
+    console.log("🔄 파일 처리 시작 - 완전한 상태 초기화");
     
-    // 🔥 핵심: 새 파일 처리 시작 전 모든 상태 초기화
-    setIsLoading(false); // 먼저 기존 로딩 상태 해제
-    setError(null);
-    setRenderingSuccess(false);
-    clearAllAnnotations(); // 새 파일 로드 시 주석 초기화
+    // 🔥 핵심: 절대적으로 깨끗한 상태 초기화 (순서 중요!)
+    
+    // 1단계: 모든 React 상태 초기화
+    setIsLoading(false);           // 기존 로딩 해제
+    setError(null);                // 에러 초기화
+    setRenderingSuccess(false);    // 렌더링 상태 초기화
+    setLoadedFiles([]);            // 기존 파일 목록 초기화
+    
+    // 2단계: Zustand 스토어 완전 초기화
+    clearAllAnnotations();         // 주석 초기화
+    
+    // 3단계: 추가 상태 초기화 (Zustand 스토어에서)
+    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    setLoading(false);             // 스토어 로딩 상태 초기화
+    setStoreError(null);           // 스토어 에러 상태 초기화
+    
+    console.log("✅ 모든 상태 초기화 완료");
     
     const dicomFiles = files.filter(file => 
       file.name.toLowerCase().endsWith('.dcm') || 
@@ -114,10 +128,15 @@ function App() {
     }
 
     try {
-      setIsLoading(true); // 검증 완료 후 로딩 시작
+      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 처리 시작`);
+      
+      // 4단계: 새로운 로딩 시작 (잠시 대기 후 실행으로 상태 변화 보장)
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      setIsLoading(true);
       setLoadedFiles(dicomFiles);
       
-      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 로드 시작...`);
+      console.log("🎯 DicomRenderer로 파일 전달 완료");
       
       // DicomRenderer에서 실제 렌더링이 수행됩니다
       // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
@@ -129,11 +148,12 @@ function App() {
     }
   };
 
-  // 드래그 앤 드롭 핸들러
+  // 드래그 앤 드롭 핸들러 (동일한 상태 초기화 적용)
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
+    console.log("🎯 드래그앤드롭으로 파일 처리 시작");
     handleFiles(files);
   };
 
@@ -147,20 +167,34 @@ function App() {
     setIsDragging(false);
   };
 
-  // DICOM 렌더링 성공 핸들러
+  // DICOM 렌더링 성공 핸들러 (강화된 상태 관리)
   const handleRenderingSuccess = (message: string) => {
-    console.log('App: 렌더링 성공', message);
+    console.log('✅ App: 렌더링 성공', message);
     setRenderingSuccess(true);
-    setIsLoading(false);
+    setIsLoading(false);     // 🔥 핵심: 반드시 로딩 해제
     setError(null);
+    
+    // 스토어 상태도 동기화
+    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    setLoading(false);
+    setStoreError(null);
+    
+    console.log('🎉 파일 로딩 완전히 완료 - 모든 상태 정리됨');
   };
 
-  // DICOM 렌더링 실패 핸들러
+  // DICOM 렌더링 실패 핸들러 (강화된 상태 관리)
   const handleRenderingError = (errorMessage: string) => {
-    console.error('App: 렌더링 실패', errorMessage);
+    console.error('❌ App: 렌더링 실패', errorMessage);
     setRenderingSuccess(false);
-    setIsLoading(false);
+    setIsLoading(false);     // 🔥 핵심: 반드시 로딩 해제
     setError(errorMessage);
+    
+    // 스토어 상태도 동기화
+    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    setLoading(false);
+    setStoreError(errorMessage);
+    
+    console.log('💥 파일 로딩 실패 - 모든 상태 정리됨');
   };
 
 

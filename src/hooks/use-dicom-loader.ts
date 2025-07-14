@@ -18,7 +18,17 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
 
   // 파일이 변경될 때마다 이미지 로딩 수행
   useEffect(() => {
-    if (files.length === 0 || loadingRef.current) return;
+    // 🔥 핵심: 새 파일 배열이 들어올 때 loadingRef 강제 초기화
+    if (files.length === 0) {
+      loadingRef.current = false;
+      debugLogger.log('📋 파일 없음 - loadingRef 초기화');
+      return;
+    }
+    
+    if (loadingRef.current) {
+      debugLogger.log('⚠️ 이미 로딩 중이므로 건너뜀');
+      return;
+    }
 
     const loadDicomImages = async () => {
       loadingRef.current = true;
@@ -163,7 +173,8 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
     return () => {
       clearTimeout(timeoutId);
       loadingRef.current = false;
+      debugLogger.log('🧹 useDicomLoader cleanup - loadingRef 초기화');
     };
 
-  }, [files, onError, onSuccess]);
+  }, [files, onError, onSuccess, files.length, ...files.map(f => f.name + f.size)]);
 }
