@@ -30,6 +30,7 @@ import {
   CircleDot,
   Brush,
   Target,
+  Camera,
 } from "lucide-react";
 import { DicomRenderer } from "./components/DicomRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
@@ -93,6 +94,7 @@ function App() {
     currentDicomDataSet,
     isLicenseModalOpen,
     toggleLicenseModal,
+    captureViewportAsPng,
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
@@ -109,6 +111,7 @@ function App() {
     currentDicomDataSet: state.currentDicomDataSet,
     isLicenseModalOpen: state.isLicenseModalOpen,
     toggleLicenseModal: state.toggleLicenseModal,
+    captureViewportAsPng: state.captureViewportAsPng,
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -999,6 +1002,18 @@ function App() {
                     style={commonButtonStyle}
                   >
                     <Reset size={16} />
+                  </button>
+                  <button
+                    className="toolbar-button"
+                    onClick={() => {
+                      console.log("📸 화면 캡처 버튼 클릭됨");
+                      captureViewportAsPng();
+                    }}
+                    disabled={isLoading || !renderingSuccess}
+                    title="현재 뷰포트 화면을 PNG 이미지로 캡처하여 저장합니다"
+                    style={commonButtonStyle}
+                  >
+                    <Camera size={16} />
                   </button>
                 </div>
               </div>

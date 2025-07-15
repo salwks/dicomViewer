@@ -504,6 +504,151 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ isLicenseModalOpen: !state.isLicenseModalOpen }));
     },
 
+    // 뷰포트 화면 캡처 및 PNG 저장 (Canvas + SVG 합성으로 주석 포함)
+    captureViewportAsPng: async () => {
+      try {
+        console.log("📸 뷰포트 캡처 시작 (Canvas + SVG 합성)...");
+        
+        // CornerstoneJS 렌더링 엔진과 뷰포트 가져오기
+        const renderingEngine = (window as any).cornerstoneRenderingEngine;
+        if (!renderingEngine) {
+          console.error("❌ CornerstoneJS 렌더링 엔진을 찾을 수 없습니다");
+          return;
+        }
+
+        const viewport = renderingEngine.getViewport("dicom-viewport");
+        if (!viewport) {
+          console.error("❌ DICOM 뷰포트를 찾을 수 없습니다");
+          return;
+        }
+
+        console.log("🎯 CornerstoneJS 뷰포트 발견, Canvas + SVG 합성 캡처 시도...");
+
+        // 메인 캔버스 가져오기 (의료 이미지)
+        const mainCanvas = viewport.getCanvas();
+        if (!mainCanvas) {
+          console.error("❌ 뷰포트 캔버스를 가져올 수 없습니다");
+          return;
+        }
+
+        console.log(`🖼️ 메인 캔버스 크기: ${mainCanvas.width}x${mainCanvas.height}`);
+
+        // SVG 주석 레이어 찾기
+        const svgLayer = viewport.element.querySelector('.svg-layer') || 
+                        viewport.element.querySelector('svg') ||
+                        viewport.element.querySelector('[data-cs-svg-layer]');
+        
+        console.log("🔍 SVG 레이어 검색 결과:", {
+          found: !!svgLayer,
+          className: svgLayer?.className || 'N/A',
+          tagName: svgLayer?.tagName || 'N/A',
+        });
+
+        // 합성 캔버스 생성
+        const compositeCanvas = document.createElement('canvas');
+        const ctx = compositeCanvas.getContext('2d');
+        
+        if (!ctx) {
+          console.error("❌ 합성 캔버스 컨텍스트 생성 실패");
+          return;
+        }
+
+        compositeCanvas.width = mainCanvas.width;
+        compositeCanvas.height = mainCanvas.height;
+
+        console.log(`🎨 합성 캔버스 생성: ${compositeCanvas.width}x${compositeCanvas.height}`);
+
+        // 1단계: 메인 캔버스 (의료 이미지) 그리기
+        ctx.drawImage(mainCanvas, 0, 0);
+        console.log("✅ 1단계: 메인 캔버스 그리기 완료");
+
+        // 2단계: SVG 주석 레이어가 있는 경우 합성
+        if (svgLayer) {
+          try {
+            console.log("🎨 2단계: SVG 주석 레이어 합성 시작...");
+            
+            // SVG 요소를 문자열로 직렬화
+            const svgData = new XMLSerializer().serializeToString(svgLayer as SVGElement);
+            console.log("📝 SVG 데이터 길이:", svgData.length, "chars");
+            
+            // SVG의 뷰박스와 크기 정보 확인
+            const svgElement = svgLayer as SVGElement;
+            const svgRect = svgElement.getBoundingClientRect();
+            const viewBoxAttr = svgElement.getAttribute('viewBox');
+            
+            console.log("📐 SVG 정보:", {
+              boundingRect: { width: svgRect.width, height: svgRect.height },
+              viewBox: viewBoxAttr,
+              svgWidth: svgElement.getAttribute('width'),
+              svgHeight: svgElement.getAttribute('height'),
+            });
+
+            // Blob을 통해 SVG를 이미지로 변환
+            const svgBlob = new Blob([svgData], { 
+              type: 'image/svg+xml;charset=utf-8' 
+            });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            // 이미지 로드 및 합성
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => {
+                try {
+                  // SVG를 캔버스 크기에 맞춰 그리기
+                  ctx.drawImage(img, 0, 0, compositeCanvas.width, compositeCanvas.height);
+                  console.log("✅ SVG 이미지 합성 완료");
+                  URL.revokeObjectURL(svgUrl);
+                  resolve();
+                } catch (drawError) {
+                  console.error("❌ SVG 그리기 중 오류:", drawError);
+                  URL.revokeObjectURL(svgUrl);
+                  reject(drawError);
+                }
+              };
+              
+              img.onerror = (imgError) => {
+                console.error("❌ SVG 이미지 로드 실패:", imgError);
+                URL.revokeObjectURL(svgUrl);
+                reject(imgError);
+              };
+              
+              img.src = svgUrl;
+            });
+            
+            console.log("✅ 2단계: SVG 주석 레이어 합성 완료");
+            
+          } catch (svgError) {
+            console.warn("⚠️ SVG 합성 실패, 이미지만 저장합니다:", svgError);
+          }
+        } else {
+          console.log("ℹ️ SVG 레이어가 없어 이미지만 캡처합니다");
+        }
+
+        // PNG 데이터 URL 생성
+        const dataURL = compositeCanvas.toDataURL('image/png', 1.0);
+        
+        // 파일명 생성 및 다운로드
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+        const filename = `Clarity-Capture_${timestamp}.png`;
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = dataURL;
+        downloadLink.download = filename;
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        console.log(`✅ 화면 캡처 완료: ${filename}`);
+        console.log(`📊 최종 이미지 크기: ${compositeCanvas.width}x${compositeCanvas.height}`);
+        console.log(`🎯 주석 포함: ${svgLayer ? 'YES' : 'NO'}`);
+        
+      } catch (error) {
+        console.error("❌ 화면 캡처 실패:", error);
+      }
+    },
+
   }))
 );
 
