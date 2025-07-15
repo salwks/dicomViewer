@@ -14,6 +14,7 @@ import type {
   RequiredAnnotationData,
   WindowLevelConfig,
   WindowLevelPreset,
+  MeasurementUnit,
 } from "../types";
 
 // Default window level presets
@@ -58,6 +59,7 @@ export const useDicomStore = create<DicomViewerState>()(
     isFlippedVertical: false,
     currentDicomDataSet: null,
     isLicenseModalOpen: false,
+    measurementUnit: 'mm' as MeasurementUnit,
 
     // Actions
     setActiveViewport: (viewportId: string) => {
@@ -504,148 +506,133 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ isLicenseModalOpen: !state.isLicenseModalOpen }));
     },
 
-    // 뷰포트 화면 캡처 및 PNG 저장 (Canvas + SVG 합성으로 주석 포함)
+    // 측정 단위 설정
+    setMeasurementUnit: (unit: MeasurementUnit) => {
+      set({ measurementUnit: unit });
+      console.log(`📏 측정 단위 변경: ${unit}`);
+    },
+
+    // 뷰포트 화면 캡처 및 PNG 저장
     captureViewportAsPng: async () => {
+      const viewportId = 'dicom-viewport';
+      debugLogger.log(`📸 뷰포트 캡처 시작...`);
+
       try {
-        console.log("📸 뷰포트 캡처 시작 (Canvas + SVG 합성)...");
+        // 뷰포트 준비
+        const { viewport, viewportElement } = await get().prepareViewportForCapture(viewportId);
         
-        // CornerstoneJS 렌더링 엔진과 뷰포트 가져오기
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (!renderingEngine) {
-          console.error("❌ CornerstoneJS 렌더링 엔진을 찾을 수 없습니다");
-          return;
-        }
-
-        const viewport = renderingEngine.getViewport("dicom-viewport");
-        if (!viewport) {
-          console.error("❌ DICOM 뷰포트를 찾을 수 없습니다");
-          return;
-        }
-
-        console.log("🎯 CornerstoneJS 뷰포트 발견, Canvas + SVG 합성 캡처 시도...");
-
-        // 메인 캔버스 가져오기 (의료 이미지)
-        const mainCanvas = viewport.getCanvas();
-        if (!mainCanvas) {
-          console.error("❌ 뷰포트 캔버스를 가져올 수 없습니다");
-          return;
-        }
-
-        console.log(`🖼️ 메인 캔버스 크기: ${mainCanvas.width}x${mainCanvas.height}`);
-
-        // SVG 주석 레이어 찾기
-        const svgLayer = viewport.element.querySelector('.svg-layer') || 
-                        viewport.element.querySelector('svg') ||
-                        viewport.element.querySelector('[data-cs-svg-layer]');
+        // HTML2Canvas로 고해상도 캡처
+        const canvas = await get().captureWithHTML2Canvas(viewportElement);
         
-        console.log("🔍 SVG 레이어 검색 결과:", {
-          found: !!svgLayer,
-          className: svgLayer?.className || 'N/A',
-          tagName: svgLayer?.tagName || 'N/A',
-        });
-
-        // 합성 캔버스 생성
-        const compositeCanvas = document.createElement('canvas');
-        const ctx = compositeCanvas.getContext('2d');
+        // 파일 다운로드
+        await get().downloadCanvasAsFile(canvas);
         
-        if (!ctx) {
-          console.error("❌ 합성 캔버스 컨텍스트 생성 실패");
-          return;
-        }
-
-        compositeCanvas.width = mainCanvas.width;
-        compositeCanvas.height = mainCanvas.height;
-
-        console.log(`🎨 합성 캔버스 생성: ${compositeCanvas.width}x${compositeCanvas.height}`);
-
-        // 1단계: 메인 캔버스 (의료 이미지) 그리기
-        ctx.drawImage(mainCanvas, 0, 0);
-        console.log("✅ 1단계: 메인 캔버스 그리기 완료");
-
-        // 2단계: SVG 주석 레이어가 있는 경우 합성
-        if (svgLayer) {
-          try {
-            console.log("🎨 2단계: SVG 주석 레이어 합성 시작...");
-            
-            // SVG 요소를 문자열로 직렬화
-            const svgData = new XMLSerializer().serializeToString(svgLayer as SVGElement);
-            console.log("📝 SVG 데이터 길이:", svgData.length, "chars");
-            
-            // SVG의 뷰박스와 크기 정보 확인
-            const svgElement = svgLayer as SVGElement;
-            const svgRect = svgElement.getBoundingClientRect();
-            const viewBoxAttr = svgElement.getAttribute('viewBox');
-            
-            console.log("📐 SVG 정보:", {
-              boundingRect: { width: svgRect.width, height: svgRect.height },
-              viewBox: viewBoxAttr,
-              svgWidth: svgElement.getAttribute('width'),
-              svgHeight: svgElement.getAttribute('height'),
-            });
-
-            // Blob을 통해 SVG를 이미지로 변환
-            const svgBlob = new Blob([svgData], { 
-              type: 'image/svg+xml;charset=utf-8' 
-            });
-            const svgUrl = URL.createObjectURL(svgBlob);
-            
-            // 이미지 로드 및 합성
-            const img = new Image();
-            await new Promise<void>((resolve, reject) => {
-              img.onload = () => {
-                try {
-                  // SVG를 캔버스 크기에 맞춰 그리기
-                  ctx.drawImage(img, 0, 0, compositeCanvas.width, compositeCanvas.height);
-                  console.log("✅ SVG 이미지 합성 완료");
-                  URL.revokeObjectURL(svgUrl);
-                  resolve();
-                } catch (drawError) {
-                  console.error("❌ SVG 그리기 중 오류:", drawError);
-                  URL.revokeObjectURL(svgUrl);
-                  reject(drawError);
-                }
-              };
-              
-              img.onerror = (imgError) => {
-                console.error("❌ SVG 이미지 로드 실패:", imgError);
-                URL.revokeObjectURL(svgUrl);
-                reject(imgError);
-              };
-              
-              img.src = svgUrl;
-            });
-            
-            console.log("✅ 2단계: SVG 주석 레이어 합성 완료");
-            
-          } catch (svgError) {
-            console.warn("⚠️ SVG 합성 실패, 이미지만 저장합니다:", svgError);
-          }
-        } else {
-          console.log("ℹ️ SVG 레이어가 없어 이미지만 캡처합니다");
-        }
-
-        // PNG 데이터 URL 생성
-        const dataURL = compositeCanvas.toDataURL('image/png', 1.0);
-        
-        // 파일명 생성 및 다운로드
-        const now = new Date();
-        const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
-        const filename = `Clarity-Capture_${timestamp}.png`;
-
-        const downloadLink = document.createElement('a');
-        downloadLink.href = dataURL;
-        downloadLink.download = filename;
-        
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-
-        console.log(`✅ 화면 캡처 완료: ${filename}`);
-        console.log(`📊 최종 이미지 크기: ${compositeCanvas.width}x${compositeCanvas.height}`);
-        console.log(`🎯 주석 포함: ${svgLayer ? 'YES' : 'NO'}`);
+        debugLogger.success('✅ 주석이 포함된 화면 캡처가 완료되었습니다.');
         
       } catch (error) {
-        console.error("❌ 화면 캡처 실패:", error);
+        console.error("❌ 고해상도 캡처 실패, 기본 방법 시도:", error);
+        await get().fallbackCapture(viewportId);
+      }
+    },
+
+    // 뷰포트 캡처 준비
+    prepareViewportForCapture: async (viewportId: string) => {
+      const renderingEngine = getRenderingEngine('dicom-rendering-engine');
+      if (!renderingEngine) {
+        throw new Error('렌더링 엔진을 찾을 수 없습니다.');
+      }
+
+      const viewport = renderingEngine.getViewport(viewportId);
+      if (!viewport) {
+        throw new Error(`뷰포트(${viewportId})를 찾을 수 없습니다.`);
+      }
+
+      // 렌더링 완료 대기
+      await viewport.render();
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // 뷰포트 DOM 요소 찾기
+      const viewportElement = viewport.element || 
+                             document.querySelector(`[data-viewport-uid="${viewportId}"]`) ||
+                             document.querySelector('.viewport-element') ||
+                             document.querySelector('.cornerstone-viewport');
+
+      if (!viewportElement) {
+        throw new Error('뷰포트 DOM 요소를 찾을 수 없습니다.');
+      }
+
+      return { viewport, viewportElement };
+    },
+
+    // HTML2Canvas로 고해상도 캡처
+    captureWithHTML2Canvas: async (viewportElement: Element) => {
+      console.log("📦 HTML2Canvas 라이브러리 로딩...");
+      const html2canvas = await import('https://cdn.skypack.dev/html2canvas@1.4.1');
+      
+      // 고해상도 설정
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const highResScale = Math.max(devicePixelRatio, 2);
+      
+      console.log(`🎨 고해상도 캡처 시작 (scale: ${highResScale})...`);
+      
+      const canvas = await html2canvas.default(viewportElement, {
+        backgroundColor: '#000000',
+        useCORS: true,
+        allowTaint: true,
+        scale: highResScale,
+        width: viewportElement.offsetWidth,
+        height: viewportElement.offsetHeight,
+        logging: false,
+        removeContainer: true,
+        imageTimeout: 0,
+        ignoreElements: (element) => element.classList.contains('cornerstone-canvas-background')
+      });
+
+      console.log(`✅ 캡처 완료: ${canvas.width}x${canvas.height}`);
+      return canvas;
+    },
+
+    // 캔버스를 파일로 다운로드
+    downloadCanvasAsFile: async (canvas: HTMLCanvasElement) => {
+      return new Promise<void>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Blob 생성 실패'));
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+          const filename = `Clarity-Capture_${timestamp}.png`;
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          console.log(`✅ 파일 저장 완료: ${filename}`);
+          resolve();
+        }, 'image/png', 1.0);
+      });
+    },
+
+    // 폴백 캡처 (기본 캔버스)
+    fallbackCapture: async (viewportId: string) => {
+      try {
+        const renderingEngine = getRenderingEngine('dicom-rendering-engine');
+        const viewport = renderingEngine.getViewport(viewportId);
+        const canvas = viewport.getCanvas();
+        
+        await get().downloadCanvasAsFile(canvas);
+        debugLogger.success('이미지만 캡처 완료 (주석 제외)');
+        
+      } catch (fallbackError) {
+        console.error("❌ 폴백 방법도 실패:", fallbackError);
+        debugLogger.error('❌ 화면 캡처에 완전히 실패했습니다.');
+        alert('화면을 캡처하는 데 실패했습니다.');
       }
     },
 

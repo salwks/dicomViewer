@@ -95,6 +95,8 @@ function App() {
     isLicenseModalOpen,
     toggleLicenseModal,
     captureViewportAsPng,
+    measurementUnit,
+    setMeasurementUnit,
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
@@ -112,6 +114,8 @@ function App() {
     isLicenseModalOpen: state.isLicenseModalOpen,
     toggleLicenseModal: state.toggleLicenseModal,
     captureViewportAsPng: state.captureViewportAsPng,
+    measurementUnit: state.measurementUnit,
+    setMeasurementUnit: state.setMeasurementUnit,
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -693,9 +697,33 @@ function App() {
                   </h3>
                   <div className="settings-list">
                     <div className="setting-item">
-                      <label>
-                        활성 도구: <strong>{activeTool || "None"}</strong>
+                      <label style={{ fontSize: "12px", color: "#ffffff", marginBottom: "8px", display: "block" }}>
+                        측정 단위
                       </label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#d1d5db", cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="measurementUnit"
+                            value="mm"
+                            checked={measurementUnit === 'mm'}
+                            onChange={(e) => setMeasurementUnit(e.target.value as 'mm' | 'inch')}
+                            style={{ margin: 0 }}
+                          />
+                          밀리미터 (mm)
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#d1d5db", cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="measurementUnit"
+                            value="inch"
+                            checked={measurementUnit === 'inch'}
+                            onChange={(e) => setMeasurementUnit(e.target.value as 'mm' | 'inch')}
+                            style={{ margin: 0 }}
+                          />
+                          인치 (inch)
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

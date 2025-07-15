@@ -97,6 +97,9 @@ export interface ImageInfo {
 // Layout types
 export type LayoutType = '1x1' | '1x2' | '2x1' | '2x2' | '3x3' | '4x4';
 
+// Measurement unit types
+export type MeasurementUnit = 'mm' | 'inch';
+
 export interface LayoutConfig {
   rows: number;
   columns: number;
@@ -185,6 +188,8 @@ export interface DicomViewerState {
   isFlippedHorizontal: boolean;
   isFlippedVertical: boolean;
   currentDicomDataSet: any;
+  isLicenseModalOpen: boolean;
+  measurementUnit: MeasurementUnit;
   
   // Actions
   setActiveViewport: (viewportId: string) => void;
@@ -207,4 +212,11 @@ export interface DicomViewerState {
   flipImage: (direction: 'horizontal' | 'vertical') => void;
   resetImageTransform: () => void;
   setDicomDataSet: (dataSet: any) => void;
+  toggleLicenseModal: () => void;
+  setMeasurementUnit: (unit: MeasurementUnit) => void;
+  captureViewportAsPng: () => Promise<void>;
+  prepareViewportForCapture: (viewportId: string) => Promise<{ viewport: any; viewportElement: Element; }>;
+  captureWithHTML2Canvas: (viewportElement: Element) => Promise<HTMLCanvasElement>;
+  downloadCanvasAsFile: (canvas: HTMLCanvasElement) => Promise<void>;
+  fallbackCapture: (viewportId: string) => Promise<void>;
 }

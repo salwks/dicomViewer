@@ -30,6 +30,7 @@ import {
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
 import { useDicomStore } from '../store/dicom-store';
+import { convertPixelToUnit, convertPixelAreaToUnit, getPixelSpacingFromMetadata, formatAngle } from '../utils/measurement-converter';
 
 interface DicomViewportProps {
   onError: (error: string) => void;
@@ -52,14 +53,57 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     activateToolInViewport, 
     addAnnotation, 
     updateAnnotation, 
-    removeAnnotation
+    removeAnnotation,
+    measurementUnit,
+    currentDicomDataSet
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     activateToolInViewport: state.activateToolInViewport,
     addAnnotation: state.addAnnotation,
     updateAnnotation: state.updateAnnotation,
-    removeAnnotation: state.removeAnnotation
+    removeAnnotation: state.removeAnnotation,
+    measurementUnit: state.measurementUnit,
+    currentDicomDataSet: state.currentDicomDataSet
   }));
+
+  // Helper function to update annotation text with selected measurement unit
+  const updateAnnotationText = (annotation: any) => {
+    try {
+      // Get pixel spacing from DICOM metadata
+      const pixelSpacing = getPixelSpacingFromMetadata(currentDicomDataSet);
+      
+      // Update annotation text based on tool type and measurement unit
+      if (annotation.data?.cachedStats) {
+        const stats = annotation.data.cachedStats;
+        
+        // For length-based measurements (Length, Bidirectional)
+        if (stats.length !== undefined) {
+          const convertedLength = convertPixelToUnit(stats.length, pixelSpacing, measurementUnit);
+          if (annotation.data.handles?.textBox) {
+            annotation.data.text = convertedLength;
+          }
+        }
+        
+        // For area measurements (ROI tools)
+        if (stats.area !== undefined) {
+          const convertedArea = convertPixelAreaToUnit(stats.area, pixelSpacing, measurementUnit);
+          if (annotation.data.handles?.textBox) {
+            annotation.data.text = convertedArea;
+          }
+        }
+        
+        // For angle measurements (keep as degrees)
+        if (stats.angle !== undefined) {
+          const formattedAngle = formatAngle(stats.angle);
+          if (annotation.data.handles?.textBox) {
+            annotation.data.text = formattedAngle;
+          }
+        }
+      }
+    } catch (error) {
+      debugLogger.error('주석 텍스트 업데이트 실패:', error);
+    }
+  };
 
   // Tool activation through Zustand store
   const handleToolActivation = (toolName: string) => {
@@ -234,6 +278,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         // 새로 생성된 주석은 기본적으로 보이도록 설정
         annotation.isVisible = true;
 
+        // Update annotation text with selected measurement unit
+        updateAnnotationText(annotation);
+
         // 스토어에 추가할 주석 데이터 구성
         const annotationData = {
           annotationUID: annotation.annotationUID,
@@ -260,6 +307,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       try {
         const annotation = event.detail?.annotation;
         if (annotation && annotation.annotationUID) {
+          // Update annotation text with selected measurement unit
+          updateAnnotationText(annotation);
+          
           const updates = {
             data: annotation.data,
             metadata: annotation.metadata
@@ -319,6 +369,44 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation]);
+
+  // Handle measurement unit changes for existing annotations
+  useEffect(() => {
+    if (!isViewportInitialized.current) return;
+
+    debugLogger.log(`측정 단위가 ${measurementUnit}로 변경됨 - 기존 주석 업데이트 시작`);
+    
+    try {
+      // Get the annotation manager
+      const renderingEngine = renderingEngineRef.current;
+      if (!renderingEngine) return;
+
+      const viewport = renderingEngine.getViewport('dicom-viewport');
+      if (!viewport) return;
+
+      // Get all annotations from CornerstoneJS annotation state
+      const annotationManager = annotation.state.getAnnotationManager();
+      const allAnnotations = annotationManager.getAllAnnotations();
+
+      // Update text for all existing annotations
+      Object.values(allAnnotations).forEach((frameAnnotations: any) => {
+        Object.values(frameAnnotations).forEach((toolAnnotations: any) => {
+          if (Array.isArray(toolAnnotations)) {
+            toolAnnotations.forEach((ann: any) => {
+              updateAnnotationText(ann);
+            });
+          }
+        });
+      });
+
+      // Trigger a render to show updated text
+      viewport.render();
+      
+      debugLogger.success(`✅ 기존 주석 ${measurementUnit} 단위로 업데이트 완료`);
+    } catch (error) {
+      debugLogger.error('기존 주석 단위 업데이트 실패:', error);
+    }
+  }, [measurementUnit, currentDicomDataSet]);
 
 
   // 정리
