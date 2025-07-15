@@ -59,7 +59,7 @@ export const useDicomStore = create<DicomViewerState>()(
     isFlippedVertical: false,
     currentDicomDataSet: null,
     isLicenseModalOpen: false,
-    measurementUnit: 'mm' as MeasurementUnit,
+    // displayUnit 제거 - mm로 고정
 
     // Actions
     setActiveViewport: (viewportId: string) => {
@@ -506,11 +506,7 @@ export const useDicomStore = create<DicomViewerState>()(
       set((state) => ({ isLicenseModalOpen: !state.isLicenseModalOpen }));
     },
 
-    // 측정 단위 설정
-    setMeasurementUnit: (unit: MeasurementUnit) => {
-      set({ measurementUnit: unit });
-      console.log(`📏 측정 단위 변경: ${unit}`);
-    },
+    // setDisplayUnit 제거 - mm로 고정
 
     // 뷰포트 화면 캡처 및 PNG 저장
     captureViewportAsPng: async () => {

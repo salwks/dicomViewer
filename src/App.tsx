@@ -36,6 +36,7 @@ import { DicomRenderer } from "./components/DicomRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
 import { useDicomStore } from "./store/dicom-store";
+// 측정값 관련 import 제거 - 더 이상 사용하지 않음
 import "./App.css";
 
 /**
@@ -95,8 +96,6 @@ function App() {
     isLicenseModalOpen,
     toggleLicenseModal,
     captureViewportAsPng,
-    measurementUnit,
-    setMeasurementUnit,
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
     setActiveTool: state.setActiveTool,
@@ -114,8 +113,6 @@ function App() {
     isLicenseModalOpen: state.isLicenseModalOpen,
     toggleLicenseModal: state.toggleLicenseModal,
     captureViewportAsPng: state.captureViewportAsPng,
-    measurementUnit: state.measurementUnit,
-    setMeasurementUnit: state.setMeasurementUnit,
   }));
 
   // 주석은 이제 Zustand 스토어에서 관리됨
@@ -591,11 +588,12 @@ function App() {
                                       title="클릭하여 이름 편집"
                                     >
                                       {annotation.data?.label ||
-                                        annotation.data?.text ||
                                         `${annotation.toolName} #${index + 1}`}
                                     </span>
                                   )}
                                 </div>
+
+                                {/* 측정값 완전 제거 - ID와 편집 가능한 이름만 표시 */}
 
                                 {/* 도구 정보 div 숨김 처리 */}
                                 <div style={{ display: "none" }}>
@@ -690,43 +688,7 @@ function App() {
                 </div>
 
                 {/* Settings */}
-                <div className="sidebar-section">
-                  <h3 className="sidebar-section-title">
-                    <Settings size={16} />
-                    설정
-                  </h3>
-                  <div className="settings-list">
-                    <div className="setting-item">
-                      <label style={{ fontSize: "12px", color: "#ffffff", marginBottom: "8px", display: "block" }}>
-                        측정 단위
-                      </label>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#d1d5db", cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="measurementUnit"
-                            value="mm"
-                            checked={measurementUnit === 'mm'}
-                            onChange={(e) => setMeasurementUnit(e.target.value as 'mm' | 'inch')}
-                            style={{ margin: 0 }}
-                          />
-                          밀리미터 (mm)
-                        </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#d1d5db", cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="measurementUnit"
-                            value="inch"
-                            checked={measurementUnit === 'inch'}
-                            onChange={(e) => setMeasurementUnit(e.target.value as 'mm' | 'inch')}
-                            style={{ margin: 0 }}
-                          />
-                          인치 (inch)
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* 단위 설정 제거 - mm로 고정 */}
               </div>
 
               {/* Footer */}

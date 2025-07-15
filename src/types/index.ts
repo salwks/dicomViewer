@@ -189,7 +189,7 @@ export interface DicomViewerState {
   isFlippedVertical: boolean;
   currentDicomDataSet: any;
   isLicenseModalOpen: boolean;
-  measurementUnit: MeasurementUnit;
+  // displayUnit 제거 - mm로 고정
   
   // Actions
   setActiveViewport: (viewportId: string) => void;
@@ -213,7 +213,7 @@ export interface DicomViewerState {
   resetImageTransform: () => void;
   setDicomDataSet: (dataSet: any) => void;
   toggleLicenseModal: () => void;
-  setMeasurementUnit: (unit: MeasurementUnit) => void;
+  // setDisplayUnit 제거 - mm로 고정
   captureViewportAsPng: () => Promise<void>;
   prepareViewportForCapture: (viewportId: string) => Promise<{ viewport: any; viewportElement: Element; }>;
   captureWithHTML2Canvas: (viewportElement: Element) => Promise<HTMLCanvasElement>;

@@ -30,7 +30,7 @@ import {
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
 import { useDicomStore } from '../store/dicom-store';
-import { convertPixelToUnit, convertPixelAreaToUnit, getPixelSpacingFromMetadata, formatAngle } from '../utils/measurement-converter';
+// 측정값 변환 import 제거 - 간단한 mm 변환만 사용
 
 interface DicomViewportProps {
   onError: (error: string) => void;
@@ -54,7 +54,6 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     addAnnotation, 
     updateAnnotation, 
     removeAnnotation,
-    measurementUnit,
     currentDicomDataSet
   } = useDicomStore((state) => ({
     activeTool: state.activeTool,
@@ -62,46 +61,68 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     addAnnotation: state.addAnnotation,
     updateAnnotation: state.updateAnnotation,
     removeAnnotation: state.removeAnnotation,
-    measurementUnit: state.measurementUnit,
     currentDicomDataSet: state.currentDicomDataSet
   }));
 
-  // Helper function to update annotation text with selected measurement unit
+  /**
+   * 주석 텍스트를 mm 단위로 변환
+   * Length 도구에만 적용되며, 실패 시 기본 표시 유지
+   */
   const updateAnnotationText = (annotation: any) => {
     try {
-      // Get pixel spacing from DICOM metadata
-      const pixelSpacing = getPixelSpacingFromMetadata(currentDicomDataSet);
+      if (!annotation.data?.cachedStats) {
+        console.log('⚠️ cachedStats 없음');
+        return;
+      }
       
-      // Update annotation text based on tool type and measurement unit
-      if (annotation.data?.cachedStats) {
-        const stats = annotation.data.cachedStats;
+      const stats = annotation.data.cachedStats;
+      console.log('🔍 stats:', stats);
+      
+      const imageId = Object.keys(stats)[0];
+      console.log('🔍 imageId:', imageId);
+      
+      const measurementData = stats[imageId];
+      console.log('🔍 measurementData:', measurementData);
+      console.log('🔍 measurementData의 모든 속성:', Object.keys(measurementData || {}));
+      console.log('🔍 measurementData.length:', measurementData?.length);
+      console.log('🔍 measurementData.area:', measurementData?.area);
+      console.log('🔍 measurementData.angle:', measurementData?.angle);
+      
+      // Length 측정 (길이 도구)
+      if (measurementData?.length !== undefined && measurementData.length > 0) {
+        const mmText = `${measurementData.length.toFixed(1)} mm`;
+        console.log(`📏 길이 변환: ${measurementData.length} → ${mmText}`);
         
-        // For length-based measurements (Length, Bidirectional)
-        if (stats.length !== undefined) {
-          const convertedLength = convertPixelToUnit(stats.length, pixelSpacing, measurementUnit);
-          if (annotation.data.handles?.textBox) {
-            annotation.data.text = convertedLength;
-          }
+        annotation.data.text = mmText;
+        
+        // textBox가 있으면 추가 설정
+        if (annotation.data.handles?.textBox) {
+          annotation.data.handles.textBox.text = mmText;
+          console.log('✅ textBox에도 설정 완료');
         }
         
-        // For area measurements (ROI tools)
-        if (stats.area !== undefined) {
-          const convertedArea = convertPixelAreaToUnit(stats.area, pixelSpacing, measurementUnit);
-          if (annotation.data.handles?.textBox) {
-            annotation.data.text = convertedArea;
-          }
+        console.log('✅ 최종 annotation.data.text:', annotation.data.text);
+      }
+      // Area 측정 (ROI 도구들)
+      else if (measurementData?.area !== undefined && measurementData.area > 0) {
+        const mmSquaredText = `${measurementData.area.toFixed(1)} mm²`;
+        console.log(`📐 면적 변환: ${measurementData.area} → ${mmSquaredText}`);
+        
+        annotation.data.text = mmSquaredText;
+        
+        // textBox가 있으면 추가 설정
+        if (annotation.data.handles?.textBox) {
+          annotation.data.handles.textBox.text = mmSquaredText;
+          console.log('✅ textBox에도 설정 완료');
         }
         
-        // For angle measurements (keep as degrees)
-        if (stats.angle !== undefined) {
-          const formattedAngle = formatAngle(stats.angle);
-          if (annotation.data.handles?.textBox) {
-            annotation.data.text = formattedAngle;
-          }
-        }
+        console.log('✅ 최종 annotation.data.text:', annotation.data.text);
+      } else {
+        console.log('⚠️ 지원되는 측정 데이터 없음');
       }
     } catch (error) {
-      debugLogger.error('주석 텍스트 업데이트 실패:', error);
+      // 에러 시 기본 동작 유지
+      console.log('⚠️ mm 변환 실패:', error);
     }
   };
 
@@ -274,12 +295,22 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
 
         console.log('📝 주석 UID:', annotation.annotationUID);
         console.log('🔧 도구 이름:', annotation.metadata?.toolName);
+        console.log('📊 주석 데이터:', annotation.data);
+        console.log('📏 cachedStats:', annotation.data?.cachedStats);
 
         // 새로 생성된 주석은 기본적으로 보이도록 설정
         annotation.isVisible = true;
 
-        // Update annotation text with selected measurement unit
+        // Length 도구의 텍스트를 mm 단위로 변환
         updateAnnotationText(annotation);
+        
+        // CornerstoneJS가 텍스트를 덮어쓰지 못하도록 지속적으로 mm 텍스트 유지
+        const keepMmText = () => {
+          setTimeout(() => updateAnnotationText(annotation), 100);
+          setTimeout(() => updateAnnotationText(annotation), 300);
+          setTimeout(() => updateAnnotationText(annotation), 500);
+        };
+        keepMmText();
 
         // 스토어에 추가할 주석 데이터 구성
         const annotationData = {
@@ -309,6 +340,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         if (annotation && annotation.annotationUID) {
           // Update annotation text with selected measurement unit
           updateAnnotationText(annotation);
+          
+          // CornerstoneJS가 덮어쓰는 것을 방지하기 위해 약간의 지연 후 다시 설정
+          setTimeout(() => updateAnnotationText(annotation), 50);
           
           const updates = {
             data: annotation.data,
@@ -370,43 +404,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation]);
 
-  // Handle measurement unit changes for existing annotations
-  useEffect(() => {
-    if (!isViewportInitialized.current) return;
-
-    debugLogger.log(`측정 단위가 ${measurementUnit}로 변경됨 - 기존 주석 업데이트 시작`);
-    
-    try {
-      // Get the annotation manager
-      const renderingEngine = renderingEngineRef.current;
-      if (!renderingEngine) return;
-
-      const viewport = renderingEngine.getViewport('dicom-viewport');
-      if (!viewport) return;
-
-      // Get all annotations from CornerstoneJS annotation state
-      const annotationManager = annotation.state.getAnnotationManager();
-      const allAnnotations = annotationManager.getAllAnnotations();
-
-      // Update text for all existing annotations
-      Object.values(allAnnotations).forEach((frameAnnotations: any) => {
-        Object.values(frameAnnotations).forEach((toolAnnotations: any) => {
-          if (Array.isArray(toolAnnotations)) {
-            toolAnnotations.forEach((ann: any) => {
-              updateAnnotationText(ann);
-            });
-          }
-        });
-      });
-
-      // Trigger a render to show updated text
-      viewport.render();
-      
-      debugLogger.success(`✅ 기존 주석 ${measurementUnit} 단위로 업데이트 완료`);
-    } catch (error) {
-      debugLogger.error('기존 주석 단위 업데이트 실패:', error);
-    }
-  }, [measurementUnit, currentDicomDataSet]);
+  // displayUnit useEffect 제거 - mm로 고정이므로 불필요
 
 
   // 정리
