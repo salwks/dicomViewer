@@ -55,9 +55,10 @@ CornerstoneJS 3D 라이브러리를 기반으로 구축되어 고성능 의료 �
 
 ### 📱 사용자 인터페이스
 
-- **툴바**: 자주 사용하는 도구들을 한 번에 접근
-- **사이드바**: 주석 목록 관리 및 파일 정보 확인
-- **상태바**: 현재 도구 상태 및 파일 로딩 진행률 표시
+- **어두운 테마**: 의료 영상 관찰에 적합한 다크 테마 적용
+- **직관적인 툴바**: 도구별 그룹화 및 아이콘 기반 인터페이스
+- **사이드바**: 파일 업로드, 상태 정보, 주석 관리 통합
+- **반응형 레이아웃**: 다양한 화면 크기에 최적화된 인터페이스
 
 ## 설치 방법
 
@@ -287,7 +288,7 @@ const stats = {
 
 ### UI/UX
 - **Lucide React**: 아이콘 라이브러리
-- **CSS3**: 반응형 스타일링
+- **CSS3**: 커스텀 다크 테마 스타일링
 - **HTML2Canvas**: 화면 캡처
 
 ### 개발 도구
@@ -412,100 +413,75 @@ console.log('✅ 새 주석을 스토어에 추가');
 
 ## 변경사항 리포트
 
-### 🚀 Recent Problem Fixes
+### 🚀 최근 해결된 문제들
 
-### Critical Issues Resolved ✅
+### 핵심 문제 해결 ✅
 
-**1. Mock Data Loading (CORS) Issues**
-- **Problem**: `Cross origin requests are only supported for HTTP` errors when using `mock://` protocol
-- **Solution**: Implemented custom `mockImageLoader` with proper Cornerstone3D interface
-- **Files**: `src/utils/mockImageLoader.ts` - Custom image loader for mock data
+**1. DICOM 파일 로딩 문제**
+- **문제**: 첫 번째 DICOM 파일이 무시되고 두 번째 파일부터 로드됨
+- **해결**: `use-dicom-loader.ts`의 파일 처리 로직을 분석하고 0-기반 인덱싱 확인
+- **파일**: 파일 처리 순서 및 상태 관리 최적화
 
-**2. Data Destructuring Errors**
-- **Problem**: `TypeError: Right side of assignment cannot be destructured`
-- **Solution**: Enhanced error handling and proper mock data generation
-- **Files**: `MockDataManager` class with comprehensive data validation
+**2. 무한 로딩 상태 문제**
+- **문제**: 파일 로드 후 로딩 상태가 해제되지 않음
+- **해결**: 완전한 상태 초기화 로직 구현
+- **파일**: `App.tsx`의 `handleFiles` 함수 개선
 
-**3. Viewport Size Warnings**
-- **Problem**: `Viewport is too small – 0 – 0` warnings
-- **Solution**: Improved CSS sizing with proper min-width/min-height
-- **Files**: Enhanced CSS in `public/index.html`
+**3. 보안 인증 시스템**
+- **문제**: 사용자 인증 및 권한 관리 필요
+- **해결**: JWT 기반 인증 시스템 구현
+- **파일**: `SecurityLogin.tsx`, `LoginModern.tsx`, `SecurityDashboard.tsx`
 
-**4. UI State Management**
-- **Problem**: Sidebar disappearing during series comparison
-- **Solution**: Separate viewport containers for main and comparison modes
-- **Files**: Dual viewport system with proper mode switching
+**4. 입력 검증 및 XSS 방어**
+- **문제**: 사용자 입력에 대한 보안 검증 필요
+- **해결**: 포괄적인 입력 검증 시스템 구현
+- **파일**: `input-validation.ts`, `xss-protection.ts`
 
-**5. Multi-Viewport Tool Group Conflicts** ✅
-- **Problem**: Annotation tools not working in multi-layout mode, forced W/L only
-- **Solution**: Enhanced tool group management with mode-aware activation
-- **Files**: `MultiViewportToolManager` improvements and `activateToolForCurrentMode` function
+**5. 측정 단위 표시 개선**
+- **문제**: 측정 도구가 픽셀 단위로 표시됨
+- **해결**: Length 도구에서 mm 단위 표시 구현
+- **파일**: `DicomViewport.tsx`의 측정값 변환 로직
 
-**6. Layout Switching Tool Issues** ✅
-- **Problem**: Annotation tools not working after switching back from multi to single layout
-- **Solution**: Proper tool group cleanup and reconnection for main viewer
-- **Files**: Added `reconnectTools()` method to DicomViewer class
+### 주요 기능 추가 🆕
 
-**7. Sidebar Responsive Issues** ✅
-- **Problem**: Sidebar size not fixed, viewport taking 100% on different resolutions
-- **Solution**: Fixed sidebar width with `flex-shrink: 0` and proper min/max width
-- **Files**: Enhanced CSS with responsive design fixes
-
-**8. Measurement Unit Display** ✅
-- **Problem**: Measurement tools showing pixel units instead of real-world units
-- **Solution**: Implemented mm unit display for Length measurements
-- **Files**: `DicomViewport.tsx` with CornerstoneJS data structure integration
-
-### New Features Added 🆕
-
-**Mock Image Loader System**
+**보안 강화 시스템**
 ```typescript
-// Automatic mock data generation with realistic patterns
-const mockData = MockDataManager.getInstance();
-const imageIds = mockData.generateMockSeries('series1', 20);
+// 파일 접근 검사
+const hasAccess = securityStore.checkFileAccess(file.name);
 
-// Custom loader registration
-registerMockImageLoader();
+// 입력 검증
+const validation = validateFileName(file.name, {
+  logAttempts: true
+});
 ```
 
-**Enhanced UI Controls**
-- **🏠 Exit Button**: Return to main viewer from comparison mode
-- **Sidebar Preservation**: Annotation tools remain accessible
-- **Mode Switching**: Seamless transition between viewers
+**다크 테마 UI**
+- **🎨 의료 영상 최적화**: 어두운 배경으로 영상 관찰 최적화
+- **🔧 도구 그룹화**: 기본 도구, 측정 도구, ROI 도구 등 카테고리별 분류
+- **📱 반응형 디자인**: 다양한 화면 크기에 대응
 
-**Smart Tool Management System**
+**주석 관리 시스템**
 ```typescript
-// Mode-aware tool activation
-function activateToolForCurrentMode(toolName: string, toolId: string) {
-    const currentLayout = layoutManager.getCurrentLayout();
-    if (currentLayout === '1x1') {
-        viewer.activateTool(toolName); // Main viewer tools
-    } else {
-        multiToolManager.activateTool(toolName); // Multi-viewport tools
-    }
-}
+// 주석 라벨 편집
+const startEditingAnnotation = (annotationUID: string, currentLabel: string) => {
+  // 보안 검증 후 편집 허용
+  const validation = validateAnnotationLabel(editingValue, {
+    maxLength: 100,
+    sanitize: true
+  });
+};
 ```
 
-**Fixed Annotation Workflow**
-- ✅ **1x1 Layout**: All annotation tools working with main viewer tool group
-- ✅ **Multi-Layout**: Annotation tools working with multi-viewport tool group  
-- ✅ **Layout Switch**: Proper tool group cleanup and reconnection
-- ✅ **Sidebar Always Available**: Fixed width sidebar (300px) on all screen sizes
+**통합 상태 관리**
+- ✅ **Zustand 스토어**: 전역 상태 관리 시스템
+- ✅ **주석 관리**: 실시간 주석 추가/편집/삭제
+- ✅ **이미지 조작**: 회전, 반전, 확대/축소 상태 관리
+- ✅ **보안 상태**: 인증 및 권한 관리
 
-**Measurement Unit System**
-- ✅ **Viewport Display**: Length measurements shown in mm units
-- ✅ **Annotation List**: Clean display with ID and editable names only
-- ✅ **CornerstoneJS Integration**: Proper data structure handling for real measurements
-- ✅ **Error Handling**: Fallback to default display if conversion fails
+### 기술 구현 세부사항
 
-### Technical Implementation Details
-
-**updateAnnotationText Function**
+**측정값 mm 변환 함수**
 ```typescript
-/**
- * 주석 텍스트를 mm 단위로 변환
- * Length 도구에만 적용되며, 실패 시 기본 표시 유지
- */
 const updateAnnotationText = (annotation: any) => {
   try {
     if (!annotation.data?.cachedStats) return;
@@ -517,95 +493,57 @@ const updateAnnotationText = (annotation: any) => {
     if (measurementData?.length !== undefined && measurementData.length > 0) {
       const mmText = `${measurementData.length.toFixed(1)} mm`;
       annotation.data.text = mmText;
-      
-      // textBox가 있으면 추가 설정
-      if (annotation.data.handles?.textBox) {
-        annotation.data.handles.textBox.text = mmText;
-      }
     }
   } catch (error) {
-    // 에러 시 기본 동작 유지
     console.log('⚠️ mm 변환 실패, 기본 표시 유지');
   }
 };
 ```
 
-**Key Discovery: CornerstoneJS Data Structure**
+**CornerstoneJS 데이터 구조 이해**
 ```typescript
-// CornerstoneJS measurement data structure
+// CornerstoneJS 측정 데이터 구조
 stats = {
   'imageId:wadouri:blob:...': {
-    length: 155.973453683961,  // Already calculated in mm
+    length: 155.973453683961,  // 이미 mm 단위로 계산됨
     unit: "mm",
-    area: 6374.482242475729    // Already calculated in mm²
+    area: 6374.482242475729    // 이미 mm² 단위로 계산됨
   }
 }
-
-// Access pattern: stats[imageId].length (not stats.length)
 ```
 
-### Development Process Issues and Solutions
+### 보안 기능
 
-**1. CornerstoneJS Data Structure Understanding**
-- **Problem**: `stats.length` access pattern didn't work
-- **Cause**: CornerstoneJS uses `stats[imageId].length` structure
-- **Solution**: Discovered and implemented correct data structure access
+**강화된 보안 시스템**
+- **🔐 인증 시스템**: JWT 기반 사용자 인증
+- **🛡️ 입력 검증**: XSS 및 악성 입력 방어
+- **📝 로깅**: 보안 이벤트 추적
+- **🔒 에러 처리**: 보안 정보 노출 방지
 
-**2. Text Overwriting Issues**
-- **Problem**: After mm conversion, CornerstoneJS overwrote text back to pixels
-- **Solution**: Set both `annotation.data.text` and `textBox.text` properties
+### 프로젝트 구조
 
-**3. Sidebar Measurement Display**
-- **Problem**: Measurement values unintentionally displayed in annotation list
-- **Cause**: `annotation.data?.text` display logic
-- **Solution**: Removed `text` reference, display only `label` and default names
+**주요 수정 파일**
+- `src/App.tsx` - 메인 애플리케이션 컴포넌트
+- `src/App.css` - 다크 테마 스타일링
+- `src/components/DicomViewport.tsx` - 핵심 렌더링 및 측정 로직
+- `src/store/` - Zustand 상태 관리 스토어들
+- `src/utils/` - 보안 및 유틸리티 함수들
 
-**4. Complexity Management**
-- **Problem**: Increased code complexity with mm/inch conversion features
-- **Solution**: Simplified to mm-only display for better maintainability
+### 현재 상태
 
-### File Change Summary
+**✅ 작동 중인 기능**
+1. **DICOM 파일 로딩**: 드래그 앤 드롭 및 파일 선택
+2. **측정 도구**: 길이, 각도, 면적 측정 (mm 단위)
+3. **주석 관리**: 실시간 편집 및 삭제
+4. **이미지 조작**: 회전, 반전, 확대/축소
+5. **화면 캡처**: PNG 이미지 저장
+6. **보안 인증**: 사용자 로그인 및 권한 관리
 
-**Major Modified Files**
-- `src/components/DicomViewport.tsx` - Core mm conversion logic
-- `src/App.tsx` - Annotation list cleanup, UI element removal
-- `src/store/dicom-store.ts` - displayUnit state management removal
-- `src/types/index.ts` - displayUnit type definitions removal
-
-**Deprecated Usage**
-- `src/utils/display-unit-converter.ts` - Partially deprecated
-- `src/utils/measurement-converter.ts` - Partially deprecated
-
-### Current Status
-
-**✅ Working Features**
-1. **Annotation Drawing**: All measurement tools working normally
-2. **Viewport mm Display**: Length tool shows mm units
-3. **Annotation List Management**: ID display and text editing functionality
-4. **Annotation Deletion**: Working normally
-5. **Viewport Capture**: PNG save functionality working
-
-**⚪ Limitations**
-1. **Area Measurement**: Still showing pixel units (expandable in future)
-2. **Angle Measurement**: Shows degree (°) units (no conversion needed)
-3. **Complex Unit Conversion**: Fixed to mm (per user requirements)
-
-### Future Expansion Possibilities
-
-**1. Apply mm to Other Measurement Tools**
-```typescript
-// Example: Adding Area measurement
-if (measurementData?.area !== undefined && measurementData.area > 0) {
-  const mmSquaredText = `${measurementData.area.toFixed(1)} mm²`;
-  annotation.data.text = mmSquaredText;
-}
-```
-
-**2. Restore Unit Selection Feature**
-If needed, can re-add `displayUnit` state management for mm/inch conversion functionality
-
-**3. Support Other DICOM Tags**
-More accurate measurements possible using actual pixel spacing metadata
+**⚪ 향후 개선사항**
+1. **추가 측정 도구**: 더 많은 측정 도구 지원
+2. **3D 볼륨 렌더링**: 3D 의료 영상 지원
+3. **PACS 연동**: 의료 영상 시스템 통합
+4. **다국어 지원**: 영어 및 기타 언어 지원
 
 ---
 
