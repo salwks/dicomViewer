@@ -1,0 +1,109 @@
+# GitHub Dependabot Configuration
+# Automatically monitor dependencies and create pull requests for security patches
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # Monitor npm dependencies in the root directory
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    
+    # Security and maintenance settings
+    open-pull-requests-limit: 10
+    versioning-strategy: "auto"
+    
+    # Pull request configuration
+    pull-request-branch-name:
+      separator: "/"
+    
+    # Labels for dependency updates
+    labels:
+      - "dependencies"
+      - "security"
+      - "automated"
+    
+    # Reviewers for security updates (optional - replace with actual usernames)
+    reviewers:
+      - "security-team"
+    
+    # Assignees for critical security updates
+    assignees:
+      - "security-team"
+    
+    # Commit message configuration
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    
+    # Allow automatic merging for patch-level security updates
+    # Note: This should be used carefully and only after proper testing setup
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+      - dependency-type: "indirect"
+        update-type: "security"
+    
+    # Group related updates together
+    groups:
+      cornerstone-security:
+        patterns:
+          - "@cornerstonejs/*"
+        update-types:
+          - "security"
+          - "patch"
+      
+      dev-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "development"
+        update-types:
+          - "security"
+          - "patch"
+      
+      production-security:
+        patterns:
+          - "*"
+        dependency-type: "production"
+        update-types:
+          - "security"
+    
+    # Ignore specific dependencies if needed
+    ignore:
+      # Example: Ignore major version updates for stable packages
+      - dependency-name: "@cornerstonejs/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@cornerstonejs/tools"
+        update-types: ["version-update:semver-major"]
+      # Ignore specific vulnerable packages that have no fix yet
+      # - dependency-name: "vulnerable-package"
+      #   versions: ["1.0.0"]
+    
+    # Target branch for pull requests
+    target-branch: "master"
+    
+    # Rebase strategy
+    rebase-strategy: "auto"
+
+  # Monitor GitHub Actions workflows (if any exist)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "Asia/Seoul"
+    
+    labels:
+      - "github-actions"
+      - "security"
+      - "automated"
+    
+    # Keep GitHub Actions up to date for security
+    open-pull-requests-limit: 5

@@ -152,7 +152,8 @@ export type CreateAnnotationData = Omit<AnnotationData, 'annotationUID'> & {
   annotationUID?: string;
 };
 
-// State management types for Zustand store
+// State management types for Zustand store (LEGACY - now using sliced stores)
+// @deprecated Use individual stores: AnnotationStoreState, ViewportStoreState, UIStoreState
 export interface DicomViewerState {
   // Viewport state
   viewports: Map<string, ViewportConfig>;

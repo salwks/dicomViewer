@@ -1,9 +1,9 @@
 {
 	"meta": {
-		"generatedAt": "2025-07-10T20:27:10.775Z",
+		"generatedAt": "2025-07-15T09:27:28.928Z",
 		"tasksAnalyzed": 10,
 		"totalTasks": 10,
-		"analysisCount": 10,
+		"analysisCount": 20,
 		"thresholdScore": 5,
 		"projectName": "Taskmaster",
 		"usedResearch": true
@@ -88,6 +88,86 @@
 			"recommendedSubtasks": 7,
 			"expansionPrompt": "Expand into: (1) Implement series manager, (2) Implement stack navigation tool, (3) Create series browser UI, (4) Create thumbnail viewer UI, (5) Integrate navigation controls, (6) Handle image/series selection events, (7) Test navigation with large and multiple series.",
 			"reasoning": "Series navigation involves managing collections of images, efficient UI updates, and responsive navigation controls. Handling large datasets and ensuring smooth user experience increases the complexity."
+		},
+		{
+			"taskId": 11,
+			"taskTitle": "Dependency Vulnerability Analysis",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down the process into: (1) Preparation and environment setup, (2) Running npm audit, (3) Documenting vulnerabilities, (4) Applying automatic fixes, (5) Manual remediation and research, (6) Verification and reporting.",
+			"reasoning": "This task involves multiple steps, including both automated and manual processes, and requires careful documentation and validation. The need to research and manually update dependencies adds to the complexity, but the process is well-defined and follows standard security practices."
+		},
+		{
+			"taskId": 12,
+			"taskTitle": "Configure Dependabot for Automated Vulnerability Alerts",
+			"complexityScore": 4,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Expand into: (1) Creating the configuration file, (2) Setting up scan frequency and PR automation, (3) Configuring notifications, (4) Verifying and testing the setup.",
+			"reasoning": "Setting up Dependabot is a straightforward configuration task with clear documentation and minimal code changes. Testing the setup adds a small amount of complexity."
+		},
+		{
+			"taskId": 13,
+			"taskTitle": "Implement XSS Protection with DOMPurify",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide into: (1) Installing dependencies, (2) Importing and integrating DOMPurify, (3) Refactoring annotation label logic, (4) Applying sanitization to all user inputs, (5) Creating a sanitization utility, (6) Writing and running tests.",
+			"reasoning": "This task requires code changes across multiple input points, careful integration to avoid breaking functionality, and comprehensive testing. Ensuring consistent sanitization and not impacting user experience increases complexity."
+		},
+		{
+			"taskId": 14,
+			"taskTitle": "Configure Security HTTP Headers with Vite Plugin",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand into: (1) Installing the plugin, (2) Modifying Vite config, (3) Defining and tuning header policies, (4) Testing in development and production, (5) Adjusting based on feedback.",
+			"reasoning": "While the plugin simplifies header management, defining a secure and functional Content-Security-Policy and validating it across environments requires careful attention and iterative testing."
+		},
+		{
+			"taskId": 15,
+			"taskTitle": "Implement Production Environment Log Management",
+			"complexityScore": 4,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break into: (1) Locating and reviewing logging utilities, (2) Refactoring log functions for environment checks, (3) Adding configuration options, (4) Testing in both environments.",
+			"reasoning": "This is a targeted refactor with clear boundaries and minimal risk, but requires thorough testing to ensure no sensitive data is logged in production."
+		},
+		{
+			"taskId": 16,
+			"taskTitle": "Implement Secure Data Storage for User Preferences",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Expand into: (1) Reviewing current storage usage, (2) Implementing encryption utilities, (3) Refactoring storage calls, (4) Handling errors and migration, (5) Installing dependencies, (6) Testing and validation.",
+			"reasoning": "Encrypting local storage and ensuring backward compatibility, error handling, and migration from old formats adds moderate complexity, especially with the need for robust testing."
+		},
+		{
+			"taskId": 17,
+			"taskTitle": "Implement Input Validation for DICOM Parameters",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide into: (1) Identifying all input points, (2) Designing validation utilities, (3) Integrating validation into UI, (4) Adding server-side validation if needed, (5) Implementing error handling and feedback, (6) Writing comprehensive tests.",
+			"reasoning": "Comprehensive input validation across the application, including both client and potential server-side, requires careful design, integration, and extensive testing to ensure security and usability."
+		},
+		{
+			"taskId": 18,
+			"taskTitle": "Implement Secure Error Handling",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand into: (1) Creating the error handling utility, (2) Refactoring code to use the utility, (3) Implementing error boundaries in React, (4) Integrating with error reporting services, (5) Testing in different environments.",
+			"reasoning": "Centralizing error handling and ensuring no sensitive data leaks, while maintaining user-friendly messages and integrating with error reporting, is moderately complex but follows established patterns."
+		},
+		{
+			"taskId": 19,
+			"taskTitle": "Implement Security Scanning in CI/CD Pipeline",
+			"complexityScore": 6,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down into: (1) Adding npm audit to CI/CD, (2) Integrating static analysis tools, (3) Creating security ESLint config, (4) Installing dependencies, (5) Configuring pipeline failure conditions, (6) Testing and validation.",
+			"reasoning": "Integrating multiple security tools into CI/CD, configuring them to fail builds on issues, and ensuring reliable reporting requires coordination and validation but is well-supported by modern CI/CD platforms."
+		},
+		{
+			"taskId": 20,
+			"taskTitle": "Create Security Documentation and Guidelines",
+			"complexityScore": 5,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Expand into: (1) Drafting SECURITY.md, (2) Writing developer guidelines, (3) Documenting security features, (4) Creating a security checklist, (5) Documenting testing approach, (6) Reviewing and validating documentation.",
+			"reasoning": "Comprehensive documentation requires gathering information from multiple sources, ensuring clarity and completeness, and validating with stakeholders, but follows a clear structure and process."
 		}
 	]
 }

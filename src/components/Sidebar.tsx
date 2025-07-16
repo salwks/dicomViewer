@@ -6,7 +6,7 @@ import {
   Info,
   Database
 } from 'lucide-react';
-import { useDicomStore, selectCurrentSeries, selectAnnotations } from '../store/dicom-store';
+import { useViewportStore, useAnnotationStore } from '../store';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,8 +14,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
-  const currentSeries = useDicomStore(selectCurrentSeries);
-  const annotations = useDicomStore(selectAnnotations);
+  const currentSeries = useViewportStore(state => state.currentSeries);
+  const annotations = useAnnotationStore(state => state.annotations);
 
   return (
     <>

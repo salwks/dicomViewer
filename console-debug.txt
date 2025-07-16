@@ -1,0 +1,101 @@
+/**
+ * 브라우저 콘솔에서 바로 실행할 수 있는 로그인 디버깅 코드
+ * 이 코드를 복사해서 브라우저 콘솔에 붙여넣고 실행하세요
+ */
+
+// 1. 환경 체크 및 스토어 상태 확인
+console.log('🔍 LOGIN DEBUG START');
+console.log('==================');
+
+// 기본 환경 체크
+console.log('1. Environment:');
+console.log('- URL:', window.location.href);
+console.log('- useSecurityStore available:', typeof window.useSecurityStore !== 'undefined');
+console.log('- Login form present:', !!document.querySelector('form'));
+
+// 스토어 상태 체크
+if (window.useSecurityStore) {
+  const state = window.useSecurityStore.getState();
+  console.log('\n2. Store State:');
+  console.log('- isAuthenticated:', state.isAuthenticated);
+  console.log('- currentUser:', state.currentUser);
+  console.log('- loginAttempts:', state.loginAttempts);
+  console.log('- isLocked:', state.isLocked);
+  console.log('- lockoutTime:', state.lockoutTime);
+  
+  // 계정 잠금 해제
+  if (state.isLocked) {
+    console.log('\n🔓 Unlocking account...');
+    window.useSecurityStore.setState({
+      isLocked: false,
+      lockoutTime: null,
+      loginAttempts: 0
+    });
+  }
+  
+  // 직접 로그인 테스트
+  console.log('\n3. Testing direct login...');
+  window.useSecurityStore.getState().login('admin', 'admin123').then(result => {
+    console.log('Login result:', result);
+    const newState = window.useSecurityStore.getState();
+    console.log('After login - isAuthenticated:', newState.isAuthenticated);
+    console.log('After login - currentUser:', newState.currentUser);
+    
+    if (result) {
+      console.log('✅ LOGIN SUCCESS!');
+      // 페이지 새로고침하여 인증 상태 반영
+      setTimeout(() => {
+        console.log('🔄 Refreshing page to reflect authentication...');
+        window.location.reload();
+      }, 1000);
+    } else {
+      console.log('❌ LOGIN FAILED');
+    }
+  }).catch(error => {
+    console.error('Login error:', error);
+  });
+} else {
+  console.error('❌ useSecurityStore not found');
+  console.log('💡 Make sure you are on the login page and the app is loaded');
+}
+
+// 2. UI 로그인 시뮬레이션 함수
+window.simulateLogin = function(username, password) {
+  console.log(`🔐 Simulating login: ${username}`);
+  
+  const usernameInput = document.querySelector('input[type="text"]');
+  const passwordInput = document.querySelector('input[type="password"]');
+  const submitButton = document.querySelector('button[type="submit"]');
+  
+  if (!usernameInput || !passwordInput || !submitButton) {
+    console.error('❌ Form elements not found');
+    return;
+  }
+  
+  // 폼 채우기
+  usernameInput.value = username;
+  passwordInput.value = password;
+  
+  // 이벤트 발생
+  usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+  passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+  usernameInput.dispatchEvent(new Event('change', { bubbles: true }));
+  passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+  
+  // 제출
+  setTimeout(() => {
+    submitButton.click();
+    console.log('✅ Form submitted');
+  }, 500);
+};
+
+// 3. 빠른 테스트 함수들
+window.testAdmin = () => simulateLogin('admin', 'admin123');
+window.testRadiologist = () => simulateLogin('radiologist', 'radio123');
+
+console.log('\n💡 Available commands:');
+console.log('- testAdmin() - Test admin login');
+console.log('- testRadiologist() - Test radiologist login');
+console.log('- simulateLogin(username, password) - Custom login test');
+
+console.log('\n🎯 DEBUG COMPLETE!');

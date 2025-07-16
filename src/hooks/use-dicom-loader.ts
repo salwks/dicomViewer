@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Types, getRenderingEngine } from '@cornerstonejs/core';
 import dicomParser from 'dicom-parser';
 import { debugLogger } from '../utils/debug-logger';
-import { useDicomStore } from '../store/dicom-store';
+import { useViewportStore } from '../store';
+import { handleDicomError, handleError, handleRenderingError, ErrorCategory, ErrorSeverity } from '../utils/error-handler';
 
 interface UseDicomLoaderProps {
   files: File[];
@@ -41,12 +42,30 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
         // 렌더링 엔진과 뷰포트 가져오기
         const renderingEngine = getRenderingEngine('dicom-rendering-engine');
         if (!renderingEngine) {
-          throw new Error('렌더링 엔진이 초기화되지 않았습니다. 뷰포트를 먼저 초기화해주세요.');
+          const errorMessage = handleError(
+            '렌더링 엔진이 초기화되지 않았습니다.',
+            'Rendering engine not initialized',
+            {
+              category: ErrorCategory.RENDERING,
+              severity: ErrorSeverity.HIGH,
+              context: { action: 'getDicomRenderingEngine' }
+            }
+          );
+          throw new Error(errorMessage);
         }
 
         const viewport = renderingEngine.getViewport('dicom-viewport') as Types.IStackViewport;
         if (!viewport) {
-          throw new Error('뷰포트를 찾을 수 없습니다.');
+          const errorMessage = handleError(
+            '뷰포트를 찾을 수 없습니다.',
+            'Viewport not found',
+            {
+              category: ErrorCategory.RENDERING,
+              severity: ErrorSeverity.HIGH,
+              context: { viewportId: 'dicom-viewport' }
+            }
+          );
+          throw new Error(errorMessage);
         }
 
         // 파일을 imageIds로 변환
@@ -75,7 +94,7 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
               
               // 🔥 첫 번째 파일의 dataSet을 스토어에 저장 (Meta Tag 표시용)
               if (i === 0) {
-                const { setDicomDataSet } = useDicomStore.getState();
+                const { setDicomDataSet } = useViewportStore.getState();
                 setDicomDataSet(dataSet);
                 debugLogger.log('💾 첫 번째 파일의 DICOM 데이터셋 스토어에 저장');
               }
@@ -105,26 +124,50 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
 
             } catch (parseError) {
               debugLogger.timeEnd(`파일 처리 ${i + 1}`);
-              debugLogger.error('DICOM 파싱 실패', {
-                fileName: file.name,
-                error: parseError,
-                fileSize: byteArray.length
-              });
-              throw new Error(`DICOM 파싱 실패 (${file.name}): ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+              const errorMessage = handleDicomError(
+                parseError instanceof Error ? parseError : String(parseError),
+                'DICOM 파싱 실패',
+                {
+                  context: {
+                    fileName: file.name,
+                    fileSize: byteArray.length,
+                    fileIndex: i + 1
+                  }
+                }
+              );
+              throw new Error(errorMessage);
             }
 
           } catch (fileError) {
             debugLogger.timeEnd(`파일 처리 ${i + 1}`);
-            debugLogger.error('파일 읽기 실패', {
-              fileName: file.name,
-              error: fileError
-            });
-            throw new Error(`파일 읽기 실패 (${file.name}): ${fileError instanceof Error ? fileError.message : String(fileError)}`);
+            const errorMessage = handleError(
+              fileError instanceof Error ? fileError : String(fileError),
+              '파일 읽기 실패',
+              {
+                category: ErrorCategory.STORAGE,
+                severity: ErrorSeverity.HIGH,
+                context: {
+                  fileName: file.name,
+                  fileIndex: i + 1
+                }
+              }
+            );
+            throw new Error(errorMessage);
           }
         }
 
         if (imageIds.length === 0) {
-          throw new Error('처리할 수 있는 DICOM 파일이 없습니다.');
+          const errorMessage = handleDicomError(
+            '처리할 수 있는 DICOM 파일이 없습니다.',
+            'No valid DICOM files found',
+            {
+              context: {
+                totalFiles: files.length,
+                processedFiles: imageIds.length
+              }
+            }
+          );
+          throw new Error(errorMessage);
         }
 
         debugLogger.log(`🎯 ${imageIds.length}개 이미지로 스택 설정 시작`);
@@ -156,18 +199,33 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
 
         } catch (stackError) {
           debugLogger.timeEnd('스택 설정 및 렌더링');
-          debugLogger.error('스택 설정 실패', {
-            error: stackError,
-            imageCount: imageIds.length
-          });
-          throw new Error(`스택 설정 실패: ${stackError instanceof Error ? stackError.message : String(stackError)}`);
+          const errorMessage = handleRenderingError(
+            stackError instanceof Error ? stackError : String(stackError),
+            '스택 설정 실패',
+            {
+              context: {
+                imageCount: imageIds.length,
+                action: 'setStack'
+              }
+            }
+          );
+          throw new Error(errorMessage);
         }
 
       } catch (error) {
         debugLogger.timeEnd('DICOM 파일 처리');
-        debugLogger.error('DICOM 파일 로딩 최종 실패', error);
+        const errorMessage = handleDicomError(
+          error instanceof Error ? error : String(error),
+          'DICOM 파일 로딩 최종 실패',
+          {
+            context: {
+              totalFiles: files.length,
+              processedImages: imageIds.length
+            }
+          }
+        );
         debugLogger.dumpErrors();
-        onError(`DICOM 로딩 실패: ${error instanceof Error ? error.message : String(error)}`);
+        onError(errorMessage);
       } finally {
         loadingRef.current = false;
       }

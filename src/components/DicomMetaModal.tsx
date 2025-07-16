@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, FileText, Copy, Search } from 'lucide-react';
+import { validateAnnotationLabel } from '../utils/input-validation';
 
 interface DicomMetaModalProps {
   isOpen: boolean;
@@ -164,6 +165,7 @@ const commonButtonStyle = {
 export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet, inline = false }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [copiedTag, setCopiedTag] = React.useState<string | null>(null);
+  const [searchError, setSearchError] = React.useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -247,7 +249,33 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
 
   const dicomTags = extractDicomTags();
 
-  // 검색 필터링
+  // 검색 입력 검증 및 처리
+  const handleSearchChange = (value: string) => {
+    setSearchError(null);
+    
+    // 입력 검증 수행
+    const validation = validateAnnotationLabel(value, {
+      maxLength: 100,
+      minLength: 0,
+      allowEmpty: true,
+      sanitize: true,
+      logAttempts: true
+    });
+
+    if (!validation.isValid) {
+      setSearchError(`검색 입력 오류: ${validation.errors.join(', ')}`);
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('검색 입력 경고:', validation.warnings);
+    }
+
+    // 검증된 값으로 검색어 설정
+    setSearchTerm(validation.sanitizedValue || value);
+  };
+
+  // 검색 필터링 (안전한 검색어 사용)
   const filteredTags = dicomTags.filter(tag =>
     tag.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tag.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -326,17 +354,22 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
               type="text"
               placeholder="태그 ID, 이름, 값으로 검색..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none px-3"
               style={{
                 width: '300px',
                 height: '36px',
                 backgroundColor: '#374151',
-                borderColor: '#4b5563',
+                borderColor: searchError ? '#dc2626' : '#4b5563',
                 color: '#ffffff'
               }}
             />
           </div>
+          {searchError && (
+            <p className="text-sm text-red-400 mt-2">
+              {searchError}
+            </p>
+          )}
           <p className="text-sm text-gray-400 mt-2">
             {filteredTags.length}개의 태그가 표시됨 
             {searchTerm && ` (전체 ${dicomTags.length}개 중 검색 결과)`}

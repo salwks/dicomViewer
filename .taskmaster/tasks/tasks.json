@@ -2,892 +2,729 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
-        "title": "Project Structure and Environment Setup",
-        "description": "Set up a scalable and maintainable project structure with all required libraries and development environment configuration.",
-        "details": "1. Create project folder structure following the PRD guidelines:\n   - src/components/ for UI components\n   - src/core/ for core viewer functionality\n   - src/tools/ for tool-related functionality\n   - src/utils/ for utility functions\n   - src/config/ for configuration files\n   - src/types/ for TypeScript type definitions\n   - public/ for static assets\n   - dist/ for build output\n   - examples/ for usage examples\n\n2. Install required dependencies:\n```bash\nnpm init -y\nnpm install --save @cornerstonejs/core @cornerstonejs/tools @cornerstonejs/dicom-image-loader @cornerstonejs/nifti-volume-loader @cornerstonejs/streaming-image-volume-loader dicom-parser dcmjs\nnpm install --save-dev typescript webpack webpack-cli webpack-dev-server ts-loader html-webpack-plugin css-loader style-loader\n```\n\n3. Configure TypeScript and Webpack:\n   - Create tsconfig.json for TypeScript configuration\n   - Set up webpack.config.js for bundling\n   - Configure development server\n\n4. Create basic HTML template with viewport containers\n\n5. Set up initial application entry point (src/index.ts) with Cornerstone3D initialization",
-        "testStrategy": "1. Verify all dependencies install correctly without conflicts\n2. Ensure webpack builds successfully without errors\n3. Confirm development server starts and serves the application\n4. Validate TypeScript compilation works correctly\n5. Check that the basic HTML template renders properly",
+        "id": 11,
+        "title": "Dependency Vulnerability Analysis",
+        "description": "Scan all project dependencies for known security vulnerabilities using npm audit and address critical and high severity issues.",
+        "details": "1. Navigate to the project root directory\n2. Run `npm audit` to identify all vulnerabilities in dependencies\n3. Document all found vulnerabilities, especially those in @cornerstonejs/tools and other core libraries\n4. For critical and high severity issues, attempt automatic fixes with `npm audit fix`\n5. For vulnerabilities that cannot be automatically fixed, research and manually update to secure versions\n6. Verify fixes by running `npm audit` again\n7. Document any remaining vulnerabilities that cannot be fixed immediately and create a mitigation plan",
+        "testStrategy": "1. Compare vulnerability counts before and after fixes\n2. Ensure application functionality remains intact after dependency updates\n3. Create a report documenting initial vulnerabilities, applied fixes, and any remaining issues",
         "priority": "high",
         "dependencies": [],
         "status": "done",
         "subtasks": [
           {
             "id": 1,
-            "title": "Define and Create the Folder Structure",
-            "description": "Establish the foundational directory layout for the project, including folders for source code, configuration, and build outputs.",
+            "title": "Preparation and Environment Setup",
+            "description": "Ensure the project environment is ready for auditing by navigating to the project root directory and verifying that all dependencies are installed and up to date.",
             "dependencies": [],
-            "details": "Create the main project directory. Inside it, add a 'src' folder for TypeScript/JavaScript files and any other necessary folders (e.g., 'dist' for build output).",
+            "details": "Open a terminal, navigate to the project root, and run 'npm install' to ensure all dependencies are present. Confirm that 'package-lock.json' exists, as it is required for npm audit.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Initialize npm and Install Dependencies",
-            "description": "Set up npm in the project directory and install required packages such as TypeScript and other development dependencies.",
+            "title": "Running npm audit",
+            "description": "Execute the npm audit command to scan for known vulnerabilities in project dependencies.",
             "dependencies": [
               1
             ],
-            "details": "Run 'npm init' to generate package.json. Install TypeScript and any other needed packages (e.g., ts-node-dev, webpack, webpack-dev-server) as dev dependencies.",
+            "details": "Run 'npm audit' in the terminal to generate a summary of vulnerabilities. For detailed output, use 'npm audit --json'.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Configure TypeScript",
-            "description": "Initialize and customize the TypeScript configuration for the project.",
+            "title": "Documenting Vulnerabilities",
+            "description": "Record all identified vulnerabilities, focusing on critical and high severity issues, and note affected packages and paths.",
             "dependencies": [
               2
             ],
-            "details": "Run 'npx tsc --init' to create tsconfig.json. Adjust compiler options as needed for the project's requirements.",
+            "details": "Extract information such as advisory ID, module name, severity, vulnerable versions, patched versions, and dependency path from the audit report. Document these details in a tracking document or issue tracker.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Configure Webpack and Dev Server",
-            "description": "Set up Webpack for bundling and configure the development server for live reloading and efficient development.",
+            "title": "Applying Automatic Fixes",
+            "description": "Attempt to resolve vulnerabilities using npm audit fix and document the changes.",
             "dependencies": [
               3
             ],
-            "details": "Create webpack.config.js with entry/output settings, loaders for TypeScript, and dev server configuration. Ensure compatibility with TypeScript setup.",
+            "details": "Run 'npm audit fix' to automatically update dependencies where possible. If necessary, use 'npm audit fix --force' for more aggressive updates, but be aware of potential breaking changes.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Create the Base HTML Template",
-            "description": "Develop the initial HTML file that will serve as the application's entry point in the browser.",
+            "title": "Manual Remediation and Research",
+            "description": "For vulnerabilities that cannot be fixed automatically, research and manually update or replace affected dependencies.",
             "dependencies": [
               4
             ],
-            "details": "Add an index.html file in the project root or public folder. Include a script tag referencing the bundled JavaScript output.",
+            "details": "Investigate unresolved vulnerabilities, check for secure versions, update package.json as needed, and test for compatibility. Document manual steps and rationale for each change.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Implement Application Entry Point and Verify Initial Build",
-            "description": "Create the main TypeScript entry file and confirm that the build process produces the expected output.",
+            "title": "Verification and Reporting",
+            "description": "Re-run npm audit to verify that vulnerabilities have been addressed and compile a final report of actions taken and any remaining issues.",
             "dependencies": [
               5
             ],
-            "details": "Add an index.ts or main.ts in 'src'. Implement a simple log or UI element. Run the build and dev server to verify everything compiles and displays correctly.",
+            "details": "Run 'npm audit' again to confirm fixes. Compare vulnerability counts before and after remediation. Prepare a report summarizing initial findings, fixes applied, manual interventions, and any outstanding vulnerabilities.",
             "status": "done",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 2,
-        "title": "Basic Viewport and Rendering Engine Implementation",
-        "description": "Implement core functionality to display DICOM images with proper rendering engine setup and image loading capabilities.",
-        "details": "1. Create viewport initialization module (src/core/viewport.ts):\n```typescript\nexport function initializeViewport(element: HTMLElement, options = {}) {\n  // Create and configure viewport\n  const viewport = cornerstone.createViewport(element, options);\n  return viewport;\n}\n```\n\n2. Implement rendering engine setup (src/core/renderingEngine.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport function setupRenderingEngine(id = 'default') {\n  const renderingEngine = new cornerstone.RenderingEngine(id);\n  return renderingEngine;\n}\n```\n\n3. Configure DICOM image loader (src/core/imageLoader.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\nimport * as cornerstoneTools from '@cornerstonejs/tools';\nimport * as cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';\n\nexport function initializeDICOMImageLoader() {\n  // Configure cornerstone DICOM image loader\n  cornerstoneDICOMImageLoader.external.cornerstone = cornerstone;\n  cornerstoneDICOMImageLoader.external.cornerstoneTools = cornerstoneTools;\n  \n  // Set up image loader configuration\n  const config = {\n    maxWebWorkers: navigator.hardwareConcurrency || 1,\n    startWebWorkersOnDemand: true,\n  };\n  cornerstoneDICOMImageLoader.webWorkerManager.initialize(config);\n}\n\nexport async function loadDicomImage(imageId) {\n  return cornerstone.imageLoader.loadAndCacheImage(imageId);\n}\n```\n\n4. Create basic viewer component (src/components/DicomViewer.ts):\n```typescript\nimport { setupRenderingEngine } from '../core/renderingEngine';\nimport { initializeViewport } from '../core/viewport';\nimport { loadDicomImage } from '../core/imageLoader';\n\nexport class DicomViewer {\n  private element: HTMLElement;\n  private renderingEngine: any;\n  private viewport: any;\n  \n  constructor(element: HTMLElement) {\n    this.element = element;\n    this.initialize();\n  }\n  \n  private async initialize() {\n    this.renderingEngine = setupRenderingEngine();\n    this.viewport = initializeViewport(this.element);\n  }\n  \n  public async displayImage(imageId: string) {\n    const image = await loadDicomImage(imageId);\n    this.viewport.displayImage(image);\n    this.renderingEngine.render();\n  }\n}\n```\n\n5. Create initialization module (src/core/init.ts) to set up the entire system",
-        "testStrategy": "1. Test viewport initialization with various container sizes\n2. Verify rendering engine properly initializes and connects to viewports\n3. Test DICOM image loading with sample images\n4. Validate image display functionality with different image types\n5. Check for memory leaks during repeated image loading/unloading",
+        "id": 12,
+        "title": "Configure Dependabot for Automated Vulnerability Alerts",
+        "description": "Set up GitHub Dependabot to automatically monitor dependencies and create pull requests for security patches.",
+        "details": "1. Create a `.github/dependabot.yml` configuration file in the repository\n2. Configure Dependabot to scan npm dependencies with appropriate frequency (weekly recommended)\n3. Set up automatic pull request creation for security patches\n4. Configure notification settings for the development team\n5. Example configuration:\n```yaml\nversion: 2\nupdates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    open-pull-requests-limit: 10\n    versioning-strategy: auto\n    labels:\n      - \"dependencies\"\n      - \"security\"\n```\n6. Enable Dependabot alerts in the GitHub repository settings",
+        "testStrategy": "1. Verify Dependabot configuration by checking GitHub repository settings\n2. Test the setup by introducing a known vulnerable dependency and confirming Dependabot creates an alert\n3. Verify pull request automation by checking if security patches are automatically proposed",
+        "priority": "medium",
+        "dependencies": [
+          11
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Creating the Dependabot Configuration File",
+            "description": "Create a `.github/dependabot.yml` file in the repository to define Dependabot's behavior, specifying the configuration version and the update settings for the npm ecosystem.",
+            "dependencies": [],
+            "details": "Navigate to the repository root, create a `.github` directory if it doesn't exist, and add a `dependabot.yml` file with the required YAML structure. Set `version: 2` and define the `updates` section for npm dependencies.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Setting Up Scan Frequency and PR Automation",
+            "description": "Configure the scan interval and enable automatic pull request creation for security patches in the `dependabot.yml` file.",
+            "dependencies": [
+              1
+            ],
+            "details": "Within the `updates` section, set the `schedule.interval` to `weekly` (or as required) and ensure Dependabot is configured to open pull requests automatically for detected security updates.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Configuring Notifications",
+            "description": "Set up notification preferences so the development team is alerted when Dependabot detects vulnerabilities or opens pull requests.",
+            "dependencies": [
+              2
+            ],
+            "details": "Adjust repository settings to enable Dependabot alerts and notifications. Optionally, configure code owners or team mentions in the repository to ensure the right people are notified of Dependabot activity.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Verifying and Testing the Setup",
+            "description": "Test the Dependabot configuration by introducing a known vulnerable dependency and confirming that alerts and automated pull requests are generated as expected.",
+            "dependencies": [
+              3
+            ],
+            "details": "Check the repository's Security tab for Dependabot alerts, verify that pull requests are created for security patches, and ensure notifications are received by the designated team members.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Implement XSS Protection with DOMPurify",
+        "description": "Add XSS protection by sanitizing user inputs, particularly annotation labels, using the DOMPurify library.",
+        "details": "1. Install DOMPurify and its TypeScript types:\n```bash\nnpm install dompurify\nnpm install --save-dev @types/dompurify\n```\n2. Import DOMPurify in files handling user input:\n```typescript\nimport DOMPurify from 'dompurify';\n```\n3. Locate the annotation label update function (updateAnnotationLabel)\n4. Modify the function to sanitize user input before storing:\n```typescript\n// Before storing the new label\nconst sanitizedLabel = DOMPurify.sanitize(newLabel);\n// Use sanitizedLabel instead of newLabel in subsequent operations\n```\n5. Apply similar sanitization to all other user input fields in the application\n6. Consider creating a utility function for consistent sanitization across the application",
+        "testStrategy": "1. Create unit tests with various malicious input patterns (script tags, event handlers, etc.)\n2. Verify that sanitized output is free from potentially executable code\n3. Test the application UI to ensure sanitization doesn't affect legitimate user input\n4. Verify that stored annotation labels are properly sanitized when retrieved and displayed",
         "priority": "high",
         "dependencies": [
-          1
+          11
         ],
         "status": "done",
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement Viewport Initialization",
-            "description": "Set up the initial viewport area in the application where DICOM images will be displayed.",
+            "title": "Installing dependencies",
+            "description": "Install the DOMPurify library and its TypeScript types to enable HTML sanitization in the project.",
             "dependencies": [],
-            "details": "Define the HTML/CSS structure for the viewer container. Ensure the viewport is responsive and can accommodate different image sizes.",
+            "details": "Run `npm install dompurify` and `npm install --save-dev @types/dompurify` in the project root to add the necessary packages.[3]",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Set Up the Rendering Engine",
-            "description": "Integrate and configure the rendering engine that will handle DICOM image display within the viewport.",
+            "title": "Importing and integrating DOMPurify",
+            "description": "Import DOMPurify into all files that handle user input or render user-generated content.",
             "dependencies": [
               1
             ],
-            "details": "Choose a suitable rendering library (e.g., Cornerstone, OHIF). Initialize the rendering context and link it to the viewport element.",
+            "details": "Add `import DOMPurify from 'dompurify';` at the top of relevant TypeScript or JavaScript files, such as those managing annotation labels or other user inputs.[3]",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Configure DICOM Image Loader",
-            "description": "Set up the module responsible for loading and parsing DICOM images from local files or remote sources.",
+            "title": "Refactoring annotation label logic",
+            "description": "Update the annotation label update function to sanitize user input before storing or rendering.",
             "dependencies": [
               2
             ],
-            "details": "Integrate a DICOM loader library. Configure it to support both file uploads and network retrieval (e.g., DICOMweb, PACS).",
+            "details": "Locate the `updateAnnotationLabel` function and modify it to use `DOMPurify.sanitize(newLabel)` before saving or displaying the label, ensuring all annotation labels are sanitized.[3]",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Implement Image Loading Logic",
-            "description": "Develop the logic to handle asynchronous loading, parsing, and error handling for DICOM images.",
-            "dependencies": [
-              3
-            ],
-            "details": "Write functions to manage image selection, loading progress, and error states. Ensure support for multiple image series and slices.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Create the Basic Viewer Component",
-            "description": "Build the main viewer component that integrates the viewport, rendering engine, and image loader.",
-            "dependencies": [
-              4
-            ],
-            "details": "Develop a reusable component/class that manages state, user interactions (zoom, pan, scroll), and rendering updates.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Integrate All Modules in an Initialization Script",
-            "description": "Write an initialization script that ties together the viewport, rendering engine, image loader, and viewer component.",
-            "dependencies": [
-              5
-            ],
-            "details": "Ensure all modules are properly instantiated and configured. Set up event listeners and application startup logic.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Validate with Sample Images and Error Handling",
-            "description": "Test the complete viewer with sample DICOM images and implement robust error handling for edge cases.",
-            "dependencies": [],
-            "details": "Load various DICOM files to verify rendering accuracy and performance. Simulate errors (e.g., corrupt files, network issues) and confirm graceful handling.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Volume Rendering Implementation",
-        "description": "Implement 3D volume rendering capabilities including volume loading, 3D viewport configuration, and Multi-Planar Reconstruction (MPR).",
-        "details": "1. Create volume loader module (src/core/volumeLoader.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\nimport * as cornerstoneStreamingImageVolumeLoader from '@cornerstonejs/streaming-image-volume-loader';\nimport * as cornerstoneNIFTIImageVolumeLoader from '@cornerstonejs/nifti-volume-loader';\n\nexport function initializeVolumeLoaders() {\n  // Register volume loaders\n  cornerstoneStreamingImageVolumeLoader.register(cornerstone);\n  cornerstoneNIFTIImageVolumeLoader.register(cornerstone);\n}\n\nexport async function loadImageVolume(volumeId, imageIds) {\n  const volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds });\n  await volume.load();\n  return volume;\n}\n```\n\n2. Implement 3D viewport functionality (src/core/volume3DViewport.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport function create3DViewport(renderingEngine, viewportId, element, options = {}) {\n  const viewport = renderingEngine.enableElement({\n    viewportId,\n    type: cornerstone.Enums.ViewportType.VOLUME_3D,\n    element,\n    defaultOptions: {\n      orientation: cornerstone.Enums.OrientationAxis.CORONAL,\n      background: [0, 0, 0],\n      ...options\n    },\n  });\n  return viewport;\n}\n\nexport function setupVolumeViewport(viewport, volume, renderingOptions = {}) {\n  viewport.setVolumes([\n    {\n      volumeId: volume.volumeId,\n      callback: ({ volumeActor }) => {\n        // Configure volume actor properties\n        volumeActor.getProperty().setInterpolationTypeToLinear();\n        volumeActor.getProperty().setShade(true);\n        volumeActor.getProperty().setSpecular(0.5);\n        volumeActor.getProperty().setSpecularPower(15);\n        // Apply any custom rendering options\n        Object.assign(volumeActor, renderingOptions);\n      },\n    },\n  ]);\n}\n```\n\n3. Implement MPR functionality (src/core/mprViewport.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport function createMPRViewports(renderingEngine, containerElements, options = {}) {\n  const axialId = 'AXIAL';\n  const sagittalId = 'SAGITTAL';\n  const coronalId = 'CORONAL';\n  \n  const viewportIds = [axialId, sagittalId, coronalId];\n  const viewportTypes = Array(3).fill(cornerstone.Enums.ViewportType.ORTHOGRAPHIC);\n  const orientations = [\n    cornerstone.Enums.OrientationAxis.AXIAL,\n    cornerstone.Enums.OrientationAxis.SAGITTAL,\n    cornerstone.Enums.OrientationAxis.CORONAL,\n  ];\n  \n  renderingEngine.enableElements(viewportIds, containerElements, viewportTypes, options);\n  \n  const viewports = viewportIds.map((id, index) => {\n    const viewport = renderingEngine.getViewport(id);\n    viewport.setOrientation(orientations[index]);\n    return viewport;\n  });\n  \n  return viewports;\n}\n\nexport function setupMPRViewports(viewports, volume) {\n  viewports.forEach(viewport => {\n    viewport.setVolumes([{ volumeId: volume.volumeId }]);\n  });\n}\n```\n\n4. Create volume controller component (src/components/VolumeController.ts):\n```typescript\nexport class VolumeController {\n  private volume: any;\n  private renderingEngine: any;\n  \n  constructor(volume, renderingEngine) {\n    this.volume = volume;\n    this.renderingEngine = renderingEngine;\n  }\n  \n  public adjustVolumeProperties(properties) {\n    const { windowWidth, windowCenter, opacity, colormap } = properties;\n    \n    if (windowWidth && windowCenter) {\n      this.volume.windowWidth = windowWidth;\n      this.volume.windowCenter = windowCenter;\n    }\n    \n    if (opacity !== undefined) {\n      this.volume.opacity = opacity;\n    }\n    \n    if (colormap) {\n      this.volume.colormap = colormap;\n    }\n    \n    this.renderingEngine.render();\n  }\n}\n```",
-        "testStrategy": "1. Test volume loading with different DICOM series\n2. Verify 3D rendering with various volume types\n3. Test MPR functionality with axial, sagittal, and coronal planes\n4. Validate volume property adjustments (window/level, opacity)\n5. Test performance with large volumes\n6. Verify correct orientation and alignment in MPR views",
-        "priority": "high",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement Volume Loader",
-            "description": "Develop a module to load volumetric data from various formats (e.g., DICOM, NIfTI) into memory for further processing and visualization.",
-            "dependencies": [],
-            "details": "Ensure support for multiple medical imaging formats and efficient memory management for large datasets.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Register and Configure Volume Loaders",
-            "description": "Create a system to register different volume loader implementations and configure them based on data type or user preferences.",
-            "dependencies": [
-              1
-            ],
-            "details": "Allow dynamic selection and configuration of loaders to handle diverse data sources and formats.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement 3D Viewport Creation",
-            "description": "Develop the core 3D viewport component for displaying volumetric data, supporting real-time interaction and navigation.",
+            "title": "Applying sanitization to all user inputs",
+            "description": "Ensure that all user input points across the application are sanitized using DOMPurify before being rendered or stored.",
             "dependencies": [
               2
             ],
-            "details": "Integrate with rendering engine and ensure compatibility with loaded volume data.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Set Up Volume Rendering Options",
-            "description": "Add configurable rendering options such as transfer functions, lighting models, and rendering algorithms (e.g., ray casting, texture mapping).",
-            "dependencies": [
-              3
-            ],
-            "details": "Expose controls for color/opacity mapping and lighting to enhance visualization of internal structures.",
+            "details": "Audit the codebase for all user input handling (forms, comments, dynamic content, etc.) and apply `DOMPurify.sanitize()` to each input before it is used in the DOM or persisted.[1][3]",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Implement MPR Viewports",
-            "description": "Develop Multi-Planar Reconstruction (MPR) viewports to display orthogonal slices (axial, sagittal, coronal) of the volume data.",
+            "title": "Creating a sanitization utility",
+            "description": "Develop a reusable utility function that wraps DOMPurify sanitization for consistent use throughout the codebase.",
             "dependencies": [
-              3
-            ],
-            "details": "Ensure accurate slice extraction and interactive navigation through the volume.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Integrate MPR with Volume Data",
-            "description": "Connect MPR viewports with the loaded volume data, ensuring correct orientation and synchronization with the 3D viewport.",
-            "dependencies": [
-              5
-            ],
-            "details": "Handle coordinate transformations and update mechanisms for consistent data representation.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Create Volume Controller for Property Adjustments",
-            "description": "Implement a controller UI to adjust volume rendering properties such as window/level, opacity, and color mapping in real time.",
-            "dependencies": [
-              4,
-              6
-            ],
-            "details": "Provide intuitive controls for users to fine-tune visualization parameters and immediately see results.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 8,
-            "title": "Test with Multiple Volume Types and Orientations",
-            "description": "Validate the system using various volume datasets and orientations to ensure robust performance and correct visualization.",
-            "dependencies": [],
-            "details": "Include edge cases such as non-standard orientations and large datasets to assess stability and rendering quality.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "Measurement Tools Implementation",
-        "description": "Implement various measurement tools including length, angle, and area measurements with result management capabilities.",
-        "details": "1. Create measurement tools setup module (src/tools/measurementTools.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeMeasurementTools() {\n  // Register all tools\n  cornerstoneTools.init();\n  \n  // Register specific measurement tools\n  cornerstoneTools.addTool(cornerstoneTools.LengthTool);\n  cornerstoneTools.addTool(cornerstoneTools.AngleTool);\n  cornerstoneTools.addTool(cornerstoneTools.EllipticalROITool);\n  cornerstoneTools.addTool(cornerstoneTools.RectangleROITool);\n  cornerstoneTools.addTool(cornerstoneTools.ProbeTool);\n}\n```\n\n2. Implement length measurement tool (src/tools/lengthTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function enableLengthTool(element, options = {}) {\n  cornerstoneTools.setToolActive('Length', { mouseButtonMask: 1, ...options });\n  \n  // Add event listener for measurement completed\n  element.addEventListener(\n    cornerstoneTools.EVENTS.MEASUREMENT_COMPLETED,\n    event => {\n      if (event.detail.toolName === 'Length') {\n        console.log('Length measurement:', event.detail.measurementData);\n      }\n    }\n  );\n}\n```\n\n3. Implement angle measurement tool (src/tools/angleTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function enableAngleTool(element, options = {}) {\n  cornerstoneTools.setToolActive('Angle', { mouseButtonMask: 1, ...options });\n  \n  // Add event listener for measurement completed\n  element.addEventListener(\n    cornerstoneTools.EVENTS.MEASUREMENT_COMPLETED,\n    event => {\n      if (event.detail.toolName === 'Angle') {\n        console.log('Angle measurement:', event.detail.measurementData);\n      }\n    }\n  );\n}\n```\n\n4. Implement area measurement tool (src/tools/areaTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function enableAreaTool(element, toolType = 'EllipticalROI', options = {}) {\n  // toolType can be 'EllipticalROI' or 'RectangleROI'\n  cornerstoneTools.setToolActive(toolType, { mouseButtonMask: 1, ...options });\n  \n  // Add event listener for measurement completed\n  element.addEventListener(\n    cornerstoneTools.EVENTS.MEASUREMENT_COMPLETED,\n    event => {\n      if (event.detail.toolName === toolType) {\n        console.log('Area measurement:', event.detail.measurementData);\n      }\n    }\n  );\n}\n```\n\n5. Create measurement manager (src/tools/measurementManager.ts):\n```typescript\nexport class MeasurementManager {\n  private measurements = [];\n  \n  public addMeasurement(measurement) {\n    this.measurements.push({\n      id: Date.now(), // Simple unique ID\n      ...measurement,\n      timestamp: new Date().toISOString()\n    });\n    return this.measurements[this.measurements.length - 1];\n  }\n  \n  public removeMeasurement(id) {\n    const index = this.measurements.findIndex(m => m.id === id);\n    if (index !== -1) {\n      this.measurements.splice(index, 1);\n      return true;\n    }\n    return false;\n  }\n  \n  public getMeasurements() {\n    return [...this.measurements];\n  }\n  \n  public saveMeasurements() {\n    const data = JSON.stringify(this.measurements);\n    localStorage.setItem('cornerstone3d-measurements', data);\n    return data;\n  }\n  \n  public loadMeasurements() {\n    const data = localStorage.getItem('cornerstone3d-measurements');\n    if (data) {\n      this.measurements = JSON.parse(data);\n      return this.measurements;\n    }\n    return [];\n  }\n}\n```",
-        "testStrategy": "1. Test each measurement tool individually with mouse interactions\n2. Verify measurement accuracy against known dimensions\n3. Test measurement persistence and retrieval\n4. Validate measurement event handling\n5. Test measurement tools on different image types (2D, 3D, MPR)\n6. Verify measurement display formatting and units",
-        "priority": "medium",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Set Up Measurement Tools Infrastructure",
-            "description": "Establish the foundational architecture and dependencies required for all measurement tools, including UI scaffolding, event listeners, and data models.",
-            "dependencies": [],
-            "details": "Define core interfaces, set up base classes for measurement tools, and ensure extensibility for future measurement types.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Length Measurement Tool",
-            "description": "Develop the tool for measuring linear distances, including UI interactions for selecting start and end points and displaying real-time feedback.",
-            "dependencies": [
-              1
-            ],
-            "details": "Handle mouse/touch events, draw lines, and calculate/display length values accurately on 2D/3D images.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Angle Measurement Tool",
-            "description": "Create the tool for measuring angles, supporting user selection of three points and providing visual and numeric feedback.",
-            "dependencies": [
-              1
-            ],
-            "details": "Enable interactive angle creation, display angle arcs, and ensure precise calculation and rendering.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Implement Area Measurement Tools (Elliptical/Rectangle)",
-            "description": "Develop tools for measuring areas using elliptical and rectangular shapes, supporting user-driven shape creation and area calculation.",
-            "dependencies": [
-              1
-            ],
-            "details": "Allow users to draw and adjust ellipses/rectangles, calculate area in real time, and display results on the image.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Create Measurement Manager",
-            "description": "Build a central manager to coordinate measurement tool activation, state management, and communication between tools and the UI.",
-            "dependencies": [
-              2,
-              3,
-              4
-            ],
-            "details": "Implement logic for switching tools, managing active measurements, and providing a unified API for measurement operations.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Integrate Event Handling for Measurements",
-            "description": "Implement robust event handling to support precise user interactions, feedback, and error handling across all measurement tools.",
-            "dependencies": [
-              5
-            ],
-            "details": "Ensure consistent event propagation, handle edge cases (e.g., overlapping measurements), and provide visual cues for user actions.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Implement Persistence and Retrieval of Measurements",
-            "description": "Enable saving, loading, and restoring measurement data, ensuring measurements persist across sessions and can be retrieved as needed.",
-            "dependencies": [
-              5,
-              6
-            ],
-            "details": "Design data serialization formats, integrate with storage solutions, and provide UI for managing saved measurements.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Annotation System Implementation",
-        "description": "Implement a comprehensive annotation system including text annotations, arrow annotations, and annotation styling capabilities.",
-        "details": "1. Create annotation manager (src/tools/annotationManager.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport class AnnotationManager {\n  private annotations = [];\n  \n  constructor() {\n    this.setupEventListeners();\n  }\n  \n  private setupEventListeners() {\n    // Listen for annotation added events\n    document.addEventListener(\n      cornerstoneTools.EVENTS.ANNOTATION_ADDED,\n      event => {\n        this.annotations.push(event.detail);\n      }\n    );\n    \n    // Listen for annotation modified events\n    document.addEventListener(\n      cornerstoneTools.EVENTS.ANNOTATION_MODIFIED,\n      event => {\n        const index = this.annotations.findIndex(\n          a => a.annotationUID === event.detail.annotationUID\n        );\n        if (index !== -1) {\n          this.annotations[index] = event.detail;\n        }\n      }\n    );\n    \n    // Listen for annotation removed events\n    document.addEventListener(\n      cornerstoneTools.EVENTS.ANNOTATION_REMOVED,\n      event => {\n        const index = this.annotations.findIndex(\n          a => a.annotationUID === event.detail.annotationUID\n        );\n        if (index !== -1) {\n          this.annotations.splice(index, 1);\n        }\n      }\n    );\n  }\n  \n  public getAnnotations() {\n    return [...this.annotations];\n  }\n  \n  public saveAnnotations() {\n    const data = JSON.stringify(this.annotations);\n    localStorage.setItem('cornerstone3d-annotations', data);\n    return data;\n  }\n  \n  public loadAnnotations() {\n    const data = localStorage.getItem('cornerstone3d-annotations');\n    if (data) {\n      this.annotations = JSON.parse(data);\n      return this.annotations;\n    }\n    return [];\n  }\n}\n```\n\n2. Implement text annotation tool (src/tools/textAnnotation.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeTextAnnotationTool() {\n  // Register the text annotation tool\n  cornerstoneTools.addTool(cornerstoneTools.TextMarkerTool);\n}\n\nexport function enableTextAnnotationTool(element, options = {}) {\n  cornerstoneTools.setToolActive('TextMarker', { mouseButtonMask: 1, ...options });\n}\n\nexport function addTextAnnotation(element, text, position, options = {}) {\n  const textMarkerConfig = {\n    text,\n    position,\n    ...options\n  };\n  \n  cornerstoneTools.addToolState(element, 'TextMarker', textMarkerConfig);\n  cornerstone.updateImage(element);\n}\n```\n\n3. Implement arrow annotation tool (src/tools/arrowAnnotation.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeArrowAnnotationTool() {\n  // Register the arrow annotation tool\n  cornerstoneTools.addTool(cornerstoneTools.ArrowAnnotateTool);\n}\n\nexport function enableArrowAnnotationTool(element, options = {}) {\n  cornerstoneTools.setToolActive('ArrowAnnotate', { mouseButtonMask: 1, ...options });\n}\n\nexport function addArrowAnnotation(element, text, start, end, options = {}) {\n  const arrowConfig = {\n    text,\n    handles: {\n      start: {\n        x: start.x,\n        y: start.y,\n      },\n      end: {\n        x: end.x,\n        y: end.y,\n      },\n    },\n    ...options\n  };\n  \n  cornerstoneTools.addToolState(element, 'ArrowAnnotate', arrowConfig);\n  cornerstone.updateImage(element);\n}\n```\n\n4. Create annotation styling module (src/tools/annotationStyling.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function customizeAnnotationStyle(toolName, styleOptions) {\n  const configuration = cornerstoneTools.getToolConfiguration(toolName) || {};\n  \n  // Apply style options\n  const updatedConfig = {\n    ...configuration,\n    ...styleOptions\n  };\n  \n  // Update tool configuration\n  cornerstoneTools.setToolConfiguration(toolName, updatedConfig);\n}\n\nexport function setGlobalAnnotationStyle(styleOptions) {\n  // Set global tool style\n  const globalConfig = {\n    color: styleOptions.color || 'rgb(255, 255, 0)',\n    lineWidth: styleOptions.lineWidth || 2,\n    font: styleOptions.font || '15px Arial',\n    textBackgroundColor: styleOptions.textBackgroundColor || 'rgba(0, 0, 0, 0.8)',\n    textColor: styleOptions.textColor || 'rgb(255, 255, 255)',\n  };\n  \n  cornerstoneTools.setToolConfiguration(null, globalConfig);\n}\n```",
-        "testStrategy": "1. Test text annotation creation and positioning\n2. Verify arrow annotation drawing and text association\n3. Test annotation styling with different colors, fonts, and line widths\n4. Validate annotation persistence and retrieval\n5. Test annotation interaction (selection, modification, deletion)\n6. Verify annotation rendering on different viewport types",
-        "priority": "medium",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement Annotation Manager",
-            "description": "Develop a central module to manage the lifecycle, state, and coordination of all annotations within the application.",
-            "dependencies": [],
-            "details": "This includes creating data structures for storing annotations, methods for adding, updating, and removing annotations, and ensuring robust state management.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Text Annotation Tool",
-            "description": "Create a tool that allows users to add, edit, and position text annotations on the canvas or document.",
-            "dependencies": [
-              1
-            ],
-            "details": "Integrate with the annotation manager to store and retrieve text annotation data, and provide a user interface for text input and placement.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Arrow Annotation Tool",
-            "description": "Develop a tool for users to draw and manipulate arrow annotations, supporting start/end points and directionality.",
-            "dependencies": [
-              1
-            ],
-            "details": "Ensure arrow annotations are managed by the annotation manager and provide intuitive controls for drawing and adjusting arrows.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Add Annotation Event Listeners",
-            "description": "Implement event listeners to handle user interactions such as creating, selecting, moving, and editing annotations.",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "Event listeners should update the annotation manager state and trigger UI updates in response to user actions.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement Annotation Styling Module",
-            "description": "Build a module to manage and apply styles (color, font, line width, etc.) to different annotation types.",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "Allow users to customize annotation appearance and ensure consistent rendering across the application.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Integrate Annotation Persistence",
-            "description": "Enable saving and loading of annotation data to and from persistent storage (e.g., database, local storage, or server).",
-            "dependencies": [
-              1,
-              2,
-              3,
-              5
-            ],
-            "details": "Ensure that all annotation types and their styles are correctly serialized and deserialized for reliable persistence.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Test Annotation Interactions and Rendering",
-            "description": "Thoroughly test all annotation tools, event handling, styling, and persistence to ensure correct behavior and robust user experience.",
-            "dependencies": [
-              4,
-              5,
-              6
-            ],
-            "details": "Include unit, integration, and user acceptance tests covering edge cases, concurrent edits, and data integrity.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "Window/Level and Image Adjustment Implementation",
-        "description": "Implement window/level (brightness/contrast) adjustment functionality with presets and interactive controls.",
-        "details": "1. Create window/level controller (src/core/windowLevelController.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport class WindowLevelController {\n  private viewport;\n  \n  constructor(viewport) {\n    this.viewport = viewport;\n  }\n  \n  public setWindowLevel(windowWidth, windowCenter) {\n    this.viewport.setProperties({\n      voiRange: {\n        windowWidth,\n        windowCenter\n      }\n    });\n    this.viewport.render();\n  }\n  \n  public getWindowLevel() {\n    const properties = this.viewport.getProperties();\n    return properties.voiRange;\n  }\n  \n  public resetWindowLevel() {\n    // Reset to default window/level\n    const image = this.viewport.getCurrentImage();\n    if (image) {\n      this.setWindowLevel(image.windowWidth, image.windowCenter);\n    }\n  }\n}\n```\n\n2. Create window/level presets configuration (src/config/windowLevelPresets.ts):\n```typescript\nexport const windowLevelPresets = {\n  // Standard presets\n  default: { windowWidth: 400, windowCenter: 40 },\n  brain: { windowWidth: 80, windowCenter: 40 },\n  lung: { windowWidth: 1500, windowCenter: -600 },\n  bone: { windowWidth: 2500, windowCenter: 480 },\n  liver: { windowWidth: 150, windowCenter: 30 },\n  mediastinum: { windowWidth: 350, windowCenter: 40 },\n  abdomen: { windowWidth: 400, windowCenter: 50 },\n  angio: { windowWidth: 500, windowCenter: 100 },\n};\n\nexport function getPresetByName(name) {\n  return windowLevelPresets[name] || windowLevelPresets.default;\n}\n```\n\n3. Implement window/level tool (src/tools/windowLevelTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeWindowLevelTool() {\n  // Register the window/level tool\n  cornerstoneTools.addTool(cornerstoneTools.WwwcTool);\n}\n\nexport function enableWindowLevelTool(element, options = {}) {\n  cornerstoneTools.setToolActive('Wwwc', { mouseButtonMask: 1, ...options });\n}\n\nexport function configureWindowLevelTool(options = {}) {\n  const configuration = {\n    // How much to change per pixel of mouse movement\n    windowWidthSpeed: options.windowWidthSpeed || 0.1,\n    windowCenterSpeed: options.windowCenterSpeed || 0.1,\n    ...options\n  };\n  \n  cornerstoneTools.setToolConfiguration('Wwwc', configuration);\n}\n```\n\n4. Create window/level UI panel component (src/components/WindowLevelPanel.ts):\n```typescript\nimport { windowLevelPresets, getPresetByName } from '../config/windowLevelPresets';\n\nexport class WindowLevelPanel {\n  private element;\n  private windowLevelController;\n  \n  constructor(containerElement, windowLevelController) {\n    this.element = containerElement;\n    this.windowLevelController = windowLevelController;\n    this.render();\n    this.attachEventListeners();\n  }\n  \n  private render() {\n    // Create preset buttons\n    const presetNames = Object.keys(windowLevelPresets);\n    \n    let html = '<div class=\"window-level-panel\">';\n    html += '<h3>Window/Level Presets</h3>';\n    html += '<div class=\"preset-buttons\">';\n    \n    presetNames.forEach(name => {\n      html += `<button data-preset=\"${name}\">${name}</button>`;\n    });\n    \n    html += '</div>';\n    html += '<div class=\"manual-controls\">';\n    html += '<label>Window Width: <input type=\"range\" id=\"windowWidth\" min=\"1\" max=\"4000\" step=\"1\"></label>';\n    html += '<label>Window Center: <input type=\"range\" id=\"windowCenter\" min=\"-1000\" max=\"1000\" step=\"1\"></label>';\n    html += '</div>';\n    html += '<button id=\"resetWindowLevel\">Reset</button>';\n    html += '</div>';\n    \n    this.element.innerHTML = html;\n  }\n  \n  private attachEventListeners() {\n    // Preset button clicks\n    const presetButtons = this.element.querySelectorAll('[data-preset]');\n    presetButtons.forEach(button => {\n      button.addEventListener('click', () => {\n        const presetName = button.getAttribute('data-preset');\n        const preset = getPresetByName(presetName);\n        this.windowLevelController.setWindowLevel(preset.windowWidth, preset.windowCenter);\n        this.updateInputs(preset.windowWidth, preset.windowCenter);\n      });\n    });\n    \n    // Manual slider inputs\n    const windowWidthInput = this.element.querySelector('#windowWidth');\n    const windowCenterInput = this.element.querySelector('#windowCenter');\n    \n    windowWidthInput.addEventListener('input', () => {\n      const windowWidth = parseInt(windowWidthInput.value, 10);\n      const { windowCenter } = this.windowLevelController.getWindowLevel();\n      this.windowLevelController.setWindowLevel(windowWidth, windowCenter);\n    });\n    \n    windowCenterInput.addEventListener('input', () => {\n      const windowCenter = parseInt(windowCenterInput.value, 10);\n      const { windowWidth } = this.windowLevelController.getWindowLevel();\n      this.windowLevelController.setWindowLevel(windowWidth, windowCenter);\n    });\n    \n    // Reset button\n    const resetButton = this.element.querySelector('#resetWindowLevel');\n    resetButton.addEventListener('click', () => {\n      this.windowLevelController.resetWindowLevel();\n      const { windowWidth, windowCenter } = this.windowLevelController.getWindowLevel();\n      this.updateInputs(windowWidth, windowCenter);\n    });\n  }\n  \n  private updateInputs(windowWidth, windowCenter) {\n    const windowWidthInput = this.element.querySelector('#windowWidth');\n    const windowCenterInput = this.element.querySelector('#windowCenter');\n    \n    windowWidthInput.value = windowWidth;\n    windowCenterInput.value = windowCenter;\n  }\n}\n```",
-        "testStrategy": "1. Test window/level adjustments with mouse interactions\n2. Verify preset functionality for different tissue types\n3. Test manual window/level input controls\n4. Validate window/level reset functionality\n5. Test window/level adjustments on different image types\n6. Verify window/level changes are correctly applied to the viewport",
-        "priority": "medium",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement Window/Level Controller",
-            "description": "Develop the core logic to adjust window and level parameters for image brightness and contrast, ensuring real-time feedback and compatibility with various image types.",
-            "dependencies": [],
-            "details": "This involves creating functions or classes that can modify the display range (window) and center (level) of image data, similar to how medical imaging tools adjust brightness and contrast. Ensure the controller can be called programmatically and supports synchronous interactive modification.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Define and Manage Presets",
-            "description": "Establish a system to define, store, and retrieve window/level presets tailored for different diagnostic tasks or image types.",
-            "dependencies": [
-              1
-            ],
-            "details": "Create a data structure or configuration file to hold preset values (e.g., for bone, soft tissue, lung). Implement functions to apply, add, edit, and remove presets, ensuring seamless integration with the window/level controller.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Window/Level Tool Integration",
-            "description": "Integrate the window/level controller with interactive tools, such as mouse or touch gestures, to allow users to adjust parameters dynamically.",
-            "dependencies": [
-              1
-            ],
-            "details": "Map standard mouse or gesture controls to window and level adjustments, following conventions used in medical imaging software. Ensure changes are reflected in real time and are compatible with the controller logic.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Create UI Panel for Adjustments",
-            "description": "Design and implement a user interface panel that allows users to manually adjust window and level values and select from available presets.",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "The panel should include sliders or input fields for manual adjustment, a dropdown or list for presets, and real-time feedback of changes. Ensure accessibility and usability for clinical workflows.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Integrate Manual and Preset Controls",
-            "description": "Coordinate manual adjustments and preset selection within the UI, ensuring consistent state management and user experience.",
-            "dependencies": [
-              4
-            ],
-            "details": "Implement logic to handle transitions between manual changes and preset application, updating the display and internal state accordingly. Prevent conflicts and ensure intuitive behavior.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Test Adjustments on Various Image Types",
-            "description": "Validate the window/level adjustment system across a range of image types (e.g., CT, MR, X-ray) and clinical scenarios.",
-            "dependencies": [
-              5
-            ],
-            "details": "Perform functional and usability testing with different image datasets, verifying that both manual and preset controls produce optimal visual results and that the system responds correctly to user input.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 7,
-        "title": "Zoom, Pan and Navigation Tools Implementation",
-        "description": "Implement image navigation tools including zoom, pan, and gesture support for both mouse and touch interactions.",
-        "details": "1. Implement zoom tool (src/tools/zoomTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeZoomTool() {\n  // Register the zoom tool\n  cornerstoneTools.addTool(cornerstoneTools.ZoomTool);\n}\n\nexport function enableZoomTool(element, options = {}) {\n  cornerstoneTools.setToolActive('Zoom', { mouseButtonMask: 1, ...options });\n}\n\nexport function configureZoomTool(options = {}) {\n  const configuration = {\n    // Zoom speed multiplier\n    zoomSpeed: options.zoomSpeed || 0.1,\n    // Invert zoom direction\n    invert: options.invert || false,\n    ...options\n  };\n  \n  cornerstoneTools.setToolConfiguration('Zoom', configuration);\n}\n\nexport function setZoomLevel(viewport, zoomLevel) {\n  viewport.setProperties({ scale: zoomLevel });\n  viewport.render();\n}\n```\n\n2. Implement pan tool (src/tools/panTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializePanTool() {\n  // Register the pan tool\n  cornerstoneTools.addTool(cornerstoneTools.PanTool);\n}\n\nexport function enablePanTool(element, options = {}) {\n  cornerstoneTools.setToolActive('Pan', { mouseButtonMask: 1, ...options });\n}\n\nexport function configurePanTool(options = {}) {\n  const configuration = {\n    // Pan speed multiplier\n    panSpeed: options.panSpeed || 1.0,\n    ...options\n  };\n  \n  cornerstoneTools.setToolConfiguration('Pan', configuration);\n}\n```\n\n3. Create zoom controls UI component (src/components/ZoomControls.ts):\n```typescript\nexport class ZoomControls {\n  private element;\n  private viewport;\n  \n  constructor(containerElement, viewport) {\n    this.element = containerElement;\n    this.viewport = viewport;\n    this.render();\n    this.attachEventListeners();\n  }\n  \n  private render() {\n    let html = '<div class=\"zoom-controls\">';\n    html += '<button id=\"zoomIn\">+</button>';\n    html += '<button id=\"zoomOut\">-</button>';\n    html += '<button id=\"zoomReset\">Reset</button>';\n    html += '</div>';\n    \n    this.element.innerHTML = html;\n  }\n  \n  private attachEventListeners() {\n    const zoomInButton = this.element.querySelector('#zoomIn');\n    const zoomOutButton = this.element.querySelector('#zoomOut');\n    const zoomResetButton = this.element.querySelector('#zoomReset');\n    \n    zoomInButton.addEventListener('click', () => {\n      const properties = this.viewport.getProperties();\n      const newScale = properties.scale * 1.2;\n      this.viewport.setProperties({ scale: newScale });\n      this.viewport.render();\n    });\n    \n    zoomOutButton.addEventListener('click', () => {\n      const properties = this.viewport.getProperties();\n      const newScale = properties.scale / 1.2;\n      this.viewport.setProperties({ scale: newScale });\n      this.viewport.render();\n    });\n    \n    zoomResetButton.addEventListener('click', () => {\n      this.viewport.resetCamera();\n      this.viewport.render();\n    });\n  }\n}\n```\n\n4. Implement gesture handlers for touch support (src/utils/gestureHandlers.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeGestureHandlers() {\n  // Enable touch tools\n  cornerstoneTools.addTool(cornerstoneTools.PinchZoomTool);\n  cornerstoneTools.addTool(cornerstoneTools.ZoomTouchPinchTool);\n  cornerstoneTools.addTool(cornerstoneTools.PanMultiTouchTool);\n}\n\nexport function enableTouchGestures(element) {\n  // Enable pinch/zoom\n  cornerstoneTools.setToolActive('ZoomTouchPinch', { });\n  \n  // Enable multi-touch pan\n  cornerstoneTools.setToolActive('PanMultiTouch', { });\n}\n\nexport function handleMouseWheel(element) {\n  // Add mouse wheel event listener for zooming\n  element.addEventListener('wheel', (event) => {\n    event.preventDefault();\n    \n    const viewport = cornerstone.getViewport(element);\n    const delta = event.deltaY > 0 ? -0.1 : 0.1;\n    const newScale = viewport.scale + delta;\n    \n    if (newScale > 0.1) { // Prevent zooming out too far\n      viewport.scale = newScale;\n      cornerstone.setViewport(element, viewport);\n      cornerstone.updateImage(element);\n    }\n  });\n}\n```",
-        "testStrategy": "1. Test zoom functionality with mouse interactions and UI controls\n2. Verify pan functionality with mouse drag operations\n3. Test touch gestures on touch-enabled devices\n4. Validate mouse wheel zoom functionality\n5. Test zoom reset functionality\n6. Verify zoom and pan operations work correctly on different viewport types",
-        "priority": "medium",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement zoom tool",
-            "description": "Develop the core logic to allow users to zoom in and out of the visualization or content area, applying appropriate coordinate transformations for scaling.",
-            "dependencies": [],
-            "details": "This involves handling scale changes, updating the view dynamically, and ensuring clarity at different zoom levels. Use libraries or custom code as appropriate for the project context.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement pan tool",
-            "description": "Develop the logic to allow users to pan (move) the viewport horizontally and vertically within the content area.",
-            "dependencies": [
-              1
-            ],
-            "details": "Implement translation transformations in response to user input, ensuring smooth and intuitive movement. Integrate with the zoom logic to maintain context.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Create zoom controls UI",
-            "description": "Design and implement user interface controls for zooming, such as buttons or sliders, to provide accessible zoom options.",
-            "dependencies": [
-              1
-            ],
-            "details": "Ensure the controls are responsive and update the view in real time. Controls should be accessible and visually integrated with the application.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Add gesture handlers for touch",
-            "description": "Implement touch gesture recognition for zoom (pinch) and pan (drag) interactions on touch-enabled devices.",
-            "dependencies": [
-              1,
               2
             ],
-            "details": "Handle multi-touch events, ensuring gestures are smooth and do not conflict with other input modalities. Test for responsiveness and accuracy.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Integrate mouse wheel and keyboard navigation",
-            "description": "Enable zoom and pan functionality using mouse wheel events and keyboard shortcuts for improved accessibility and usability.",
-            "dependencies": [
-              1,
-              2,
-              3
-            ],
-            "details": "Map mouse wheel to zoom, arrow keys to pan, and provide keyboard shortcuts for zoom in/out. Ensure event handling does not interfere with other controls.",
+            "details": "Create a utility module (e.g., `src/utils/sanitize.ts`) that exports a function like `sanitizeInput(input: string): string` which internally calls `DOMPurify.sanitize(input)`. Refactor code to use this utility for all sanitization needs.[1][3]",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Test navigation on multiple devices and viewport types",
-            "description": "Conduct comprehensive testing of zoom and pan features across various devices (desktop, tablet, mobile) and viewport sizes.",
+            "title": "Writing and running tests",
+            "description": "Develop and execute unit and integration tests to verify that all user inputs are properly sanitized and that application functionality remains intact.",
             "dependencies": [
-              1,
-              2,
               3,
               4,
               5
             ],
-            "details": "Verify consistent behavior, performance, and responsiveness. Address any device-specific issues and ensure accessibility standards are met.",
+            "details": "Write tests with various malicious input patterns (e.g., script tags, event handlers) and verify that the sanitized output is safe. Test the UI to ensure legitimate input is unaffected and that annotation labels and other user-generated content are stored and displayed securely.[3]",
             "status": "done",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 8,
-        "title": "Image Rotation and Flip Implementation",
-        "description": "Implement image orientation adjustment tools including rotation and flip functionality with UI controls.",
-        "details": "1. Create rotation controller (src/core/rotationController.ts):\n```typescript\nexport class RotationController {\n  private viewport;\n  \n  constructor(viewport) {\n    this.viewport = viewport;\n  }\n  \n  public rotateImage(degrees) {\n    const properties = this.viewport.getProperties();\n    const currentRotation = properties.rotation || 0;\n    const newRotation = (currentRotation + degrees) % 360;\n    \n    this.viewport.setProperties({ rotation: newRotation });\n    this.viewport.render();\n    \n    return newRotation;\n  }\n  \n  public setRotation(degrees) {\n    this.viewport.setProperties({ rotation: degrees });\n    this.viewport.render();\n    \n    return degrees;\n  }\n  \n  public getRotation() {\n    const properties = this.viewport.getProperties();\n    return properties.rotation || 0;\n  }\n}\n```\n\n2. Create flip controller (src/core/flipController.ts):\n```typescript\nexport class FlipController {\n  private viewport;\n  \n  constructor(viewport) {\n    this.viewport = viewport;\n  }\n  \n  public flipImageHorizontal() {\n    const properties = this.viewport.getProperties();\n    const hflip = properties.hflip || false;\n    \n    this.viewport.setProperties({ hflip: !hflip });\n    this.viewport.render();\n    \n    return !hflip;\n  }\n  \n  public flipImageVertical() {\n    const properties = this.viewport.getProperties();\n    const vflip = properties.vflip || false;\n    \n    this.viewport.setProperties({ vflip: !vflip });\n    this.viewport.render();\n    \n    return !vflip;\n  }\n  \n  public getFlipState() {\n    const properties = this.viewport.getProperties();\n    return {\n      hflip: properties.hflip || false,\n      vflip: properties.vflip || false\n    };\n  }\n  \n  public resetOrientation() {\n    this.viewport.setProperties({\n      hflip: false,\n      vflip: false,\n      rotation: 0\n    });\n    this.viewport.render();\n  }\n}\n```\n\n3. Create orientation controls UI component (src/components/OrientationControls.ts):\n```typescript\nexport class OrientationControls {\n  private element;\n  private rotationController;\n  private flipController;\n  \n  constructor(containerElement, rotationController, flipController) {\n    this.element = containerElement;\n    this.rotationController = rotationController;\n    this.flipController = flipController;\n    this.render();\n    this.attachEventListeners();\n  }\n  \n  private render() {\n    let html = '<div class=\"orientation-controls\">';\n    html += '<div class=\"rotation-controls\">';\n    html += '<button id=\"rotateLeft\">↺ 90°</button>';\n    html += '<button id=\"rotateRight\">↻ 90°</button>';\n    html += '</div>';\n    html += '<div class=\"flip-controls\">';\n    html += '<button id=\"flipHorizontal\">↔ Flip H</button>';\n    html += '<button id=\"flipVertical\">↕ Flip V</button>';\n    html += '</div>';\n    html += '<button id=\"resetOrientation\">Reset</button>';\n    html += '</div>';\n    \n    this.element.innerHTML = html;\n  }\n  \n  private attachEventListeners() {\n    const rotateLeftButton = this.element.querySelector('#rotateLeft');\n    const rotateRightButton = this.element.querySelector('#rotateRight');\n    const flipHorizontalButton = this.element.querySelector('#flipHorizontal');\n    const flipVerticalButton = this.element.querySelector('#flipVertical');\n    const resetButton = this.element.querySelector('#resetOrientation');\n    \n    rotateLeftButton.addEventListener('click', () => {\n      this.rotationController.rotateImage(-90);\n    });\n    \n    rotateRightButton.addEventListener('click', () => {\n      this.rotationController.rotateImage(90);\n    });\n    \n    flipHorizontalButton.addEventListener('click', () => {\n      this.flipController.flipImageHorizontal();\n    });\n    \n    flipVerticalButton.addEventListener('click', () => {\n      this.flipController.flipImageVertical();\n    });\n    \n    resetButton.addEventListener('click', () => {\n      this.flipController.resetOrientation();\n    });\n  }\n}\n```",
-        "testStrategy": "1. Test image rotation in both clockwise and counter-clockwise directions\n2. Verify horizontal and vertical flip functionality\n3. Test orientation reset functionality\n4. Validate that orientation changes are correctly applied to the viewport\n5. Test orientation controls UI interaction\n6. Verify orientation adjustments work correctly on different image types",
-        "priority": "medium",
+        "id": 14,
+        "title": "Configure Security HTTP Headers with Vite Plugin",
+        "description": "Implement security HTTP headers including Content-Security-Policy to prevent various attacks like clickjacking and data injection.",
+        "details": "1. Install the vite-plugin-security-headers package:\n```bash\nnpm install --save-dev vite-plugin-security-headers\n```\n2. Modify vite.config.ts to include the security headers plugin:\n```typescript\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { securityHeaders } from 'vite-plugin-security-headers';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    securityHeaders({\n      'Content-Security-Policy': {\n        'default-src': [\"'self'\"],\n        'script-src': [\"'self'\", \"'unsafe-inline'\"], // Allow inline scripts if needed\n        'style-src': [\"'self'\", \"'unsafe-inline'\"],\n        'img-src': [\"'self'\", 'data:', 'blob:'], // Allow data: and blob: for captures\n        'connect-src': [\"'self'\"]\n      },\n      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',\n      'X-Content-Type-Options': 'nosniff',\n      'X-Frame-Options': 'DENY',\n      'Referrer-Policy': 'strict-origin-when-cross-origin'\n    })\n  ]\n});\n```\n3. Test the configuration to ensure it doesn't break existing functionality\n4. Adjust CSP rules as needed based on application requirements",
+        "testStrategy": "1. Build the application and inspect HTTP response headers using browser developer tools\n2. Use online security header checkers (e.g., securityheaders.com) to validate configuration\n3. Test all application features to ensure CSP doesn't block legitimate resources\n4. Verify protection against clickjacking by attempting to embed the application in an iframe",
+        "priority": "high",
         "dependencies": [
-          2
+          11
         ],
         "status": "done",
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement Rotation Controller",
-            "description": "Develop the core logic to rotate images by standard angles (e.g., 0, 90, 180, 270 degrees) and arbitrary angles, ensuring support for different image types.",
+            "title": "Install the Security Headers Plugin",
+            "description": "Add the appropriate Vite plugin for managing security HTTP headers (such as vite-plugin-security-headers or vite-plugin-csp) to the project using npm or yarn.",
             "dependencies": [],
-            "details": "Use efficient algorithms or libraries (such as OpenCV or platform-specific APIs) to handle rotation. Ensure the controller can be invoked programmatically and maintains correct image orientation state.",
+            "details": "Run the installation command in your project directory, e.g., `npm install --save-dev vite-plugin-security-headers` or `npm i -D vite-plugin-csp`.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Implement Flip Controller",
-            "description": "Create functionality to flip images horizontally and vertically, updating the image state accordingly.",
+            "title": "Modify Vite Configuration to Include the Plugin",
+            "description": "Update the vite.config.ts file to import and configure the security headers plugin.",
             "dependencies": [
               1
             ],
-            "details": "Support both horizontal and vertical flips, possibly using transpose or mirror operations. Ensure compatibility with the rotation controller and correct state management.",
+            "details": "Import the plugin at the top of your Vite config and add it to the plugins array. Configure initial header policies as needed.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Create Orientation Controls UI",
-            "description": "Design and implement a user interface that allows users to rotate and flip images interactively.",
+            "title": "Define and Tune Security Header Policies",
+            "description": "Specify and iteratively refine Content-Security-Policy and other security headers to balance security and application functionality.",
             "dependencies": [
-              1,
               2
             ],
-            "details": "Provide buttons or controls for each orientation action (rotate left/right, flip horizontal/vertical, reset). Ensure the UI reflects the current orientation state and is accessible.",
+            "details": "Set up directives like 'default-src', 'script-src', and others. Adjust policies based on application requirements and known best practices.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Integrate with Viewport Rendering",
-            "description": "Connect the orientation controllers and UI to the image rendering pipeline so that changes are immediately visible in the viewport.",
+            "title": "Test Header Configuration in Development and Production",
+            "description": "Verify that the configured headers are correctly applied and do not interfere with application features in both development and production environments.",
             "dependencies": [
               3
             ],
-            "details": "Ensure that all orientation changes are rendered in real time and that the viewport updates correctly for all supported image types.",
+            "details": "Use browser developer tools and online header checkers to inspect headers. Test all features to ensure nothing is unintentionally blocked.",
             "status": "done",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Test Orientation Changes and Reset Functionality",
-            "description": "Verify that rotation, flipping, and reset actions work as expected across different image types and UI states.",
+            "title": "Adjust Policies Based on Feedback and Issues",
+            "description": "Iterate on the header configuration based on test results, user feedback, and security audits to ensure optimal protection and usability.",
             "dependencies": [
               4
             ],
-            "details": "Develop and execute test cases for all orientation controls, including edge cases and state resets. Confirm correct state management and rendering after each operation.",
+            "details": "Update the Vite config and plugin options as needed to resolve issues or tighten security. Document changes for future reference.",
             "status": "done",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 9,
-        "title": "Multi-Viewport System Implementation",
-        "description": "Implement a flexible multi-viewport system with layout management and synchronization capabilities.",
-        "details": "1. Create viewport manager (src/core/viewportManager.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport class ViewportManager {\n  private renderingEngine;\n  private viewports = {};\n  \n  constructor(renderingEngine) {\n    this.renderingEngine = renderingEngine;\n  }\n  \n  public createViewport(viewportId, element, type, options = {}) {\n    // Create the viewport\n    const viewport = this.renderingEngine.enableElement({\n      viewportId,\n      type,\n      element,\n      defaultOptions: options\n    });\n    \n    // Store the viewport reference\n    this.viewports[viewportId] = viewport;\n    \n    return viewport;\n  }\n  \n  public getViewport(viewportId) {\n    return this.viewports[viewportId];\n  }\n  \n  public getAllViewports() {\n    return Object.values(this.viewports);\n  }\n  \n  public removeViewport(viewportId) {\n    if (this.viewports[viewportId]) {\n      this.renderingEngine.disableElement(viewportId);\n      delete this.viewports[viewportId];\n      return true;\n    }\n    return false;\n  }\n  \n  public resetAllViewports() {\n    Object.values(this.viewports).forEach(viewport => {\n      viewport.resetCamera();\n      viewport.render();\n    });\n  }\n}\n```\n\n2. Implement layout manager (src/components/LayoutManager.ts):\n```typescript\nimport * as cornerstone from '@cornerstonejs/core';\n\nexport class LayoutManager {\n  private containerElement;\n  private viewportManager;\n  private currentLayout = '1x1';\n  private viewportElements = [];\n  \n  constructor(containerElement, viewportManager) {\n    this.containerElement = containerElement;\n    this.viewportManager = viewportManager;\n  }\n  \n  public setLayout(layout) {\n    // Clear existing viewports\n    this.clearViewports();\n    \n    // Parse layout format (e.g., '2x2', '1x3', etc.)\n    const [rows, cols] = layout.split('x').map(Number);\n    this.currentLayout = layout;\n    \n    // Create grid container\n    this.containerElement.innerHTML = '';\n    this.containerElement.style.display = 'grid';\n    this.containerElement.style.gridTemplateRows = `repeat(${rows}, 1fr)`;\n    this.containerElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;\n    this.containerElement.style.gap = '5px';\n    this.containerElement.style.height = '100%';\n    this.containerElement.style.width = '100%';\n    \n    // Create viewport elements\n    this.viewportElements = [];\n    for (let i = 0; i < rows * cols; i++) {\n      const viewportElement = document.createElement('div');\n      viewportElement.className = 'viewport-container';\n      viewportElement.style.width = '100%';\n      viewportElement.style.height = '100%';\n      viewportElement.style.position = 'relative';\n      viewportElement.style.backgroundColor = '#000';\n      viewportElement.dataset.viewportIndex = i.toString();\n      \n      this.containerElement.appendChild(viewportElement);\n      this.viewportElements.push(viewportElement);\n    }\n    \n    return this.viewportElements;\n  }\n  \n  public getViewportElement(index) {\n    return this.viewportElements[index];\n  }\n  \n  public getAllViewportElements() {\n    return [...this.viewportElements];\n  }\n  \n  public getCurrentLayout() {\n    return this.currentLayout;\n  }\n  \n  private clearViewports() {\n    // Remove all viewport elements\n    this.viewportElements.forEach((element, index) => {\n      const viewportId = element.dataset.viewportId;\n      if (viewportId) {\n        this.viewportManager.removeViewport(viewportId);\n      }\n    });\n    \n    this.viewportElements = [];\n  }\n}\n```\n\n3. Implement synchronization system (src/core/synchronization.ts):\n```typescript\nexport class SynchronizationManager {\n  private syncGroups = {};\n  \n  public createSyncGroup(groupId) {\n    if (!this.syncGroups[groupId]) {\n      this.syncGroups[groupId] = {\n        viewports: [],\n        active: true\n      };\n    }\n    return this.syncGroups[groupId];\n  }\n  \n  public addViewportToSyncGroup(groupId, viewport) {\n    const group = this.createSyncGroup(groupId);\n    \n    // Check if viewport is already in the group\n    if (!group.viewports.includes(viewport)) {\n      group.viewports.push(viewport);\n    }\n    \n    return group;\n  }\n  \n  public removeViewportFromSyncGroup(groupId, viewport) {\n    const group = this.syncGroups[groupId];\n    if (group) {\n      const index = group.viewports.indexOf(viewport);\n      if (index !== -1) {\n        group.viewports.splice(index, 1);\n        return true;\n      }\n    }\n    return false;\n  }\n  \n  public enableSyncGroup(groupId) {\n    const group = this.syncGroups[groupId];\n    if (group) {\n      group.active = true;\n      return true;\n    }\n    return false;\n  }\n  \n  public disableSyncGroup(groupId) {\n    const group = this.syncGroups[groupId];\n    if (group) {\n      group.active = false;\n      return true;\n    }\n    return false;\n  }\n  \n  public synchronizeViewports(groupId, sourceViewport, propertyName, value) {\n    const group = this.syncGroups[groupId];\n    if (group && group.active) {\n      group.viewports.forEach(viewport => {\n        if (viewport !== sourceViewport) {\n          // Create property update object\n          const updateObj = {};\n          updateObj[propertyName] = value;\n          \n          // Update the viewport property\n          viewport.setProperties(updateObj);\n          viewport.render();\n        }\n      });\n      return true;\n    }\n    return false;\n  }\n}\n```\n\n4. Create viewport navigation utilities (src/utils/viewportNavigation.ts):\n```typescript\nexport function linkViewportsPan(viewports, syncManager) {\n  const syncGroupId = 'pan-sync-' + Date.now();\n  \n  // Add all viewports to the sync group\n  viewports.forEach(viewport => {\n    syncManager.addViewportToSyncGroup(syncGroupId, viewport);\n    \n    // Add event listener for pan events\n    viewport.element.addEventListener('cornerstonepan', event => {\n      const { translation } = event.detail;\n      \n      // Synchronize pan across viewports\n      syncManager.synchronizeViewports(syncGroupId, viewport, 'translation', translation);\n    });\n  });\n  \n  return syncGroupId;\n}\n\nexport function linkViewportsZoom(viewports, syncManager) {\n  const syncGroupId = 'zoom-sync-' + Date.now();\n  \n  // Add all viewports to the sync group\n  viewports.forEach(viewport => {\n    syncManager.addViewportToSyncGroup(syncGroupId, viewport);\n    \n    // Add event listener for zoom events\n    viewport.element.addEventListener('cornerstonezoom', event => {\n      const { scale } = event.detail;\n      \n      // Synchronize zoom across viewports\n      syncManager.synchronizeViewports(syncGroupId, viewport, 'scale', scale);\n    });\n  });\n  \n  return syncGroupId;\n}\n\nexport function linkViewportsWindowLevel(viewports, syncManager) {\n  const syncGroupId = 'wl-sync-' + Date.now();\n  \n  // Add all viewports to the sync group\n  viewports.forEach(viewport => {\n    syncManager.addViewportToSyncGroup(syncGroupId, viewport);\n    \n    // Add event listener for window/level events\n    viewport.element.addEventListener('cornerstonewindowlevel', event => {\n      const { voiRange } = event.detail;\n      \n      // Synchronize window/level across viewports\n      syncManager.synchronizeViewports(syncGroupId, viewport, 'voiRange', voiRange);\n    });\n  });\n  \n  return syncGroupId;\n}\n```",
-        "testStrategy": "1. Test creation of different viewport layouts (1x1, 2x2, 1x3, etc.)\n2. Verify viewport synchronization for pan, zoom, and window/level\n3. Test adding and removing viewports from sync groups\n4. Validate that layout changes properly clean up and recreate viewports\n5. Test viewport navigation across different viewport types\n6. Verify that synchronization can be enabled/disabled as needed",
-        "priority": "high",
+        "id": 15,
+        "title": "Implement Production Environment Log Management",
+        "description": "Modify the logging system to prevent sensitive information exposure in production by disabling debug logs in production builds.",
+        "details": "1. Locate the src/utils/debug-logger.ts file\n2. Modify each logging function (log, success, error, warn, etc.) to check for production environment\n3. Add a condition at the beginning of each function to return early in production:\n```typescript\n// Example modification for a log function\nexport function log(...args: any[]): void {\n  // Skip logging in production environment\n  if (import.meta.env.PROD) {\n    return;\n  }\n  \n  // Existing logging logic\n  console.log(...args);\n}\n\n// Apply similar changes to other functions: success, error, warn, etc.\n```\n4. Consider adding a configuration option to enable logging in production for troubleshooting if needed\n5. Ensure all custom logging throughout the application uses these utility functions",
+        "testStrategy": "1. Create both development and production builds\n2. Verify logs appear in development but not in production\n3. Test all application features to ensure functionality isn't affected by log suppression\n4. Create unit tests that verify logging functions respect the environment setting",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Locate and Review Logging Utilities",
+            "description": "Identify all logging utility files and functions in the codebase, focusing on src/utils/debug-logger.ts and any other modules responsible for logging.",
+            "dependencies": [],
+            "details": "Search for logging-related files and review their current implementation, log levels, and usage patterns across environments.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Refactor Log Functions for Environment Checks",
+            "description": "Modify each logging function to check the current environment and suppress debug logs in production.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add conditional logic to each log function (log, success, error, warn, etc.) to ensure debug and verbose logs are only active in non-production environments, following best practices for environment-based log level management.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add Configuration Options for Logging",
+            "description": "Introduce configuration options to control log levels and output formats based on environment variables.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement environment-driven configuration (e.g., LOG_LEVEL) to allow dynamic adjustment of log verbosity and format, supporting structured logging if applicable.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Test Logging in Development and Production Environments",
+            "description": "Thoroughly test the logging system in both development and production builds to ensure correct log suppression and output.",
+            "dependencies": [
+              3
+            ],
+            "details": "Build and run the application in both environments, verify that logs appear as expected in development but are suppressed or limited in production, and confirm that no sensitive data is exposed.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "Implement Secure Data Storage for User Preferences",
+        "description": "Enhance security of locally stored user preferences and settings to prevent tampering and unauthorized access.",
+        "details": "1. Review current storage mechanisms for user preferences (localStorage, sessionStorage, etc.)\n2. For sensitive settings, implement encryption before storage:\n```typescript\n// Utility functions for secure storage\nimport CryptoJS from 'crypto-js';\n\nconst STORAGE_KEY = 'clarity_settings';\nconst SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET || 'default-dev-key';\n\nexport function secureStore(data: any): void {\n  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), SECRET_KEY).toString();\n  localStorage.setItem(STORAGE_KEY, encrypted);\n}\n\nexport function secureRetrieve(): any {\n  const encrypted = localStorage.getItem(STORAGE_KEY);\n  if (!encrypted) return null;\n  \n  try {\n    const decrypted = CryptoJS.AES.decrypt(encrypted, SECRET_KEY).toString(CryptoJS.enc.Utf8);\n    return JSON.parse(decrypted);\n  } catch (e) {\n    console.error('Failed to decrypt settings, resetting to defaults');\n    localStorage.removeItem(STORAGE_KEY);\n    return null;\n  }\n}\n```\n3. Install required dependency: `npm install crypto-js @types/crypto-js`\n4. Replace direct localStorage calls with these secure utility functions\n5. Implement proper error handling for corrupted storage",
+        "testStrategy": "1. Create unit tests for the encryption/decryption functions\n2. Test storage and retrieval of various data types\n3. Verify error handling when storage is tampered with\n4. Test migration from old storage format to new secure format\n5. Verify application behavior when storage is cleared or corrupted",
+        "priority": "medium",
         "dependencies": [
-          2,
-          6,
-          7,
-          8
+          11
         ],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement viewport manager",
-            "description": "Develop a core module responsible for creating, tracking, and managing the lifecycle of individual viewports.",
+            "title": "Review Current Storage Usage",
+            "description": "Analyze the existing mechanisms for storing user preferences and settings, including the use of localStorage, sessionStorage, and any other relevant APIs.",
             "dependencies": [],
-            "details": "This includes initializing viewport instances, maintaining a registry, and providing APIs for viewport access and manipulation.",
+            "details": "Document all current storage keys, data formats, and access patterns. Identify which preferences are sensitive and require encryption.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Implement layout manager",
-            "description": "Create a system to define, apply, and switch between different viewport layouts.",
+            "title": "Implement Encryption Utilities",
+            "description": "Develop or integrate encryption utilities to securely store and retrieve sensitive user preferences.",
             "dependencies": [
               1
             ],
-            "details": "The layout manager should support grid, row, column, and custom arrangements, and interact with the viewport manager to position viewports accordingly.",
+            "details": "Choose an encryption library (e.g., CryptoJS or a dedicated encrypted storage wrapper). Implement functions for encrypting and decrypting data before writing to or reading from storage.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Create dynamic viewport creation/removal",
-            "description": "Enable runtime addition and removal of viewports based on user actions or programmatic triggers.",
+            "title": "Refactor Storage Calls",
+            "description": "Update all code that reads from or writes to user preferences storage to use the new encryption utilities.",
             "dependencies": [
-              1,
               2
             ],
-            "details": "Ensure that the viewport manager and layout manager update their state and UI in response to these changes.",
+            "details": "Replace direct storage access with secureStore and secureRetrieve functions. Ensure all sensitive data is encrypted before storage and decrypted upon retrieval.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Implement synchronization manager",
-            "description": "Develop a module to coordinate synchronization of state (e.g., pan, zoom, window-level) across multiple viewports.",
+            "title": "Handle Errors and Migration",
+            "description": "Implement robust error handling for storage operations and create a migration strategy for existing unencrypted data.",
             "dependencies": [
-              1,
               3
             ],
-            "details": "This manager should allow selective or global sync, and handle event propagation efficiently.",
+            "details": "Add error handling for decryption failures and corrupted data. Develop a migration script to detect and upgrade old-format preferences to the new encrypted format.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Integrate pan/zoom/window-level sync",
-            "description": "Connect viewport interaction events (pan, zoom, window-level) to the synchronization manager for coordinated updates.",
+            "title": "Install Dependencies",
+            "description": "Install and configure all required libraries and tools for encryption and secure storage.",
             "dependencies": [
-              4
+              2
             ],
-            "details": "Ensure that user actions in one viewport can update others according to the current sync configuration.",
+            "details": "Add encryption libraries (e.g., CryptoJS, encrypt-storage) to the project. Update build and environment configurations as needed.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Implement layout switching",
-            "description": "Allow users or the system to switch between different layouts dynamically, preserving viewport state where possible.",
+            "title": "Testing and Validation",
+            "description": "Thoroughly test the new secure storage implementation, including encryption, decryption, migration, and error handling.",
             "dependencies": [
-              2,
-              3,
+              4,
               5
             ],
-            "details": "Handle transitions smoothly, updating both the UI and internal state to reflect the new layout.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Handle viewport cleanup",
-            "description": "Ensure proper cleanup and resource management when viewports are removed or layouts are switched.",
-            "dependencies": [
-              3,
-              6
-            ],
-            "details": "This includes detaching event listeners, freeing memory, and updating internal registries.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 8,
-            "title": "Test with various layouts and sync scenarios",
-            "description": "Design and execute tests covering different layout configurations and synchronization cases.",
-            "dependencies": [
-              6,
-              7
-            ],
-            "details": "Include edge cases such as rapid layout switches, mass viewport creation/removal, and complex sync groupings.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 9,
-            "title": "Document API for extensibility",
-            "description": "Produce comprehensive documentation for the viewport, layout, and synchronization APIs to support future extension and integration.",
-            "dependencies": [],
-            "details": "Include usage examples, extension points, and guidelines for custom layout or sync strategies.",
+            "details": "Write unit and integration tests for encryption utilities and storage access. Test migration from old to new format, simulate storage corruption, and verify application behavior in all scenarios.",
             "status": "pending",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 10,
-        "title": "Series Navigation Implementation",
-        "description": "Implement DICOM series navigation with stack tools, series browser, and thumbnail viewer functionality.",
-        "details": "1. Create series manager (src/core/seriesManager.ts):\n```typescript\nexport class SeriesManager {\n  private seriesList = [];\n  private currentSeriesIndex = -1;\n  \n  public addSeries(series) {\n    this.seriesList.push(series);\n    \n    // If this is the first series, set it as current\n    if (this.currentSeriesIndex === -1) {\n      this.currentSeriesIndex = 0;\n    }\n    \n    return this.seriesList.length - 1; // Return the index of the added series\n  }\n  \n  public removeSeries(index) {\n    if (index >= 0 && index < this.seriesList.length) {\n      this.seriesList.splice(index, 1);\n      \n      // Adjust current series index if needed\n      if (this.currentSeriesIndex === index) {\n        this.currentSeriesIndex = this.seriesList.length > 0 ? 0 : -1;\n      } else if (this.currentSeriesIndex > index) {\n        this.currentSeriesIndex--;\n      }\n      \n      return true;\n    }\n    return false;\n  }\n  \n  public getSeries(index) {\n    return this.seriesList[index];\n  }\n  \n  public getAllSeries() {\n    return [...this.seriesList];\n  }\n  \n  public getCurrentSeries() {\n    return this.currentSeriesIndex >= 0 ? this.seriesList[this.currentSeriesIndex] : null;\n  }\n  \n  public setCurrentSeries(index) {\n    if (index >= 0 && index < this.seriesList.length) {\n      this.currentSeriesIndex = index;\n      return true;\n    }\n    return false;\n  }\n  \n  public getSeriesCount() {\n    return this.seriesList.length;\n  }\n}\n```\n\n2. Implement stack navigation tool (src/tools/stackNavigationTool.ts):\n```typescript\nimport * as cornerstoneTools from '@cornerstonejs/tools';\n\nexport function initializeStackNavigationTool() {\n  // Register the stack scroll tool\n  cornerstoneTools.addTool(cornerstoneTools.StackScrollTool);\n  cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);\n}\n\nexport function enableStackNavigationTool(element, options = {}) {\n  // Enable stack scrolling with mouse/touch\n  cornerstoneTools.setToolActive('StackScroll', { mouseButtonMask: 1, ...options });\n  \n  // Enable mouse wheel scrolling\n  cornerstoneTools.setToolActive('StackScrollMouseWheel', {});\n}\n\nexport function configureStackNavigationTool(options = {}) {\n  const configuration = {\n    // Loop through the stack when reaching first/last image\n    loop: options.loop || false,\n    // Allow skipping images for faster navigation\n    skipDistance: options.skipDistance || 1,\n    ...options\n  };\n  \n  cornerstoneTools.setToolConfiguration('StackScroll', configuration);\n}\n\nexport function navigateToNextImage(element) {\n  const stackScrollTool = cornerstoneTools.getToolForElement(element, 'StackScroll');\n  if (stackScrollTool) {\n    stackScrollTool.moveToNextImage(element);\n    return true;\n  }\n  return false;\n}\n\nexport function navigateToPreviousImage(element) {\n  const stackScrollTool = cornerstoneTools.getToolForElement(element, 'StackScroll');\n  if (stackScrollTool) {\n    stackScrollTool.moveToPreviousImage(element);\n    return true;\n  }\n  return false;\n}\n\nexport function jumpToImage(element, imageIndex) {\n  const stackState = cornerstoneTools.getToolState(element, 'stack');\n  if (stackState && stackState.data && stackState.data.length > 0) {\n    const stackData = stackState.data[0];\n    \n    // Ensure index is within bounds\n    const validIndex = Math.max(0, Math.min(imageIndex, stackData.imageIds.length - 1));\n    \n    // Set the current index and update the image\n    stackData.currentImageIdIndex = validIndex;\n    cornerstone.updateImage(element);\n    \n    return validIndex;\n  }\n  return -1;\n}\n```\n\n3. Create series browser component (src/components/SeriesBrowser.ts):\n```typescript\nexport class SeriesBrowser {\n  private element;\n  private seriesManager;\n  private onSeriesSelected;\n  \n  constructor(containerElement, seriesManager, onSeriesSelected) {\n    this.element = containerElement;\n    this.seriesManager = seriesManager;\n    this.onSeriesSelected = onSeriesSelected;\n    this.render();\n  }\n  \n  public render() {\n    const allSeries = this.seriesManager.getAllSeries();\n    const currentSeriesIndex = this.seriesManager.getCurrentSeries() ? \n      allSeries.indexOf(this.seriesManager.getCurrentSeries()) : -1;\n    \n    let html = '<div class=\"series-browser\">';\n    html += '<h3>Available Series</h3>';\n    html += '<ul class=\"series-list\">';\n    \n    allSeries.forEach((series, index) => {\n      const isActive = index === currentSeriesIndex;\n      const activeClass = isActive ? 'active' : '';\n      \n      html += `<li class=\"series-item ${activeClass}\" data-series-index=\"${index}\">`;\n      html += `<div class=\"series-thumbnail\">`;\n      html += `<img src=\"${series.thumbnail || 'placeholder.png'}\" alt=\"Series ${index + 1}\">`;\n      html += `</div>`;\n      html += `<div class=\"series-info\">`;\n      html += `<div class=\"series-description\">${series.description || `Series ${index + 1}`}</div>`;\n      html += `<div class=\"series-details\">${series.imageCount || 0} Images</div>`;\n      html += `</div>`;\n      html += `</li>`;\n    });\n    \n    html += '</ul>';\n    html += '</div>';\n    \n    this.element.innerHTML = html;\n    this.attachEventListeners();\n  }\n  \n  private attachEventListeners() {\n    const seriesItems = this.element.querySelectorAll('.series-item');\n    \n    seriesItems.forEach(item => {\n      item.addEventListener('click', () => {\n        const seriesIndex = parseInt(item.getAttribute('data-series-index'), 10);\n        \n        // Update current series\n        this.seriesManager.setCurrentSeries(seriesIndex);\n        \n        // Update UI\n        seriesItems.forEach(el => el.classList.remove('active'));\n        item.classList.add('active');\n        \n        // Notify callback\n        if (this.onSeriesSelected) {\n          this.onSeriesSelected(this.seriesManager.getCurrentSeries(), seriesIndex);\n        }\n      });\n    });\n  }\n  \n  public update() {\n    this.render();\n  }\n}\n```\n\n4. Create thumbnail viewer component (src/components/ThumbnailViewer.ts):\n```typescript\nexport class ThumbnailViewer {\n  private element;\n  private series;\n  private onImageSelected;\n  private currentImageIndex = 0;\n  \n  constructor(containerElement, series, onImageSelected) {\n    this.element = containerElement;\n    this.series = series;\n    this.onImageSelected = onImageSelected;\n    this.render();\n  }\n  \n  public render() {\n    if (!this.series || !this.series.imageIds || this.series.imageIds.length === 0) {\n      this.element.innerHTML = '<div class=\"no-images\">No images available</div>';\n      return;\n    }\n    \n    let html = '<div class=\"thumbnail-viewer\">';\n    html += '<h3>Images</h3>';\n    html += '<div class=\"thumbnail-grid\">';\n    \n    this.series.imageIds.forEach((imageId, index) => {\n      const isActive = index === this.currentImageIndex;\n      const activeClass = isActive ? 'active' : '';\n      \n      html += `<div class=\"thumbnail ${activeClass}\" data-image-index=\"${index}\">`;\n      html += `<img src=\"${this.series.thumbnails?.[index] || 'image-placeholder.png'}\" alt=\"Image ${index + 1}\">`;\n      html += `<div class=\"thumbnail-number\">${index + 1}</div>`;\n      html += `</div>`;\n    });\n    \n    html += '</div>';\n    html += '<div class=\"thumbnail-controls\">';\n    html += '<button id=\"prevImage\">Previous</button>';\n    html += `<span class=\"image-counter\">${this.currentImageIndex + 1} / ${this.series.imageIds.length}</span>`;\n    html += '<button id=\"nextImage\">Next</button>';\n    html += '</div>';\n    html += '</div>';\n    \n    this.element.innerHTML = html;\n    this.attachEventListeners();\n  }\n  \n  private attachEventListeners() {\n    const thumbnails = this.element.querySelectorAll('.thumbnail');\n    const prevButton = this.element.querySelector('#prevImage');\n    const nextButton = this.element.querySelector('#nextImage');\n    \n    thumbnails.forEach(thumbnail => {\n      thumbnail.addEventListener('click', () => {\n        const imageIndex = parseInt(thumbnail.getAttribute('data-image-index'), 10);\n        this.selectImage(imageIndex);\n      });\n    });\n    \n    if (prevButton) {\n      prevButton.addEventListener('click', () => {\n        if (this.currentImageIndex > 0) {\n          this.selectImage(this.currentImageIndex - 1);\n        }\n      });\n    }\n    \n    if (nextButton) {\n      nextButton.addEventListener('click', () => {\n        if (this.currentImageIndex < this.series.imageIds.length - 1) {\n          this.selectImage(this.currentImageIndex + 1);\n        }\n      });\n    }\n  }\n  \n  public selectImage(index) {\n    if (index >= 0 && index < this.series.imageIds.length) {\n      this.currentImageIndex = index;\n      \n      // Update UI\n      const thumbnails = this.element.querySelectorAll('.thumbnail');\n      thumbnails.forEach(thumbnail => thumbnail.classList.remove('active'));\n      \n      const selectedThumbnail = this.element.querySelector(`[data-image-index=\"${index}\"]`);\n      if (selectedThumbnail) {\n        selectedThumbnail.classList.add('active');\n      }\n      \n      const counter = this.element.querySelector('.image-counter');\n      if (counter) {\n        counter.textContent = `${index + 1} / ${this.series.imageIds.length}`;\n      }\n      \n      // Notify callback\n      if (this.onImageSelected) {\n        this.onImageSelected(this.series.imageIds[index], index);\n      }\n      \n      return true;\n    }\n    return false;\n  }\n  \n  public loadSeriesThumbnails() {\n    // This would typically load thumbnails asynchronously\n    // For each image in the series, generate a small thumbnail\n    if (this.series && this.series.imageIds) {\n      this.series.thumbnails = this.series.thumbnails || [];\n      \n      this.series.imageIds.forEach((imageId, index) => {\n        // In a real implementation, you would generate thumbnails here\n        // For now, we'll just use placeholders\n        this.series.thumbnails[index] = 'image-placeholder.png';\n      });\n      \n      this.render();\n    }\n  }\n}\n```",
-        "testStrategy": "1. Test series navigation with keyboard, mouse, and UI controls\n2. Verify series browser displays correct series information\n3. Test thumbnail viewer with different series sizes\n4. Validate image selection and navigation within a series\n5. Test stack navigation tool with mouse wheel and drag interactions\n6. Verify correct image loading and display when navigating between series",
+        "id": 17,
+        "title": "Implement Input Validation for DICOM Parameters",
+        "description": "Add comprehensive input validation for all DICOM parameters and user inputs to prevent injection attacks and ensure data integrity.",
+        "details": "1. Identify all user input points in the application, especially those related to DICOM parameters\n2. Create a validation utility module with functions for different data types:\n```typescript\n// src/utils/validation.ts\nexport function validateDicomTag(tag: string): boolean {\n  // DICOM tags follow format (xxxx,xxxx) where x is a hexadecimal digit\n  return /^\\([0-9A-Fa-f]{4},[0-9A-Fa-f]{4}\\)$/.test(tag);\n}\n\nexport function validateNumericInput(value: string, min?: number, max?: number): boolean {\n  const num = parseFloat(value);\n  if (isNaN(num)) return false;\n  if (min !== undefined && num < min) return false;\n  if (max !== undefined && num > max) return false;\n  return true;\n}\n\n// Add more validation functions as needed\n```\n3. Apply these validation functions at all input points\n4. Implement proper error handling and user feedback for invalid inputs\n5. For critical operations, add server-side validation as well if applicable",
+        "testStrategy": "1. Create unit tests for each validation function with valid and invalid inputs\n2. Test boundary conditions (min/max values, empty strings, etc.)\n3. Attempt to bypass validation with malformed inputs\n4. Verify error messages are clear and helpful\n5. Test integration with UI components to ensure validation feedback is displayed correctly",
         "priority": "high",
         "dependencies": [
-          2,
-          7
+          13
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify All Input Points",
+            "description": "Catalog every location in the application where user input is accepted, with special attention to DICOM parameter fields and any other user-editable data.",
+            "dependencies": [],
+            "details": "Review UI forms, API endpoints, and backend processing to ensure all input vectors are accounted for, including edge cases such as file uploads or hidden fields.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Design Validation Utilities",
+            "description": "Develop reusable validation functions for each DICOM parameter and input type, adhering to DICOM standards and application requirements.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement functions for validating DICOM tags, numeric ranges, string lengths, and custom constraints. Ensure utilities are modular and easily testable.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Validation into UI",
+            "description": "Embed validation logic into all relevant UI components to provide immediate feedback and prevent invalid data entry.",
+            "dependencies": [
+              2
+            ],
+            "details": "Connect validation utilities to form fields, display real-time error messages, and disable submission when inputs are invalid.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Server-Side Validation if Needed",
+            "description": "Implement server-side validation for all critical input points to ensure security and data integrity, even if client-side validation is bypassed.",
+            "dependencies": [
+              3
+            ],
+            "details": "Replicate or extend validation logic on the backend, especially for API endpoints that process DICOM parameters or user data.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Error Handling and Feedback",
+            "description": "Develop robust error handling to provide clear, actionable feedback to users while preventing sensitive information leakage.",
+            "dependencies": [
+              4
+            ],
+            "details": "Integrate error messages with UI, ensure logs are sanitized, and use centralized error handling utilities to manage validation failures.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Write Comprehensive Tests",
+            "description": "Create unit, integration, and boundary tests for all validation utilities and UI flows to ensure correctness and resilience against malformed input.",
+            "dependencies": [
+              5
+            ],
+            "details": "Test with valid, invalid, and edge-case data; verify error messages; and ensure both client and server-side validation are enforced.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Implement Secure Error Handling",
+        "description": "Enhance error handling to prevent information leakage in error messages while maintaining useful feedback for users.",
+        "details": "1. Create a centralized error handling utility:\n```typescript\n// src/utils/error-handler.ts\ninterface ErrorOptions {\n  logToConsole?: boolean;\n  reportToService?: boolean;\n  showToUser?: boolean;\n}\n\nexport function handleError(error: Error, message: string, options: ErrorOptions = {}) {\n  // Default options\n  const opts = {\n    logToConsole: !import.meta.env.PROD,\n    reportToService: import.meta.env.PROD,\n    showToUser: true,\n    ...options\n  };\n\n  // Create sanitized user message (no stack traces or sensitive info)\n  const userMessage = `${message}. Please try again or contact support.`;\n  \n  // Log to console in development\n  if (opts.logToConsole) {\n    console.error(message, error);\n  }\n  \n  // Report to error tracking service in production\n  if (opts.reportToService) {\n    // Implement error reporting service integration\n    // errorReportingService.report(error, message);\n  }\n  \n  // Return user-safe message for UI display\n  return userMessage;\n}\n```\n2. Replace direct error logging and displaying with this utility\n3. Ensure sensitive information (file paths, stack traces, etc.) is never shown to users\n4. Add proper error boundaries in React components to prevent crashes",
+        "testStrategy": "1. Create unit tests for the error handling utility\n2. Test with various error types and options\n3. Verify development vs. production behavior differences\n4. Test React error boundaries with simulated errors\n5. Verify user-facing error messages are appropriate and don't contain sensitive information",
+        "priority": "medium",
+        "dependencies": [
+          15
         ],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement Series Manager",
-            "description": "Develop a backend or data structure to manage collections of image series, including loading, storing, and retrieving series metadata and images.",
+            "title": "Create the Error Handling Utility",
+            "description": "Develop a centralized error handling utility that sanitizes error messages, prevents sensitive data leakage, and provides configurable options for logging, reporting, and user feedback.",
             "dependencies": [],
-            "details": "Ensure the manager can efficiently handle large datasets and supports operations like adding, removing, and querying series.",
+            "details": "Implement the utility in a dedicated module (e.g., src/utils/error-handler.ts) with options for console logging, error reporting, and user-facing messages. Ensure the utility can distinguish between development and production environments.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Implement Stack Navigation Tool",
-            "description": "Create a navigation mechanism that allows users to move forward and backward through images within a series (stack navigation).",
+            "title": "Refactor Code to Use the Error Handling Utility",
+            "description": "Update existing codebase to replace ad-hoc error handling with the new centralized utility, ensuring consistent and secure error management throughout the application.",
             "dependencies": [
               1
             ],
-            "details": "Support keyboard, button, and possibly gesture-based navigation for smooth user experience.",
+            "details": "Identify all locations where errors are currently handled or logged. Refactor these instances to use the new utility, passing appropriate options based on context and environment.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Create Series Browser UI",
-            "description": "Design and implement a user interface for browsing available series, displaying key metadata and allowing selection.",
+            "title": "Implement Error Boundaries in React",
+            "description": "Introduce React error boundary components to catch and handle errors in the component tree, displaying fallback UIs and preventing application crashes.",
             "dependencies": [
-              1
+              1,
+              2
             ],
-            "details": "Use visual cues and clear organization to help users quickly find and select series, even in large collections.",
+            "details": "Create class-based error boundary components implementing componentDidCatch and getDerivedStateFromError. Wrap critical parts of the React component tree with these boundaries and ensure they utilize the error handling utility for logging and reporting[1][2][3][4].",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Create Thumbnail Viewer UI",
-            "description": "Develop a UI component that displays thumbnails of images within the selected series for quick overview and navigation.",
+            "title": "Integrate with Error Reporting Services",
+            "description": "Connect the error handling utility and error boundaries to external error reporting services (e.g., Sentry, Rollbar) for centralized monitoring and alerting.",
             "dependencies": [
+              1,
               2,
               3
             ],
-            "details": "Ensure thumbnails load efficiently and update responsively as users navigate or select different series.",
+            "details": "Configure API keys and environment-specific settings. Ensure that only sanitized, non-sensitive error data is sent to external services. Test integration with sample errors.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Integrate Navigation Controls",
-            "description": "Add and connect navigation controls (e.g., next/previous buttons, sliders) to the stack navigation and thumbnail viewer.",
+            "title": "Test Error Handling in Different Environments",
+            "description": "Thoroughly test the error handling system in both development and production environments to verify correct behavior, message sanitization, and integration with reporting services.",
             "dependencies": [
+              1,
               2,
+              3,
               4
             ],
-            "details": "Controls should be intuitive, responsive, and accessible, supporting both mouse and keyboard input.",
+            "details": "Simulate various error scenarios, including rendering errors, lifecycle errors, and asynchronous errors. Confirm that user-facing messages are appropriate, sensitive data is not leaked, and errors are correctly logged and reported based on environment.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "title": "Implement Security Scanning in CI/CD Pipeline",
+        "description": "Integrate automated security scanning into the CI/CD pipeline to catch vulnerabilities before deployment.",
+        "details": "1. Add npm audit to the CI/CD pipeline to check for dependency vulnerabilities\n2. Integrate a static code analysis tool for security issues:\n```yaml\n# Example GitHub Actions workflow\nname: Security Scan\n\non:\n  push:\n    branches: [ main, develop ]\n  pull_request:\n    branches: [ main, develop ]\n\njobs:\n  security-scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      \n      - name: Setup Node.js\n        uses: actions/setup-node@v3\n        with:\n          node-version: '16'\n          cache: 'npm'\n      \n      - name: Install dependencies\n        run: npm ci\n      \n      - name: Run dependency vulnerability check\n        run: npm audit --audit-level=high\n      \n      - name: Run ESLint security plugin\n        run: npx eslint . --ext .ts,.tsx --config .eslintrc.security.js\n```\n3. Create a security-focused ESLint configuration:\n```javascript\n// .eslintrc.security.js\nmodule.exports = {\n  extends: [\n    'plugin:security/recommended',\n  ],\n  plugins: [\n    'security'\n  ],\n  rules: {\n    // Add custom security rules\n  }\n};\n```\n4. Install required dependencies: `npm install --save-dev eslint-plugin-security`\n5. Configure the pipeline to fail on high or critical security issues",
+        "testStrategy": "1. Test the CI/CD pipeline with known security issues to verify detection\n2. Verify pipeline fails appropriately on security violations\n3. Test false positive handling and rule adjustments\n4. Verify scan reports are properly generated and accessible\n5. Test integration with pull request workflows",
+        "priority": "medium",
+        "dependencies": [
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install and Configure Dependencies for Security Scanning",
+            "description": "Install all necessary dependencies for security scanning, including npm audit, static analysis tools, and ESLint security plugins.",
+            "dependencies": [],
+            "details": "Ensure that all required packages (e.g., audit-ci, ESLint security plugins, static analysis tools) are added to devDependencies. Update package.json and lock files as needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Add npm audit to CI/CD Pipeline",
+            "description": "Integrate npm audit (or audit-ci) into the CI/CD workflow to automatically scan dependencies for vulnerabilities.",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure the pipeline to run npm audit or audit-ci immediately after checking out the repository and before installing or building the project. Ensure the audit step is present in the workflow YAML and outputs results for review.[1][2][3]",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Static Analysis Tools",
+            "description": "Add static code analysis tools to the CI/CD pipeline to detect security issues in the codebase.",
+            "dependencies": [
+              1
+            ],
+            "details": "Select and configure a static analysis tool (e.g., SonarQube, Snyk, or similar) and add its execution step to the pipeline. Ensure it scans the codebase and produces a report on security findings.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Security-Focused ESLint Configuration",
+            "description": "Develop or extend an ESLint configuration that enforces security best practices.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add ESLint plugins and rules targeting security (e.g., eslint-plugin-security). Update the ESLint config file to include these rules and ensure they are enforced during linting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Configure Pipeline Failure Conditions for Security Issues",
+            "description": "Set up the CI/CD pipeline to fail builds when critical vulnerabilities or security rule violations are detected.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Adjust pipeline scripts and tool configurations so that any high or critical findings from npm audit, static analysis, or ESLint security checks cause the build to fail. Document thresholds and exceptions as needed.",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Handle Image/Series Selection Events",
-            "description": "Implement event handling logic for user actions such as selecting a series or an individual image, updating the UI and navigation state accordingly.",
+            "title": "Test and Validate Security Scanning Integration",
+            "description": "Verify that all security scanning steps work as intended and that the pipeline fails appropriately on security violations.",
             "dependencies": [
-              3,
-              4,
               5
             ],
-            "details": "Ensure that selection events trigger appropriate updates in both the main viewer and navigation controls.",
+            "details": "Introduce known vulnerabilities and insecure code to test detection. Confirm that reports are generated, failures occur as configured, and results are accessible in pull request workflows. Adjust configurations based on test outcomes.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Create Security Documentation and Guidelines",
+        "description": "Develop comprehensive security documentation for developers and users, including security features and best practices.",
+        "details": "1. Create a SECURITY.md file in the repository root with:\n   - Security contact information\n   - Supported versions\n   - Vulnerability reporting process\n   - Security update policy\n2. Add developer security guidelines in the project wiki or docs folder:\n   - Secure coding practices specific to the application\n   - XSS prevention techniques\n   - Proper handling of DICOM data\n   - Authentication and authorization best practices\n3. Document all implemented security features:\n   - CSP configuration\n   - Input sanitization\n   - Secure storage mechanisms\n4. Create a security checklist for code reviews\n5. Document the security testing approach\n6. Include security considerations in the user documentation",
+        "testStrategy": "1. Review documentation for completeness and accuracy\n2. Have team members validate the guidelines\n3. Verify all security features are properly documented\n4. Test documentation links and references\n5. Ensure documentation is accessible to all team members",
+        "priority": "low",
+        "dependencies": [
+          11,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Draft SECURITY.md File",
+            "description": "Create a SECURITY.md file in the repository root that includes security contact information, supported versions, vulnerability reporting process, security update policy, security-related configurations, and known security gaps or future enhancements.",
+            "dependencies": [],
+            "details": "Follow best practices by including a disclosure policy, response process, and scope. Ensure the file is clear and accessible to all contributors and users.[1][3][4][5]",
             "status": "pending",
             "testStrategy": ""
           },
           {
-            "id": 7,
-            "title": "Test Navigation with Large and Multiple Series",
-            "description": "Conduct thorough testing of the navigation system using large datasets and multiple series to ensure performance, correctness, and smooth user experience.",
-            "dependencies": [],
-            "details": "Identify and address any performance bottlenecks, UI glitches, or usability issues that arise with scale.",
+            "id": 2,
+            "title": "Write Developer Security Guidelines",
+            "description": "Develop comprehensive security guidelines for developers, covering secure coding practices, XSS prevention, DICOM data handling, and authentication/authorization best practices.",
+            "dependencies": [
+              1
+            ],
+            "details": "Document these guidelines in the project wiki or docs folder, referencing the SECURITY.md file where appropriate.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Document Security Features",
+            "description": "List and describe all implemented security features, such as CSP configuration, authentication mechanisms, and data protection measures.",
+            "dependencies": [
+              2
+            ],
+            "details": "Ensure each feature is clearly explained, including its purpose and how it contributes to the overall security posture.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Security Checklist",
+            "description": "Develop a security checklist for developers and reviewers to use during development and code review processes.",
+            "dependencies": [
+              3
+            ],
+            "details": "Checklist should cover key security practices, required configurations, and verification steps for each release.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Document Security Testing Approach",
+            "description": "Describe the approach and tools used for security testing, including static analysis, vulnerability scanning, and manual review procedures.",
+            "dependencies": [
+              4
+            ],
+            "details": "Include instructions for running tests and interpreting results, ensuring reproducibility for all team members.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Review and Validate Security Documentation",
+            "description": "Conduct a thorough review of all security documentation and guidelines, validating accuracy and completeness with team members and stakeholders.",
+            "dependencies": [
+              5
+            ],
+            "details": "Verify that all documentation is accessible, up-to-date, and that links and references function correctly.",
             "status": "pending",
             "testStrategy": ""
           }
@@ -896,7 +733,7 @@
     ],
     "metadata": {
       "created": "2025-07-10T17:09:41.719Z",
-      "updated": "2025-07-12T07:17:26.713Z",
+      "updated": "2025-07-15T21:40:42.046Z",
       "description": "Tasks for master context"
     }
   }

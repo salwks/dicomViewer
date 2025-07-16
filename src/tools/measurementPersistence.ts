@@ -579,17 +579,54 @@ export class MeasurementPersistence {
     data: any
   ): Promise<void> {
     const key = `measurement_session_${sessionId}`;
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      const { secureStore } = require('../utils/secure-storage');
+      secureStore(data, key);
+    } catch (error) {
+      console.warn('Failed to use secure storage, falling back to regular localStorage:', error);
+      localStorage.setItem(key, JSON.stringify(data));
+    }
   }
 
   private async loadFromLocalStorage(sessionId: string): Promise<any> {
     const key = `measurement_session_${sessionId}`;
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
+    try {
+      const { secureRetrieve } = require('../utils/secure-storage');
+      const data = secureRetrieve(key);
+      if (data) return data;
+      
+      // Fallback to regular localStorage
+      const legacyData = localStorage.getItem(key);
+      if (legacyData) {
+        const parsed = JSON.parse(legacyData);
+        // Migrate to secure storage
+        try {
+          const { secureStore } = require('../utils/secure-storage');
+          secureStore(parsed, key);
+          localStorage.removeItem(key);
+        } catch (migrationError) {
+          console.warn('Failed to migrate measurement data to secure storage:', migrationError);
+        }
+        return parsed;
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Failed to load from secure storage, trying regular localStorage:', error);
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    }
   }
 
   private async deleteFromLocalStorage(sessionId: string): Promise<void> {
     const key = `measurement_session_${sessionId}`;
+    try {
+      const { secureRemove } = require('../utils/secure-storage');
+      secureRemove(key);
+    } catch (error) {
+      console.warn('Failed to use secure storage removal, falling back to regular localStorage:', error);
+    }
+    // Always try regular localStorage removal as fallback
     localStorage.removeItem(key);
   }
 
@@ -940,15 +977,32 @@ export class MeasurementPersistence {
     // Save backup based on storage type
     // For simplicity, we'll use localStorage for backups
     const key = `measurement_backup_${backup.id}`;
-    localStorage.setItem(key, JSON.stringify(backup));
+    try {
+      const { secureStore } = require('../utils/secure-storage');
+      secureStore(backup, key);
+    } catch (error) {
+      console.warn('Failed to use secure storage for backup, falling back to regular localStorage:', error);
+      localStorage.setItem(key, JSON.stringify(backup));
+    }
   }
 
   private async loadBackup(
     backupId: string
   ): Promise<MeasurementBackup | null> {
     const key = `measurement_backup_${backupId}`;
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
+    try {
+      const { secureRetrieve } = require('../utils/secure-storage');
+      const data = secureRetrieve(key);
+      if (data) return data;
+      
+      // Fallback to regular localStorage
+      const legacyData = localStorage.getItem(key);
+      return legacyData ? JSON.parse(legacyData) : null;
+    } catch (error) {
+      console.warn('Failed to load backup from secure storage, trying regular localStorage:', error);
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    }
   }
 
   // Utility methods

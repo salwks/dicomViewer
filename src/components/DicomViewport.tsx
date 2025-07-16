@@ -29,7 +29,7 @@ import {
 } from '@cornerstonejs/tools';
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
-import { useDicomStore } from '../store/dicom-store';
+import { useAnnotationStore, useViewportStore } from '../store';
 // 측정값 변환 import 제거 - 간단한 mm 변환만 사용
 
 interface DicomViewportProps {
@@ -47,22 +47,18 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
   const toolGroupRef = useRef<any>(null);
   const isViewportInitialized = useRef(false);
 
-  // Zustand store for tool management and annotations
+  // Zustand stores for tool management and annotations
   const { 
     activeTool, 
     activateToolInViewport, 
     addAnnotation, 
     updateAnnotation, 
     removeAnnotation,
+  } = useAnnotationStore();
+
+  const {
     currentDicomDataSet
-  } = useDicomStore((state) => ({
-    activeTool: state.activeTool,
-    activateToolInViewport: state.activateToolInViewport,
-    addAnnotation: state.addAnnotation,
-    updateAnnotation: state.updateAnnotation,
-    removeAnnotation: state.removeAnnotation,
-    currentDicomDataSet: state.currentDicomDataSet
-  }));
+  } = useViewportStore();
 
   /**
    * 주석 텍스트를 mm 단위로 변환
@@ -87,39 +83,60 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       console.log('🔍 measurementData.length:', measurementData?.length);
       console.log('🔍 measurementData.area:', measurementData?.area);
       console.log('🔍 measurementData.angle:', measurementData?.angle);
+      console.log('🔍 measurementData.unit:', measurementData?.unit);
+      
+      // 현재 DICOM 파일의 픽셀 간격 정보 확인
+      if (currentDicomDataSet) {
+        const pixelSpacing = currentDicomDataSet.string('x00280030');
+        console.log('🔍 DICOM PixelSpacing:', pixelSpacing);
+        console.log('🔍 DICOM 파일 메타데이터:', {
+          pixelSpacing: pixelSpacing,
+          hasPixelSpacing: !!pixelSpacing
+        });
+      }
+      
+      let convertedText = null;
       
       // Length 측정 (길이 도구)
       if (measurementData?.length !== undefined && measurementData.length > 0) {
-        const mmText = `${measurementData.length.toFixed(1)} mm`;
-        console.log(`📏 길이 변환: ${measurementData.length} → ${mmText}`);
-        
-        annotation.data.text = mmText;
-        
-        // textBox가 있으면 추가 설정
-        if (annotation.data.handles?.textBox) {
-          annotation.data.handles.textBox.text = mmText;
-          console.log('✅ textBox에도 설정 완료');
-        }
-        
-        console.log('✅ 최종 annotation.data.text:', annotation.data.text);
+        convertedText = `${measurementData.length.toFixed(1)} mm`;
+        console.log(`📏 길이 변환: ${measurementData.length} → ${convertedText}`);
       }
       // Area 측정 (ROI 도구들)
       else if (measurementData?.area !== undefined && measurementData.area > 0) {
-        const mmSquaredText = `${measurementData.area.toFixed(1)} mm²`;
-        console.log(`📐 면적 변환: ${measurementData.area} → ${mmSquaredText}`);
-        
-        annotation.data.text = mmSquaredText;
-        
-        // textBox가 있으면 추가 설정
-        if (annotation.data.handles?.textBox) {
-          annotation.data.handles.textBox.text = mmSquaredText;
-          console.log('✅ textBox에도 설정 완료');
-        }
-        
-        console.log('✅ 최종 annotation.data.text:', annotation.data.text);
+        convertedText = `${measurementData.area.toFixed(1)} mm²`;
+        console.log(`📐 면적 변환: ${measurementData.area} → ${convertedText}`);
       } else {
         console.log('⚠️ 지원되는 측정 데이터 없음');
+        return;
       }
+      
+      // 모든 가능한 텍스트 속성에 설정
+      console.log('🔧 변환 전 annotation.data:', JSON.stringify(annotation.data, null, 2));
+      
+      annotation.data.text = convertedText;
+      
+      // textBox 설정
+      if (annotation.data.handles?.textBox) {
+        annotation.data.handles.textBox.text = convertedText;
+        console.log('✅ textBox에도 설정 완료');
+      }
+      
+      // 기타 가능한 텍스트 속성들도 설정
+      if (annotation.data.handles) {
+        annotation.data.handles.text = convertedText;
+      }
+      
+      // CornerstoneJS 내부 텍스트 속성들도 설정
+      if (annotation.data.cachedStats) {
+        const imageId = Object.keys(annotation.data.cachedStats)[0];
+        if (annotation.data.cachedStats[imageId]) {
+          annotation.data.cachedStats[imageId].text = convertedText;
+        }
+      }
+      
+      console.log('🔧 변환 후 annotation.data:', JSON.stringify(annotation.data, null, 2));
+      console.log('✅ 최종 annotation.data.text:', annotation.data.text);
     } catch (error) {
       // 에러 시 기본 동작 유지
       console.log('⚠️ mm 변환 실패:', error);
@@ -306,11 +323,25 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         
         // CornerstoneJS가 텍스트를 덮어쓰지 못하도록 지속적으로 mm 텍스트 유지
         const keepMmText = () => {
+          setTimeout(() => updateAnnotationText(annotation), 50);
           setTimeout(() => updateAnnotationText(annotation), 100);
+          setTimeout(() => updateAnnotationText(annotation), 200);
           setTimeout(() => updateAnnotationText(annotation), 300);
           setTimeout(() => updateAnnotationText(annotation), 500);
+          setTimeout(() => updateAnnotationText(annotation), 1000);
         };
         keepMmText();
+        
+        // 주기적으로 텍스트 확인하고 복원
+        const textWatcher = setInterval(() => {
+          if (annotation.data?.text && !annotation.data.text.includes('mm')) {
+            console.log('🔄 텍스트가 px로 변경됨, 다시 mm로 복원');
+            updateAnnotationText(annotation);
+          }
+        }, 500);
+        
+        // 5초 후 워처 해제
+        setTimeout(() => clearInterval(textWatcher), 5000);
 
         // 스토어에 추가할 주석 데이터 구성
         const annotationData = {

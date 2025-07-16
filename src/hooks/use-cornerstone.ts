@@ -19,7 +19,7 @@ import {
   Enums as ToolEnums
 } from '@cornerstonejs/tools';
 import { initializeCornerstone3D } from '../utils/cornerstone-init';
-import { useDicomStore } from '../store/dicom-store';
+import { useUIStore } from '../store';
 import type { ViewportConfig, LayoutType } from '../types';
 
 interface UseCornerstoneProps {
@@ -44,7 +44,7 @@ export function useCornerstone({
   const isInitializedRef = useRef(false);
   const toolGroupRef = useRef<any>(null);
   
-  const { setError, setLoading } = useDicomStore();
+  const { setError, setLoading } = useUIStore();
 
   // Initialize Cornerstone3D
   const initialize = useCallback(async () => {

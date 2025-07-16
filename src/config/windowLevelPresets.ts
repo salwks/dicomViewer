@@ -148,34 +148,69 @@ export function validatePreset(preset: WindowLevelPreset): boolean {
 
 export function savePresetsToLocalStorage(): void {
     try {
-        const presetsJson = JSON.stringify(windowLevelPresets);
-        localStorage.setItem('cornerstone3d-windowlevel-presets', presetsJson);
-        console.log('Window/Level presets saved to localStorage');
+        const { secureStore } = require('../utils/secure-storage');
+        secureStore(windowLevelPresets, 'clarity_window_level_presets');
+        console.log('Window/Level presets saved to secure storage');
     } catch (error) {
-        console.error('Error saving presets to localStorage:', error);
+        console.error('Error saving presets to secure storage:', error);
+        // Fallback to regular localStorage in case of encryption issues
+        try {
+            const presetsJson = JSON.stringify(windowLevelPresets);
+            localStorage.setItem('cornerstone3d-windowlevel-presets', presetsJson);
+            console.log('Window/Level presets saved to localStorage (fallback)');
+        } catch (fallbackError) {
+            console.error('Error with fallback localStorage save:', fallbackError);
+        }
     }
 }
 
 export function loadPresetsFromLocalStorage(): boolean {
     try {
-        const presetsJson = localStorage.getItem('cornerstone3d-windowlevel-presets');
-        if (presetsJson) {
-            const loadedPresets = JSON.parse(presetsJson);
-            
+        const { secureRetrieve } = require('../utils/secure-storage');
+        const loadedPresets = secureRetrieve('clarity_window_level_presets');
+        
+        if (loadedPresets) {
             // Validate and merge loaded presets
             Object.entries(loadedPresets).forEach(([name, preset]) => {
                 if (validatePreset(preset as WindowLevelPreset)) {
                     windowLevelPresets[name] = preset as WindowLevelPreset;
                 } else {
-                    console.warn(`Invalid preset '${name}' found in localStorage, skipping`);
+                    console.warn(`Invalid preset '${name}' found in secure storage, skipping`);
                 }
             });
             
-            console.log('Window/Level presets loaded from localStorage');
+            console.log('Window/Level presets loaded from secure storage');
+            return true;
+        }
+        
+        // Fallback to legacy localStorage
+        const presetsJson = localStorage.getItem('cornerstone3d-windowlevel-presets');
+        if (presetsJson) {
+            const legacyPresets = JSON.parse(presetsJson);
+            
+            // Validate and merge legacy presets
+            Object.entries(legacyPresets).forEach(([name, preset]) => {
+                if (validatePreset(preset as WindowLevelPreset)) {
+                    windowLevelPresets[name] = preset as WindowLevelPreset;
+                } else {
+                    console.warn(`Invalid preset '${name}' found in legacy storage, skipping`);
+                }
+            });
+            
+            // Migrate to secure storage
+            try {
+                const { secureStore } = require('../utils/secure-storage');
+                secureStore(legacyPresets, 'clarity_window_level_presets');
+                localStorage.removeItem('cornerstone3d-windowlevel-presets');
+                console.log('Window/Level presets migrated from legacy storage');
+            } catch (migrationError) {
+                console.warn('Failed to migrate presets to secure storage:', migrationError);
+            }
+            
             return true;
         }
     } catch (error) {
-        console.error('Error loading presets from localStorage:', error);
+        console.error('Error loading presets from secure storage:', error);
     }
     
     return false;

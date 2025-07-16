@@ -1,5 +1,7 @@
 import { getPresetNames, getPresetByName, WindowLevelPreset } from '../config/windowLevelPresets';
 import { DicomViewer } from './DicomViewer';
+import { validateNumericInput } from '../utils/input-validation';
+import { handleValidationError } from '../utils/validation-error-handler';
 
 export class WindowLevelPanel {
     private element: HTMLElement;
@@ -94,21 +96,63 @@ export class WindowLevelPanel {
         
         if (windowWidthSlider) {
             windowWidthSlider.addEventListener('input', () => {
-                const windowWidth = parseInt(windowWidthSlider.value, 10);
-                const windowCenter = parseInt(windowCenterSlider.value, 10);
+                const windowWidthValue = windowWidthSlider.value;
+                const windowCenterValue = windowCenterSlider.value;
+                
+                // Validate window width input
+                const widthValidation = validateNumericInput(windowWidthValue, 'windowWidth');
+                if (!widthValidation.isValid) {
+                    console.warn('Window width validation failed:', widthValidation.errors);
+                    handleValidationError(widthValidation, 'windowWidth');
+                    return;
+                }
+                
+                // Validate window center input
+                const centerValidation = validateNumericInput(windowCenterValue, 'windowLevel');
+                if (!centerValidation.isValid) {
+                    console.warn('Window center validation failed:', centerValidation.errors);
+                    handleValidationError(centerValidation, 'windowCenter');
+                    return;
+                }
+                
+                const windowWidth = parseInt(windowWidthValue, 10);
+                const windowCenter = parseInt(windowCenterValue, 10);
                 
                 this.viewer.setWindowLevel(windowWidth, windowCenter);
                 this.updateValueDisplays(windowWidth, windowCenter);
+                
+                console.log(`Window/Level validated and applied: W=${windowWidth}, L=${windowCenter}`);
             });
         }
         
         if (windowCenterSlider) {
             windowCenterSlider.addEventListener('input', () => {
-                const windowWidth = parseInt(windowWidthSlider.value, 10);
-                const windowCenter = parseInt(windowCenterSlider.value, 10);
+                const windowWidthValue = windowWidthSlider.value;
+                const windowCenterValue = windowCenterSlider.value;
+                
+                // Validate window width input
+                const widthValidation = validateNumericInput(windowWidthValue, 'windowWidth');
+                if (!widthValidation.isValid) {
+                    console.warn('Window width validation failed:', widthValidation.errors);
+                    handleValidationError(widthValidation, 'windowWidth');
+                    return;
+                }
+                
+                // Validate window center input
+                const centerValidation = validateNumericInput(windowCenterValue, 'windowLevel');
+                if (!centerValidation.isValid) {
+                    console.warn('Window center validation failed:', centerValidation.errors);
+                    handleValidationError(centerValidation, 'windowCenter');
+                    return;
+                }
+                
+                const windowWidth = parseInt(windowWidthValue, 10);
+                const windowCenter = parseInt(windowCenterValue, 10);
                 
                 this.viewer.setWindowLevel(windowWidth, windowCenter);
                 this.updateValueDisplays(windowWidth, windowCenter);
+                
+                console.log(`Window/Level validated and applied: W=${windowWidth}, L=${windowCenter}`);
             });
         }
         
@@ -147,6 +191,36 @@ export class WindowLevelPanel {
                 const type = button.getAttribute('data-type');
                 const delta = parseInt(button.getAttribute('data-delta') || '0', 10);
                 
+                // Get current values and calculate new values
+                const current = this.viewer.getCurrentWindowLevel();
+                if (!current) return;
+                
+                let newWidth = current.windowWidth;
+                let newCenter = current.windowCenter;
+                
+                if (type === 'width') {
+                    newWidth = current.windowWidth + delta;
+                } else if (type === 'center') {
+                    newCenter = current.windowCenter + delta;
+                }
+                
+                // Validate the new values
+                const widthValidation = validateNumericInput(newWidth.toString(), 'windowWidth');
+                const centerValidation = validateNumericInput(newCenter.toString(), 'windowLevel');
+                
+                if (!widthValidation.isValid) {
+                    console.warn('Window width adjustment validation failed:', widthValidation.errors);
+                    handleValidationError(widthValidation, 'windowWidth');
+                    return;
+                }
+                
+                if (!centerValidation.isValid) {
+                    console.warn('Window center adjustment validation failed:', centerValidation.errors);
+                    handleValidationError(centerValidation, 'windowCenter');
+                    return;
+                }
+                
+                // Apply the validated adjustments
                 if (type === 'width') {
                     this.viewer.adjustWindowWidth(delta);
                 } else if (type === 'center') {
@@ -154,6 +228,7 @@ export class WindowLevelPanel {
                 }
                 
                 this.updateCurrentValues();
+                console.log(`Window/Level adjustment validated and applied: ${type} ${delta > 0 ? '+' : ''}${delta}`);
             });
         });
     }

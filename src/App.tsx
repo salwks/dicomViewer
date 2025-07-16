@@ -31,11 +31,18 @@ import {
   Brush,
   Target,
   Camera,
+  Shield,
 } from "lucide-react";
 import { DicomRenderer } from "./components/DicomRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
-import { useDicomStore } from "./store/dicom-store";
+import { useAnnotationStore, useViewportStore, useUIStore, useSecurityStore } from "./store";
+import SecurityLogin from "./components/SecurityLogin";
+import SecurityDashboard from "./components/SecurityDashboard";
+import { sanitizeFileName, XSSProtection } from "./utils/xss-protection";
+import { validateAnnotationLabel, validateFileName } from "./utils/input-validation";
+import { SecureErrorBoundary, DicomErrorBoundary, AuthErrorBoundary } from "./components/SecureErrorBoundary";
+import { initializeErrorReporting } from "./utils/error-reporting";
 // 측정값 관련 import 제거 - 더 이상 사용하지 않음
 import "./App.css";
 
@@ -62,6 +69,35 @@ const commonButtonStyle = {
 };
 
 function App() {
+  // Security state - check authentication first
+  const { isAuthenticated, currentUser, checkAuthentication } = useSecurityStore();
+  const [showSecurityDashboard, setShowSecurityDashboard] = useState(false);
+  
+  // 디버깅을 위해 전역으로 노출
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).useSecurityStore = useSecurityStore;
+      console.log('🔧 useSecurityStore exposed to window for debugging');
+    }
+  }, []);
+  
+  // Check authentication on app load
+  useEffect(() => {
+    console.log('🔐 App: Checking authentication on load');
+    const authResult = checkAuthentication();
+    console.log('🔐 App: Authentication check result:', authResult);
+    
+    // Initialize error reporting
+    initializeErrorReporting({
+      service: 'local',
+      environment: import.meta.env.PROD ? 'production' : 'development',
+      enableUserFeedback: true,
+      sampleRate: 1.0
+    }).catch(error => {
+      console.error('Failed to initialize error reporting:', error);
+    });
+  }, [checkAuthentication]);
+
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +114,7 @@ function App() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Zustand store for tool management and sidebar controls
+  // Zustand stores for tool management and sidebar controls
   const {
     activeTool,
     setActiveTool,
@@ -86,6 +122,9 @@ function App() {
     clearAllAnnotations,
     removeAnnotation,
     updateAnnotationLabel,
+  } = useAnnotationStore();
+
+  const {
     rotateImage,
     flipImage,
     resetImageTransform,
@@ -93,27 +132,13 @@ function App() {
     isFlippedHorizontal,
     isFlippedVertical,
     currentDicomDataSet,
+    captureViewportAsPng,
+  } = useViewportStore();
+
+  const {
     isLicenseModalOpen,
     toggleLicenseModal,
-    captureViewportAsPng,
-  } = useDicomStore((state) => ({
-    activeTool: state.activeTool,
-    setActiveTool: state.setActiveTool,
-    annotations: state.annotations,
-    clearAllAnnotations: state.clearAllAnnotations,
-    removeAnnotation: state.removeAnnotation,
-    updateAnnotationLabel: state.updateAnnotationLabel,
-    rotateImage: state.rotateImage,
-    flipImage: state.flipImage,
-    resetImageTransform: state.resetImageTransform,
-    currentRotation: state.currentRotation,
-    isFlippedHorizontal: state.isFlippedHorizontal,
-    isFlippedVertical: state.isFlippedVertical,
-    currentDicomDataSet: state.currentDicomDataSet,
-    isLicenseModalOpen: state.isLicenseModalOpen,
-    toggleLicenseModal: state.toggleLicenseModal,
-    captureViewportAsPng: state.captureViewportAsPng,
-  }));
+  } = useUIStore();
 
   // 주석은 이제 Zustand 스토어에서 관리됨
 
@@ -135,12 +160,45 @@ function App() {
   };
 
   const saveAnnotationEdit = () => {
-    if (editingAnnotationId && editingValue.trim()) {
-      updateAnnotationLabel(editingAnnotationId, editingValue.trim());
-      console.log(
-        `💾 주석 라벨 저장: ${editingAnnotationId} -> "${editingValue.trim()}"`
-      );
+    if (!editingAnnotationId || !editingValue.trim()) {
+      setError("주석 라벨을 입력해주세요.");
+      return;
     }
+
+    // 입력 검증 수행
+    const validation = validateAnnotationLabel(editingValue, {
+      maxLength: 100,
+      minLength: 1,
+      sanitize: true,
+      logAttempts: true
+    });
+
+    if (!validation.isValid) {
+      setError(`입력 검증 실패: ${validation.errors.join(', ')}`);
+      console.warn("❌ 주석 라벨 검증 실패:", validation.errors);
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn("⚠️ 주석 라벨 경고:", validation.warnings);
+    }
+
+    // 검증된 값으로 업데이트
+    const sanitizedLabel = validation.sanitizedValue || editingValue.trim();
+    updateAnnotationLabel(editingAnnotationId, sanitizedLabel);
+    
+    console.log(
+      `💾 주석 라벨 저장 (검증됨): ${editingAnnotationId} -> "${sanitizedLabel}"`
+    );
+
+    if (sanitizedLabel !== editingValue.trim()) {
+      setToastMessage(`⚠️ 라벨이 보안상 수정되었습니다: "${sanitizedLabel}"`);
+      setShowToast(true);
+    } else {
+      setToastMessage(`✓ 주석 라벨이 저장되었습니다`);
+      setShowToast(true);
+    }
+    
     setEditingAnnotationId(null);
     setEditingValue("");
   };
@@ -176,7 +234,41 @@ function App() {
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
       if (files.length > 0) {
-        handleFiles(files);
+        // Security check for file access with enhanced validation
+        const securityStore = useSecurityStore.getState();
+        const validFiles = files.filter(file => {
+          // 1. 기존 보안 검사
+          const hasAccess = securityStore.checkFileAccess(file.name);
+          if (!hasAccess) {
+            console.warn(`Access denied for file: ${file.name}`);
+            return false;
+          }
+
+          // 2. 파일명 검증
+          const fileValidation = validateFileName(file.name, {
+            logAttempts: true
+          });
+
+          if (!fileValidation.isValid) {
+            console.error(`파일명 검증 실패: ${file.name}`, fileValidation.errors);
+            setError(`파일명 오류 (${file.name}): ${fileValidation.errors.join(', ')}`);
+            return false;
+          }
+
+          if (fileValidation.warnings.length > 0) {
+            console.warn(`파일명 경고 (${file.name}):`, fileValidation.warnings);
+            setToastMessage(`⚠️ 파일 경고: ${fileValidation.warnings.join(', ')}`);
+            setShowToast(true);
+          }
+
+          return true;
+        });
+        
+        if (validFiles.length > 0) {
+          handleFiles(validFiles);
+        } else {
+          setError("Access denied: Invalid file type or insufficient permissions");
+        }
       }
       // 🔥 핵심: input 요소 초기화로 같은 파일 재선택 허용
       (e.target as HTMLInputElement).value = "";
@@ -200,7 +292,7 @@ function App() {
     clearAllAnnotations(); // 주석 초기화
 
     // 3단계: 추가 상태 초기화 (Zustand 스토어에서)
-    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    const { setLoading, setError: setStoreError } = useUIStore.getState();
     setLoading(false); // 스토어 로딩 상태 초기화
     setStoreError(null); // 스토어 에러 상태 초기화
 
@@ -243,7 +335,42 @@ function App() {
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     console.log("🎯 드래그앤드롭으로 파일 처리 시작");
-    handleFiles(files);
+    
+    // Security check for file access with enhanced validation
+    const securityStore = useSecurityStore.getState();
+    const validFiles = files.filter(file => {
+      // 1. 기존 보안 검사
+      const hasAccess = securityStore.checkFileAccess(file.name);
+      if (!hasAccess) {
+        console.warn(`Access denied for file: ${file.name}`);
+        return false;
+      }
+
+      // 2. 파일명 검증 (드래그앤드롭에도 동일한 검증 적용)
+      const fileValidation = validateFileName(file.name, {
+        logAttempts: true
+      });
+
+      if (!fileValidation.isValid) {
+        console.error(`드래그앤드롭 파일명 검증 실패: ${file.name}`, fileValidation.errors);
+        setError(`파일명 오류 (${file.name}): ${fileValidation.errors.join(', ')}`);
+        return false;
+      }
+
+      if (fileValidation.warnings.length > 0) {
+        console.warn(`드래그앤드롭 파일명 경고 (${file.name}):`, fileValidation.warnings);
+        setToastMessage(`⚠️ 파일 경고: ${fileValidation.warnings.join(', ')}`);
+        setShowToast(true);
+      }
+
+      return true;
+    });
+    
+    if (validFiles.length > 0) {
+      handleFiles(validFiles);
+    } else {
+      setError("Access denied: Invalid file type or insufficient permissions");
+    }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -264,7 +391,7 @@ function App() {
     setError(null);
 
     // 스토어 상태도 동기화
-    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    const { setLoading, setError: setStoreError } = useUIStore.getState();
     setLoading(false);
     setStoreError(null);
 
@@ -288,15 +415,33 @@ function App() {
     setError(errorMessage);
 
     // 스토어 상태도 동기화
-    const { setLoading, setError: setStoreError } = useDicomStore.getState();
+    const { setLoading, setError: setStoreError } = useUIStore.getState();
     setLoading(false);
     setStoreError(errorMessage);
 
     console.log("💥 파일 로딩 실패 - 모든 상태 정리됨");
   };
 
+  // Security gate - show login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <AuthErrorBoundary>
+        <SecurityLogin onLoginSuccess={() => setShowSecurityDashboard(false)} />
+      </AuthErrorBoundary>
+    );
+  }
+
+  // Show security dashboard if requested
+  if (showSecurityDashboard) {
+    return (
+      <SecureErrorBoundary>
+        <SecurityDashboard />
+      </SecureErrorBoundary>
+    );
+  }
+
   return (
-    <>
+    <SecureErrorBoundary>
       <div className="app">
         {/* Header */}
         <header className="app-header">
@@ -308,6 +453,27 @@ function App() {
             </div>
 
             <div className="header-right">
+              <div className="security-info">
+                <span className="user-info">
+                  {currentUser?.username} ({currentUser?.role})
+                </span>
+                <button
+                  onClick={() => setShowSecurityDashboard(true)}
+                  className="security-dashboard-btn"
+                  style={{
+                    ...commonButtonStyle,
+                    padding: "8px 12px",
+                    backgroundColor: "#1f2937",
+                    color: "white",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    marginRight: "8px",
+                  }}
+                  title="Security Dashboard"
+                >
+                  <Shield size={14} />
+                </button>
+              </div>
               <span className="status-ready">Ready</span>
             </div>
           </div>
@@ -1063,11 +1229,13 @@ function App() {
 
                 {/* DICOM 렌더러 - Meta Tag 모달이 열려있지 않을 때만 표시 */}
                 {loadedFiles.length > 0 && !isDragging && !isMetaModalOpen && (
-                  <DicomRenderer
-                    files={loadedFiles}
-                    onError={handleRenderingError}
-                    onSuccess={handleRenderingSuccess}
-                  />
+                  <DicomErrorBoundary>
+                    <DicomRenderer
+                      files={loadedFiles}
+                      onError={handleRenderingError}
+                      onSuccess={handleRenderingSuccess}
+                    />
+                  </DicomErrorBoundary>
                 )}
 
                 {/* Meta Tag 창 - 뷰포트와 같은 위치에 표시 */}
@@ -1175,7 +1343,7 @@ function App() {
           inline={false}
         />
       )}
-    </>
+    </SecureErrorBoundary>
   );
 }
 
