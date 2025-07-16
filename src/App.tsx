@@ -38,6 +38,7 @@ import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
 import { useAnnotationStore, useViewportStore, useUIStore, useSecurityStore } from "./store";
 import SecurityLogin from "./components/SecurityLogin";
+import LoginModern from "./components/LoginModern";
 import SecurityDashboard from "./components/SecurityDashboard";
 import { sanitizeFileName, XSSProtection } from "./utils/xss-protection";
 import { validateAnnotationLabel, validateFileName } from "./utils/input-validation";
@@ -426,7 +427,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <AuthErrorBoundary>
-        <SecurityLogin onLoginSuccess={() => setShowSecurityDashboard(false)} />
+        <LoginModern onLoginSuccess={() => setShowSecurityDashboard(false)} />
       </AuthErrorBoundary>
     );
   }

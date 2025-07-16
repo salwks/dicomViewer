@@ -65,11 +65,29 @@ const getDependencies = (): DependencyInfo[] => {
       license: "MIT",
       type: "dependency",
     },
+    {
+      name: "@types/crypto-js",
+      version: "^4.2.2",
+      license: "MIT",
+      type: "dependency",
+    },
+    {
+      name: "crypto-js",
+      version: "^4.2.0",
+      license: "MIT",
+      type: "dependency",
+    },
     { name: "dcmjs", version: "^0.43.0", license: "MIT", type: "dependency" },
     {
       name: "dicom-parser",
       version: "^1.8.21",
       license: "MIT",
+      type: "dependency",
+    },
+    {
+      name: "dompurify",
+      version: "^3.2.6",
+      license: "Apache-2.0 OR MPL-2.0",
       type: "dependency",
     },
     {
@@ -89,6 +107,12 @@ const getDependencies = (): DependencyInfo[] => {
     { name: "zustand", version: "^4.4.7", license: "MIT", type: "dependency" },
 
     // Dev dependencies
+    {
+      name: "@types/dompurify",
+      version: "^3.0.5",
+      license: "MIT",
+      type: "devDependency",
+    },
     {
       name: "@types/node",
       version: "^24.0.13",
@@ -114,8 +138,38 @@ const getDependencies = (): DependencyInfo[] => {
       type: "devDependency",
     },
     {
+      name: "@typescript-eslint/eslint-plugin",
+      version: "^8.37.0",
+      license: "MIT",
+      type: "devDependency",
+    },
+    {
+      name: "@typescript-eslint/parser",
+      version: "^8.37.0",
+      license: "MIT",
+      type: "devDependency",
+    },
+    {
       name: "@vitejs/plugin-react",
       version: "^4.2.1",
+      license: "MIT",
+      type: "devDependency",
+    },
+    {
+      name: "audit-ci",
+      version: "^7.1.0",
+      license: "Apache-2.0",
+      type: "devDependency",
+    },
+    {
+      name: "eslint-plugin-security",
+      version: "^3.0.1",
+      license: "Apache-2.0",
+      type: "devDependency",
+    },
+    {
+      name: "ts-node",
+      version: "^10.9.2",
       license: "MIT",
       type: "devDependency",
     },
@@ -126,6 +180,12 @@ const getDependencies = (): DependencyInfo[] => {
       type: "devDependency",
     },
     { name: "vite", version: "^5.2.0", license: "MIT", type: "devDependency" },
+    {
+      name: "vite-plugin-csp",
+      version: "^1.1.2",
+      license: "MIT",
+      type: "devDependency",
+    },
     {
       name: "vite-plugin-static-copy",
       version: "^3.1.1",
