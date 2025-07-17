@@ -37,8 +37,10 @@ import {
   Target,
   Camera,
   Shield,
+  Monitor,
 } from "lucide-react";
 import { DicomRenderer } from "./components/DicomRenderer";
+import MultiViewportRenderer from "./components/MultiViewportRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
 import { useAnnotationStore, useViewportStore, useUIStore, useSecurityStore } from "./store";
@@ -167,6 +169,8 @@ function App() {
   );
   const [editingValue, setEditingValue] = useState("");
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
+  const [viewportLayout, setViewportLayout] = useState<'1x' | '2x'>('1x');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -263,6 +267,22 @@ function App() {
       trackDicomViewerEvents.languageChange(currentLanguage);
     }
   }, [currentLanguage]);
+
+  // 뷰포트 레이아웃 변경 시 기존 렌더링 정리
+  useEffect(() => {
+    if (loadedFiles.length > 0) {
+      // 기존 렌더링 상태 초기화
+      setRenderingSuccess(false);
+      setIsLoading(true);
+      
+      // 잠시 대기 후 렌더링 재시작
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [viewportLayout, selectedFiles]);
 
   // 주석은 이제 Zustand 스토어에서 관리됨
 
@@ -391,7 +411,15 @@ function App() {
         });
         
         if (validFiles.length > 0) {
-          handleFiles(validFiles);
+          // 누적으로 파일 추가 (최대 4개)
+          const remainingSlots = 4 - loadedFiles.length;
+          const filesToAdd = validFiles.slice(0, remainingSlots);
+          
+          if (filesToAdd.length > 0) {
+            handleFiles([...loadedFiles, ...filesToAdd]);
+            // 새로 추가된 첫 번째 파일을 기본으로 선택
+            setSelectedFiles([filesToAdd[0]]);
+          }
         } else {
           const errorMessage = isLoginEnabled 
             ? "Access denied: Invalid file type or insufficient permissions"
@@ -415,7 +443,9 @@ function App() {
     setIsLoading(false); // 기존 로딩 해제
     setError(null); // 에러 초기화
     setRenderingSuccess(false); // 렌더링 상태 초기화
-    setLoadedFiles([]); // 기존 파일 목록 초기화
+    // 누적 모드에서는 파일 목록을 초기화하지 않음
+    // setLoadedFiles([]); // 기존 파일 목록 초기화
+    // setSelectedFiles([]); // 선택된 파일 초기화
 
     // 2단계: Zustand 스토어 완전 초기화
     clearAllAnnotations(); // 주석 초기화
@@ -498,7 +528,15 @@ function App() {
     });
     
     if (validFiles.length > 0) {
-      handleFiles(validFiles);
+      // 누적으로 파일 추가 (최대 4개)
+      const remainingSlots = 4 - loadedFiles.length;
+      const filesToAdd = validFiles.slice(0, remainingSlots);
+      
+      if (filesToAdd.length > 0) {
+        handleFiles([...loadedFiles, ...filesToAdd]);
+        // 새로 추가된 첫 번째 파일을 기본으로 선택
+        setSelectedFiles([filesToAdd[0]]);
+      }
     } else {
       const errorMessage = isLoginEnabled 
         ? "Access denied: Invalid file type or insufficient permissions"
@@ -614,6 +652,8 @@ function App() {
                   </button>
                 </div>
               )}
+              
+              
               <LanguageSelector className="mr-3" />
               <span className="status-ready">{t('ready')}</span>
             </div>
@@ -645,38 +685,42 @@ function App() {
                     <button
                       className="file-upload-button"
                       onClick={handleFileUpload}
-                      disabled={isLoading}
+                      disabled={isLoading || loadedFiles.length >= 4}
                       style={{
                         ...commonButtonStyle,
                         width: "100%",
                         padding: "12px 16px",
-                        backgroundColor: "#3b82f6",
+                        backgroundColor: (isLoading || loadedFiles.length >= 4) ? "#9ca3af" : "#3b82f6",
                         color: "white",
                         borderRadius: "8px",
                         fontSize: "14px",
                         fontWeight: "500",
-                        cursor: isLoading ? "not-allowed" : "pointer",
+                        cursor: (isLoading || loadedFiles.length >= 4) ? "not-allowed" : "pointer",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "8px",
                         transition: "background-color 0.2s",
-                        opacity: isLoading ? 0.6 : 1,
+                        opacity: (isLoading || loadedFiles.length >= 4) ? 0.6 : 1,
                       }}
                       onMouseEnter={(e) => {
-                        if (!isLoading) {
+                        if (!isLoading && loadedFiles.length < 4) {
                           e.currentTarget.style.backgroundColor = "#2563eb";
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isLoading) {
+                        if (!isLoading && loadedFiles.length < 4) {
                           e.currentTarget.style.backgroundColor = "#3b82f6";
                         }
                       }}
-                      title={t('upload')}
+                      title={loadedFiles.length >= 4 ? "Maximum 4 files reached" : t('upload')}
                     >
                       <Upload size={16} />
-                      <span>{t('upload')}</span>
+                      <span>
+                        {loadedFiles.length >= 4 ? `Max Files (${loadedFiles.length}/4)` : 
+                         loadedFiles.length > 0 ? `Add More (${loadedFiles.length}/4)` : 
+                         t('upload')}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -712,14 +756,94 @@ function App() {
                         </span>
                       </div>
                       {loadedFiles.slice(0, 3).map((file, index) => (
-                        <div key={index} className="info-item">
-                          <label>{t('fileNumber').replace('{number}', String(index + 1))}:</label>
-                          <span>{file.name}</span>
+                        <div key={index} className="info-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div>
+                            <label>{t('fileNumber').replace('{number}', String(index + 1))}:</label>
+                            <span>{file.name}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const newFiles = loadedFiles.filter((_, i) => i !== index);
+                              setLoadedFiles(newFiles);
+                              // 선택된 파일에서도 제거
+                              setSelectedFiles(prev => prev.filter(f => f !== file));
+                              // 파일이 모두 삭제되면 상태 초기화
+                              if (newFiles.length === 0) {
+                                setRenderingSuccess(false);
+                                setError(null);
+                                clearAllAnnotations();
+                              }
+                            }}
+                            style={{
+                              ...commonButtonStyle,
+                              color: "#ef4444",
+                              padding: "2px 4px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              marginLeft: "8px",
+                            }}
+                            title="Remove file"
+                          >
+                            <X size={12} />
+                          </button>
                         </div>
                       ))}
                       {loadedFiles.length > 3 && (
-                        <div className="info-item">
+                        <div className="info-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <span>{t('andMoreFiles').replace('{count}', String(loadedFiles.length - 3))}</span>
+                          <button
+                            onClick={() => {
+                              setLoadedFiles([]);
+                              setSelectedFiles([]);
+                              setRenderingSuccess(false);
+                              setError(null);
+                              clearAllAnnotations();
+                            }}
+                            style={{
+                              ...commonButtonStyle,
+                              backgroundColor: "#ef4444",
+                              color: "white",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "11px",
+                              marginLeft: "8px",
+                            }}
+                            title="Clear all files"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* 전체 파일 삭제 버튼 */}
+                      {loadedFiles.length > 0 && (
+                        <div className="info-item" style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #404040" }}>
+                          <button
+                            onClick={() => {
+                              setLoadedFiles([]);
+                              setSelectedFiles([]);
+                              setRenderingSuccess(false);
+                              setError(null);
+                              clearAllAnnotations();
+                            }}
+                            style={{
+                              ...commonButtonStyle,
+                              backgroundColor: "#ef4444",
+                              color: "white",
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              fontSize: "12px",
+                              width: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "6px",
+                            }}
+                            title="Clear all files"
+                          >
+                            <X size={14} />
+                            Clear All Files ({loadedFiles.length})
+                          </button>
                         </div>
                       )}
 
@@ -777,6 +901,144 @@ function App() {
                     <p className="no-data">{t('fileNotLoaded')}</p>
                   )}
                 </div>
+
+                {/* Multi-File Selection */}
+                {loadedFiles.length >= 1 && (
+                  <div className="sidebar-section">
+                    <h3 className="sidebar-section-title">
+                      <Grid size={16} />
+                      Viewport 관리
+                    </h3>
+                    <div className="file-selection-section">
+                      <div className="layout-buttons" style={{ marginBottom: "12px" }}>
+                        <button
+                          onClick={() => setViewportLayout('1x')}
+                          className={`layout-btn ${viewportLayout === '1x' ? 'active' : ''}`}
+                          style={{
+                            ...commonButtonStyle,
+                            padding: "8px 12px",
+                            backgroundColor: viewportLayout === '1x' ? "#3b82f6" : "#6b7280",
+                            color: "white",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            marginRight: "8px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <Monitor size={14} />
+                          1x
+                        </button>
+                        <button
+                          onClick={() => setViewportLayout('2x')}
+                          className={`layout-btn ${viewportLayout === '2x' ? 'active' : ''}`}
+                          style={{
+                            ...commonButtonStyle,
+                            padding: "8px 12px",
+                            backgroundColor: viewportLayout === '2x' ? "#3b82f6" : "#6b7280",
+                            color: "white",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            marginRight: "8px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <Grid size={14} />
+                          2x
+                        </button>
+                      </div>
+                      
+                      {loadedFiles.length > 1 && (
+                        <div className="file-selection-list">
+                        {loadedFiles.map((file, index) => (
+                          <div key={index} className="file-selection-item" style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "8px",
+                            backgroundColor: selectedFiles.includes(file) ? "#3b82f6" : "#374151",
+                            borderRadius: "6px",
+                            marginBottom: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => {
+                            if (selectedFiles.includes(file)) {
+                              setSelectedFiles(selectedFiles.filter(f => f !== file));
+                            } else {
+                              const maxFiles = viewportLayout === '2x2' ? 4 : viewportLayout === '1x2' ? 2 : 1;
+                              if (selectedFiles.length < maxFiles) {
+                                setSelectedFiles([...selectedFiles, file]);
+                              }
+                            }
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedFiles.includes(file)}
+                              onChange={() => {}}
+                              style={{ marginRight: "8px" }}
+                            />
+                            <span style={{ 
+                              fontSize: "12px",
+                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
+                              marginRight: "8px",
+                              fontWeight: "bold"
+                            }}>
+                              {selectedFiles.includes(file) ? selectedFiles.indexOf(file) + 1 : ''}
+                            </span>
+                            <span style={{ 
+                              fontSize: "12px",
+                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap"
+                            }}>
+                              {file.name}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newFiles = loadedFiles.filter(f => f !== file);
+                                setLoadedFiles(newFiles);
+                                setSelectedFiles(prev => prev.filter(f => f !== file));
+                                // 파일이 모두 삭제되면 상태 초기화
+                                if (newFiles.length === 0) {
+                                  setRenderingSuccess(false);
+                                  setError(null);
+                                  clearAllAnnotations();
+                                }
+                              }}
+                              style={{
+                                ...commonButtonStyle,
+                                color: "#ef4444",
+                                padding: "2px 4px",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                marginLeft: "8px",
+                              }}
+                              title="Remove file"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        </div>
+                      )}
+                      
+                      <div style={{ 
+                        fontSize: "11px", 
+                        color: "#9ca3af", 
+                        marginTop: "8px",
+                        textAlign: "center"
+                      }}>
+                        {viewportLayout === '2x' ? 'Select up to 4 files for 2x layout' : 
+                         '1x layout adapts to selected files (1x1→1x2→1x3→1x4)'}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* 주석 정보 */}
                 <div
@@ -1444,7 +1706,7 @@ function App() {
                   {loadedFiles.length > 0 && !isDragging && (
                     <DicomErrorBoundary>
                       <DicomRenderer
-                        files={loadedFiles}
+                        files={selectedFiles.length > 0 ? selectedFiles : [loadedFiles[0]]}
                         onError={handleRenderingError}
                         onSuccess={handleRenderingSuccess}
                       />

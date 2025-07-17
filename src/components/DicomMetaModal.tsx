@@ -43,7 +43,6 @@ const dicomTagNames: Record<string, string> = {
   'x00080090': 'Referring Physician Name',
   'x00081010': 'Station Name',
   'x00081030': 'Study Description',
-  'x0008103e': 'Series Description',
   'x00081040': 'Institutional Department Name',
   'x00081050': 'Performing Physician Name',
   'x00081060': 'Name of Physician Reading Study',

@@ -35,6 +35,9 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
     const loadDicomImages = async () => {
       loadingRef.current = true;
       
+      // imageIds를 함수 최상단에서 선언하여 스코프 문제 해결
+      const imageIds: string[] = [];
+      
       try {
         debugLogger.log('📁 DICOM 파일 로딩 시작', { fileCount: files.length });
         debugLogger.time('DICOM 파일 처리');
@@ -69,7 +72,6 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
         }
 
         // 파일을 imageIds로 변환
-        const imageIds: string[] = [];
         
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
