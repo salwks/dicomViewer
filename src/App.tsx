@@ -99,25 +99,27 @@ function App() {
 
   // 색상 반전 함수
   const handleInvertColors = () => {
-    const viewport = cornerstoneRenderingEngineRef.current?.getViewport('dicom-viewport');
-    if (viewport) {
-      try {
-        const voiLutModule = viewport.getImageData()?.voiLUTModule;
-        const properties = viewport.getProperties();
-        
-        // 현재 반전 상태 확인 및 토글
-        const currentInvert = properties?.invert || false;
-        viewport.setProperties({
-          ...properties,
-          invert: !currentInvert
-        });
-        viewport.render();
-        
-        console.log(`🔄 Color invert toggled: ${!currentInvert}`);
-        showToastMessage(`${t('invert')}: ${!currentInvert ? 'ON' : 'OFF'}`);
-      } catch (error) {
-        console.error('Failed to invert colors:', error);
-        showToastMessage(t('failed'));
+    const renderingEngine = (window as any).cornerstoneRenderingEngine;
+    if (renderingEngine) {
+      const viewport = renderingEngine.getViewport('dicom-viewport');
+      if (viewport) {
+        try {
+          const properties = viewport.getProperties();
+          
+          // 현재 반전 상태 확인 및 토글
+          const currentInvert = properties?.invert || false;
+          viewport.setProperties({
+            ...properties,
+            invert: !currentInvert
+          });
+          viewport.render();
+          
+          console.log(`🔄 Color invert toggled: ${!currentInvert}`);
+          showToastMessage(`${t('invert')}: ${!currentInvert ? 'ON' : 'OFF'}`);
+        } catch (error) {
+          console.error('Failed to invert colors:', error);
+          showToastMessage(t('failed'));
+        }
       }
     }
   };
@@ -224,6 +226,23 @@ function App() {
 
   // 쿠키 동의 상태 확인 및 Google Analytics 초기화
   useEffect(() => {
+    // 🚀 동적 페이지 제목 설정
+    document.title = `${import.meta.env.VITE_APP_NAME} v${import.meta.env.VITE_APP_VERSION}`;
+    
+    // 🎨 개발자 콘솔에 버전 정보 출력
+    console.log(
+      `%c${import.meta.env.VITE_APP_NAME} v${import.meta.env.VITE_APP_VERSION}`,
+      'color: #3b82f6; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);'
+    );
+    console.log(
+      `%c🏥 Modern React-based DICOM viewer using Cornerstone3D`,
+      'color: #10b981; font-size: 14px; font-weight: normal;'
+    );
+    console.log(
+      `%c📊 Performance optimized for medical imaging`,
+      'color: #8b5cf6; font-size: 12px; font-weight: normal;'
+    );
+    
     const consentCookie = document.cookie
       .split('; ')
       .find(row => row.startsWith('CookieConsent='));
@@ -233,7 +252,7 @@ function App() {
     
     if (hasConsent) {
       initGA();
-      trackPageView('/', 'Clarity DICOM Viewer - Home');
+      trackPageView('/', `${import.meta.env.VITE_APP_NAME} v${import.meta.env.VITE_APP_VERSION} - Home`);
       trackDicomViewerEvents.languageChange(currentLanguage);
     }
   }, []);
@@ -567,8 +586,8 @@ function App() {
           <div className="header-content">
             <div className="header-left">
               <Layout className="header-icon" />
-              <h1>{t('appName')}</h1>
-              <span className="version">{t('appVersion')}</span>
+              <h1>{import.meta.env.VITE_APP_NAME}</h1>
+              <span className="version">v{import.meta.env.VITE_APP_VERSION}</span>
             </div>
 
             <div className="header-right">
@@ -1415,16 +1434,23 @@ function App() {
                   </div>
                 )}
 
-                {/* DICOM 렌더러 - Meta Tag 모달이 열려있지 않을 때만 표시 */}
-                {loadedFiles.length > 0 && !isDragging && !isMetaModalOpen && (
-                  <DicomErrorBoundary>
-                    <DicomRenderer
-                      files={loadedFiles}
-                      onError={handleRenderingError}
-                      onSuccess={handleRenderingSuccess}
-                    />
-                  </DicomErrorBoundary>
-                )}
+                {/* DICOM 렌더러 - Meta Tag 모달이 열려있을 때 숨김 처리 (언마운트하지 않음) */}
+                <div style={{ 
+                  visibility: isMetaModalOpen ? 'hidden' : 'visible',
+                  pointerEvents: isMetaModalOpen ? 'none' : 'auto',
+                  width: '100%',
+                  height: '100%'
+                }}>
+                  {loadedFiles.length > 0 && !isDragging && (
+                    <DicomErrorBoundary>
+                      <DicomRenderer
+                        files={loadedFiles}
+                        onError={handleRenderingError}
+                        onSuccess={handleRenderingSuccess}
+                      />
+                    </DicomErrorBoundary>
+                  )}
+                </div>
 
                 {/* Meta Tag 창 - 뷰포트와 같은 위치에 표시 */}
                 {isMetaModalOpen && (
@@ -1607,7 +1633,7 @@ function App() {
         console.log('🍪 쿠키 동의됨 - Google Analytics 초기화');
         setHasCookieConsent(true);
         initGA();
-        trackPageView('/', 'Clarity DICOM Viewer - Home');
+        trackPageView('/', `${import.meta.env.VITE_APP_NAME} v${import.meta.env.VITE_APP_VERSION} - Home`);
       }}
       onDecline={() => {
         console.log('🍪 쿠키 거부됨 - Google Analytics 비활성화');

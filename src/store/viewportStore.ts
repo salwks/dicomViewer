@@ -289,7 +289,7 @@ export const useViewportStore = create<ViewportStoreState>()(
     },
 
     prepareViewportForCapture: async (viewportId: string) => {
-      const renderingEngine = getRenderingEngine('dicom-rendering-engine');
+      const renderingEngine = (window as any).cornerstoneRenderingEngine || getRenderingEngine('dicom-rendering-engine');
       if (!renderingEngine) {
         throw new Error('렌더링 엔진을 찾을 수 없습니다.');
       }
@@ -382,7 +382,7 @@ export const useViewportStore = create<ViewportStoreState>()(
           }
         });
 
-        const renderingEngine = getRenderingEngine('dicom-rendering-engine');
+        const renderingEngine = (window as any).cornerstoneRenderingEngine || getRenderingEngine('dicom-rendering-engine');
         const viewport = renderingEngine.getViewport(viewportId);
         const canvas = viewport.getCanvas();
         

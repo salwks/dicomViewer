@@ -1,6 +1,6 @@
 {
   "name": "Clarity",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -11,6 +11,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
+    "version:patch": "npm version patch && npm run build",
+    "version:minor": "npm version minor && npm run build",
+    "version:major": "npm version major && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "audit": "npm audit",
     "security-audit": "npm audit --audit-level=moderate",

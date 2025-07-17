@@ -6,8 +6,14 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
 import { wasmResolver } from './vite-wasm-resolver.js';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
+
+// package.json에서 버전 정보 읽기
+const packageJson = JSON.parse(
+  readFileSync(resolve(__dirname, 'package.json'), 'utf8')
+);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -132,6 +138,9 @@ export default defineConfig({
     global: 'globalThis',
     // Disable polyseg WASM module to prevent build issues
     'process.env.DISABLE_POLYSEG': 'true',
+    // 🚀 버전 정보 환경 변수 추가
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+    'import.meta.env.VITE_APP_NAME': JSON.stringify(packageJson.name),
   },
   optimizeDeps: {
     include: ['@cornerstonejs/core', '@cornerstonejs/tools'],

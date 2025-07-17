@@ -176,7 +176,10 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
         // 🔧 뷰포트에 스택 설정 (기존 뷰포트 재사용)
         try {
           debugLogger.log('뷰포트 스택 설정 시작', {
-            imageCount: imageIds.length
+            imageCount: imageIds.length,
+            viewportType: viewport.type,
+            viewportId: viewport.id,
+            element: viewport.element
           });
 
           await viewport.setStack(imageIds);
@@ -185,6 +188,14 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
           // 렌더링
           viewport.render();
           debugLogger.success('✅ 렌더링 완료');
+          
+          // 렌더링 후 상태 확인
+          debugLogger.log('🔍 렌더링 후 상태 확인:', {
+            hasImageData: !!viewport.getImageData(),
+            currentImageIndex: viewport.getCurrentImageIdIndex(),
+            stackSize: viewport.getImageIds().length,
+            properties: viewport.getProperties()
+          });
           
           debugLogger.timeEnd('스택 설정 및 렌더링');
           debugLogger.timeEnd('DICOM 파일 처리');
@@ -231,13 +242,35 @@ export function useDicomLoader({ files, onError, onSuccess }: UseDicomLoaderProp
       }
     };
 
-    // 약간의 지연을 두어 뷰포트 초기화가 완료된 후 실행
-    const timeoutId = setTimeout(() => {
+    // 뷰포트 초기화 완료를 기다린 후 실행
+    const handleViewportReady = () => {
+      debugLogger.log('📡 뷰포트 준비 완료 이벤트 수신 - 이미지 로딩 시작');
       loadDicomImages();
-    }, 100);
+    };
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    // 뷰포트가 이미 준비되었는지 확인
+    if ((window as any).cornerstoneRenderingEngine) {
+      debugLogger.log('⚡ 뷰포트 이미 준비됨 - 즉시 이미지 로딩 시작');
+      loadDicomImages();
+    } else {
+      debugLogger.log('⏳ 뷰포트 준비 대기 중...');
+      window.addEventListener('cornerstoneViewportReady', handleViewportReady, { once: true });
+      
+      // 타임아웃 설정 (안전장치)
+      timeoutId = setTimeout(() => {
+        debugLogger.warn('⚠️ 뷰포트 준비 이벤트 타임아웃 - 강제 시작');
+        window.removeEventListener('cornerstoneViewportReady', handleViewportReady);
+        loadDicomImages();
+      }, 3000);
+    }
 
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      window.removeEventListener('cornerstoneViewportReady', handleViewportReady);
       loadingRef.current = false;
       debugLogger.log('🧹 useDicomLoader cleanup - loadingRef 초기화');
     };

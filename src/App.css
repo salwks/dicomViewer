@@ -414,6 +414,9 @@ body {
   position: relative;
   background-color: #000000;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .viewport-container.dragging {

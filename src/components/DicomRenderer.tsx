@@ -17,7 +17,11 @@ interface DicomRendererProps {
  * 이 구조로 뷰포트가 파괴되지 않고, 이미지만 교체됩니다.
  */
 const DicomRendererComponent = ({ files, onError, onSuccess }: DicomRendererProps) => {
-  debugLogger.log('🏗️ DicomRenderer 렌더링', { fileCount: files.length });
+  debugLogger.log('🏗️ DicomRenderer 렌더링', { 
+    fileCount: files.length,
+    fileNames: files.map(f => f.name),
+    timestamp: new Date().toISOString()
+  });
 
   // 이미지 로딩 훅 (뷰포트와 분리)
   useDicomLoader({ files, onError, onSuccess });

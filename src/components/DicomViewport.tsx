@@ -266,6 +266,19 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
 
         debugLogger.success('✅ 뷰포트 초기화 완료');
         isViewportInitialized.current = true;
+        
+        // 초기화 완료 후 상태 확인
+        debugLogger.log('🔍 뷰포트 초기화 후 상태 확인:', {
+          element: viewportRef.current,
+          elementDimensions: {
+            width: viewportRef.current?.clientWidth,
+            height: viewportRef.current?.clientHeight
+          },
+          renderingEngine: !!renderingEngineRef.current,
+          toolGroup: !!toolGroupRef.current,
+          viewport: !!renderingEngine.getViewport(viewportId)
+        });
+        
         onSuccess('뷰포트 초기화 완료');
 
         // 주석 이벤트 리스너는 별도 useEffect에서 관리
@@ -318,30 +331,24 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         // 새로 생성된 주석은 기본적으로 보이도록 설정
         annotation.isVisible = true;
 
-        // Length 도구의 텍스트를 mm 단위로 변환
+        // Length 도구의 텍스트를 mm 단위로 변환 (한 번만 실행)
         updateAnnotationText(annotation);
         
-        // CornerstoneJS가 텍스트를 덮어쓰지 못하도록 지속적으로 mm 텍스트 유지
-        const keepMmText = () => {
-          setTimeout(() => updateAnnotationText(annotation), 50);
-          setTimeout(() => updateAnnotationText(annotation), 100);
-          setTimeout(() => updateAnnotationText(annotation), 200);
-          setTimeout(() => updateAnnotationText(annotation), 300);
-          setTimeout(() => updateAnnotationText(annotation), 500);
-          setTimeout(() => updateAnnotationText(annotation), 1000);
+        // 🚀 성능 최적화: 단발성 재시도로 변경
+        // CornerstoneJS 내부 렌더링 완료 후 한 번만 재설정
+        const retryTextUpdate = (retryCount = 0) => {
+          if (retryCount >= 3) return; // 최대 3번만 재시도
+          
+          setTimeout(() => {
+            if (annotation.data?.text && !annotation.data.text.includes('mm')) {
+              console.log(`🔄 텍스트 재설정 시도 ${retryCount + 1}/3`);
+              updateAnnotationText(annotation);
+              retryTextUpdate(retryCount + 1);
+            }
+          }, 100 * (retryCount + 1)); // 100ms, 200ms, 300ms로 점진적 지연
         };
-        keepMmText();
         
-        // 주기적으로 텍스트 확인하고 복원
-        const textWatcher = setInterval(() => {
-          if (annotation.data?.text && !annotation.data.text.includes('mm')) {
-            console.log('🔄 텍스트가 px로 변경됨, 다시 mm로 복원');
-            updateAnnotationText(annotation);
-          }
-        }, 500);
-        
-        // 5초 후 워처 해제
-        setTimeout(() => clearInterval(textWatcher), 5000);
+        retryTextUpdate();
 
         // 스토어에 추가할 주석 데이터 구성
         const annotationData = {
@@ -362,6 +369,9 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       }
     };
 
+    // 🚀 성능 최적화: 디바운싱된 업데이트 맵
+    const updateTimers = new Map<string, NodeJS.Timeout>();
+    
     // ANNOTATION_MODIFIED 이벤트 핸들러 - 주석 수정 시 호출
     const handleAnnotationModified = (event: any) => {
       debugLogger.log('✏️ ANNOTATION_MODIFIED 이벤트 수신', event.detail);
@@ -369,18 +379,29 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       try {
         const annotation = event.detail?.annotation;
         if (annotation && annotation.annotationUID) {
-          // Update annotation text with selected measurement unit
-          updateAnnotationText(annotation);
+          // 🚀 디바운싱: 동일한 주석의 연속 수정 요청을 그룹핑
+          const annotationUID = annotation.annotationUID;
           
-          // CornerstoneJS가 덮어쓰는 것을 방지하기 위해 약간의 지연 후 다시 설정
-          setTimeout(() => updateAnnotationText(annotation), 50);
+          // 기존 타이머 취소
+          if (updateTimers.has(annotationUID)) {
+            clearTimeout(updateTimers.get(annotationUID)!);
+          }
           
-          const updates = {
-            data: annotation.data,
-            metadata: annotation.metadata
-          };
+          // 새 타이머 설정 (100ms 디바운싱)
+          const timer = setTimeout(() => {
+            // Update annotation text with selected measurement unit
+            updateAnnotationText(annotation);
+            
+            const updates = {
+              data: annotation.data,
+              metadata: annotation.metadata
+            };
 
-          updateAnnotation(annotation.annotationUID, updates);
+            updateAnnotation(annotationUID, updates);
+            updateTimers.delete(annotationUID);
+          }, 100);
+          
+          updateTimers.set(annotationUID, timer);
         }
       } catch (error) {
         debugLogger.error('❌ 주석 수정 이벤트 처리 실패:', error);
@@ -431,7 +452,11 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       eventTarget.removeEventListener(ANNOTATION_MODIFIED, handleAnnotationModified);
       eventTarget.removeEventListener(ANNOTATION_REMOVED, handleAnnotationRemoved);
       
-      debugLogger.log('🧹 주석 이벤트 리스너 정리 완료');
+      // 🚀 성능 최적화: 남은 디바운싱 타이머 정리
+      updateTimers.forEach((timer) => clearTimeout(timer));
+      updateTimers.clear();
+      
+      debugLogger.log('🧹 주석 이벤트 리스너 및 타이머 정리 완료');
     };
   }, [isViewportInitialized.current, addAnnotation, updateAnnotation, removeAnnotation]);
 
@@ -459,8 +484,19 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
     if (renderingEngineRef.current && toolGroupRef.current && isViewportInitialized.current) {
       // 전역적으로 참조 저장 (사이드바 컨트롤에서 사용)
       (window as any).cornerstoneRenderingEngine = renderingEngineRef.current;
-      (window as any).cornerstoneToolGroupRef = toolGroupRef;
+      (window as any).cornerstoneToolGroupRef = toolGroupRef.current;
       debugLogger.log('🌐 전역 참조 설정 완료');
+      
+      // 뷰포트 초기화 완료 신호 전송
+      const initEvent = new CustomEvent('cornerstoneViewportReady', {
+        detail: { 
+          renderingEngine: renderingEngineRef.current,
+          toolGroup: toolGroupRef.current,
+          viewportId: 'dicom-viewport'
+        }
+      });
+      window.dispatchEvent(initEvent);
+      debugLogger.log('📡 뷰포트 준비 완료 이벤트 전송');
     }
   }, [isViewportInitialized.current]);
 
