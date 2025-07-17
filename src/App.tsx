@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
+import CookieConsent from "react-cookie-consent";
+import { trackPageView, trackDicomViewerEvents, initGA } from "./analytics";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import {
   Upload,
   Layout,
@@ -28,6 +32,7 @@ import {
   RectangleHorizontal,
   CircleEllipsis,
   CircleDot,
+  MessageSquare,
   Brush,
   Target,
   Camera,
@@ -39,6 +44,8 @@ import { LicenseModal } from "./components/LicenseModal";
 import { useAnnotationStore, useViewportStore, useUIStore, useSecurityStore } from "./store";
 import { useTranslation } from "./utils/i18n";
 import LanguageSelector from "./components/LanguageSelector";
+import FeedbackModal from "./components/FeedbackModal";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import SecurityLogin from "./components/SecurityLogin";
 import LoginModern from "./components/LoginModern";
 import SecurityDashboard from "./components/SecurityDashboard";
@@ -72,6 +79,12 @@ const commonButtonStyle = {
 };
 
 function App() {
+  // Router location for conditional rendering
+  const location = useLocation();
+  
+  // Cookie consent state
+  const [hasCookieConsent, setHasCookieConsent] = useState(false);
+  
   // Security state - check authentication first
   const { isAuthenticated, currentUser, checkAuthentication } = useSecurityStore();
   const [showSecurityDashboard, setShowSecurityDashboard] = useState(false);
@@ -83,7 +96,32 @@ function App() {
     isLoginEnabled,
     currentLanguage,
   } = useUIStore();
-  
+
+  // 색상 반전 함수
+  const handleInvertColors = () => {
+    const viewport = cornerstoneRenderingEngineRef.current?.getViewport('dicom-viewport');
+    if (viewport) {
+      try {
+        const voiLutModule = viewport.getImageData()?.voiLUTModule;
+        const properties = viewport.getProperties();
+        
+        // 현재 반전 상태 확인 및 토글
+        const currentInvert = properties?.invert || false;
+        viewport.setProperties({
+          ...properties,
+          invert: !currentInvert
+        });
+        viewport.render();
+        
+        console.log(`🔄 Color invert toggled: ${!currentInvert}`);
+        showToastMessage(`${t('invert')}: ${!currentInvert ? 'ON' : 'OFF'}`);
+      } catch (error) {
+        console.error('Failed to invert colors:', error);
+        showToastMessage(t('failed'));
+      }
+    }
+  };
+
   // 디버깅을 위해 전역으로 노출
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -121,6 +159,7 @@ function App() {
   const [renderingSuccess, setRenderingSuccess] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(
     null
   );
@@ -128,6 +167,15 @@ function App() {
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Toast message function
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
 
   // Zustand stores for tool management and sidebar controls
   const {
@@ -152,6 +200,50 @@ function App() {
 
   // 번역 함수
   const { t } = useTranslation(currentLanguage);
+
+  // 키보드 단축키 설정
+  const { getShortcutForTool } = useKeyboardShortcuts({
+    onToolSelect: (toolName) => {
+      console.log(`🎯 Shortcut activated: ${toolName}`);
+      setActiveTool(toolName);
+      // Google Analytics 키보드 단축키 사용 추적
+      const shortcut = getShortcutForTool(toolName);
+      if (shortcut) {
+        trackDicomViewerEvents.shortcutUsage(shortcut, toolName);
+      }
+    },
+    onInvert: () => {
+      console.log('🎯 Shortcut activated: Invert');
+      handleInvertColors();
+      // Google Analytics 이미지 조작 추적
+      trackDicomViewerEvents.imageManipulation('invert_colors');
+      trackDicomViewerEvents.shortcutUsage('I', 'Invert');
+    },
+    enabled: !isLicenseModalOpen && !showFeedbackModal && !isMetaModalOpen
+  });
+
+  // 쿠키 동의 상태 확인 및 Google Analytics 초기화
+  useEffect(() => {
+    const consentCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('CookieConsent='));
+    
+    const hasConsent = consentCookie?.split('=')[1] === 'true';
+    setHasCookieConsent(hasConsent);
+    
+    if (hasConsent) {
+      initGA();
+      trackPageView('/', 'Clarity DICOM Viewer - Home');
+      trackDicomViewerEvents.languageChange(currentLanguage);
+    }
+  }, []);
+
+  // 언어 변경 추적
+  useEffect(() => {
+    if (currentLanguage) {
+      trackDicomViewerEvents.languageChange(currentLanguage);
+    }
+  }, [currentLanguage]);
 
   // 주석은 이제 Zustand 스토어에서 관리됨
 
@@ -464,7 +556,11 @@ function App() {
   }
 
   return (
-    <SecureErrorBoundary>
+    <>
+      <Routes>
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/" element={
+          <SecureErrorBoundary>
       <div className="app">
         {/* Header */}
         <header className="app-header">
@@ -910,6 +1006,37 @@ function App() {
                   >
                     {t('appName')} v0.1.0
                   </p>
+                  
+                  {/* Feedback Button */}
+                  <button
+                    onClick={() => {
+                      setShowFeedbackModal(true);
+                      trackDicomViewerEvents.feedbackSubmit('modal_opened');
+                    }}
+                    style={{
+                      ...commonButtonStyle,
+                      color: "#10b981",
+                      fontSize: "8px",
+                      textDecoration: "underline",
+                      padding: "2px 0",
+                      transition: "color 0.2s",
+                      marginBottom: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#059669";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#10b981";
+                    }}
+                    title={t('feedback')}
+                  >
+                    <MessageSquare size={10} />
+                    {t('feedback')}
+                  </button>
+                  
                   <button
                     onClick={() => {
                       console.log(
@@ -971,20 +1098,27 @@ function App() {
                       icon: SearchIcon,
                       tooltip: t('magnifyTool'),
                     },
-                  ].map(({ tool, icon: Icon, tooltip }) => (
-                    <button
-                      key={tool}
-                      className={`toolbar-button ${
-                        activeTool === tool ? "active" : ""
-                      }`}
-                      onClick={() => setActiveTool(tool)}
-                      disabled={isLoading}
-                      title={tooltip}
-                      style={commonButtonStyle}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
+                  ].map(({ tool, icon: Icon, tooltip }) => {
+                    const shortcut = getShortcutForTool(tool);
+                    const tooltipWithShortcut = shortcut ? `${tooltip} (${shortcut})` : tooltip;
+                    return (
+                      <button
+                        key={tool}
+                        className={`toolbar-button ${
+                          activeTool === tool ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveTool(tool);
+                          trackDicomViewerEvents.toolUsage(tool);
+                        }}
+                        disabled={isLoading}
+                        title={tooltipWithShortcut}
+                        style={commonButtonStyle}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1013,20 +1147,27 @@ function App() {
                       icon: Move3D,
                       tooltip: t('bidirectionalTool'),
                     },
-                  ].map(({ tool, icon: Icon, tooltip }) => (
-                    <button
-                      key={tool}
-                      className={`toolbar-button ${
-                        activeTool === tool ? "active" : ""
-                      }`}
-                      onClick={() => setActiveTool(tool)}
-                      disabled={isLoading}
-                      title={tooltip}
-                      style={commonButtonStyle}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
+                  ].map(({ tool, icon: Icon, tooltip }) => {
+                    const shortcut = getShortcutForTool(tool);
+                    const tooltipWithShortcut = shortcut ? `${tooltip} (${shortcut})` : tooltip;
+                    return (
+                      <button
+                        key={tool}
+                        className={`toolbar-button ${
+                          activeTool === tool ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveTool(tool);
+                          trackDicomViewerEvents.toolUsage(tool);
+                        }}
+                        disabled={isLoading}
+                        title={tooltipWithShortcut}
+                        style={commonButtonStyle}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1050,20 +1191,27 @@ function App() {
                       icon: Circle,
                       tooltip: t('circleROI'),
                     },
-                  ].map(({ tool, icon: Icon, tooltip }) => (
-                    <button
-                      key={tool}
-                      className={`toolbar-button ${
-                        activeTool === tool ? "active" : ""
-                      }`}
-                      onClick={() => setActiveTool(tool)}
-                      disabled={isLoading}
-                      title={tooltip}
-                      style={commonButtonStyle}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
+                  ].map(({ tool, icon: Icon, tooltip }) => {
+                    const shortcut = getShortcutForTool(tool);
+                    const tooltipWithShortcut = shortcut ? `${tooltip} (${shortcut})` : tooltip;
+                    return (
+                      <button
+                        key={tool}
+                        className={`toolbar-button ${
+                          activeTool === tool ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveTool(tool);
+                          trackDicomViewerEvents.toolUsage(tool);
+                        }}
+                        disabled={isLoading}
+                        title={tooltipWithShortcut}
+                        style={commonButtonStyle}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1082,20 +1230,27 @@ function App() {
                       icon: Spline,
                       tooltip: "Spline ROI - 스플라인 곡선",
                     },
-                  ].map(({ tool, icon: Icon, tooltip }) => (
-                    <button
-                      key={tool}
-                      className={`toolbar-button ${
-                        activeTool === tool ? "active" : ""
-                      }`}
-                      onClick={() => setActiveTool(tool)}
-                      disabled={isLoading}
-                      title={tooltip}
-                      style={commonButtonStyle}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
+                  ].map(({ tool, icon: Icon, tooltip }) => {
+                    const shortcut = getShortcutForTool(tool);
+                    const tooltipWithShortcut = shortcut ? `${tooltip} (${shortcut})` : tooltip;
+                    return (
+                      <button
+                        key={tool}
+                        className={`toolbar-button ${
+                          activeTool === tool ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveTool(tool);
+                          trackDicomViewerEvents.toolUsage(tool);
+                        }}
+                        disabled={isLoading}
+                        title={tooltipWithShortcut}
+                        style={commonButtonStyle}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1115,20 +1270,27 @@ function App() {
                       icon: Target,
                       tooltip: t('informationProbe'),
                     },
-                  ].map(({ tool, icon: Icon, tooltip }) => (
-                    <button
-                      key={tool}
-                      className={`toolbar-button ${
-                        activeTool === tool ? "active" : ""
-                      }`}
-                      onClick={() => setActiveTool(tool)}
-                      disabled={isLoading}
-                      title={tooltip}
-                      style={commonButtonStyle}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
+                  ].map(({ tool, icon: Icon, tooltip }) => {
+                    const shortcut = getShortcutForTool(tool);
+                    const tooltipWithShortcut = shortcut ? `${tooltip} (${shortcut})` : tooltip;
+                    return (
+                      <button
+                        key={tool}
+                        className={`toolbar-button ${
+                          activeTool === tool ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveTool(tool);
+                          trackDicomViewerEvents.toolUsage(tool);
+                        }}
+                        disabled={isLoading}
+                        title={tooltipWithShortcut}
+                        style={commonButtonStyle}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1369,7 +1531,102 @@ function App() {
           inline={false}
         />
       )}
-    </SecureErrorBoundary>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            trackDicomViewerEvents.feedbackSubmit('modal_closed');
+          }}
+          language={currentLanguage}
+        />
+      )}
+          </SecureErrorBoundary>
+        } />
+      </Routes>
+
+      {/* 쿠키 동의 전 화면 비활성화 오버레이 */}
+      {!hasCookieConsent && location.pathname === '/' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }} />
+      )}
+      
+      {/* Cookie Consent - 개인정보처리방침 페이지에서는 숨김 */}
+      {location.pathname !== '/privacy-policy' && (
+    <CookieConsent
+      location="bottom"
+      buttonText={t('acceptCookies')}
+      declineButtonText={t('declineCookies')}
+      enableDeclineButton
+      cookieName="CookieConsent"
+      style={{
+        background: "#2d2d2d",
+        fontSize: "14px",
+        color: "#e5e7eb",
+        padding: "20px",
+        borderTop: "1px solid #404040",
+        boxShadow: "0 -2px 10px rgba(0, 0, 0, 0.3)",
+        zIndex: "10000",
+        left: "280px",
+        right: "0",
+        width: "calc(100% - 280px)",
+      }}
+      buttonStyle={{
+        background: "#3b82f6",
+        color: "white",
+        fontSize: "14px",
+        fontWeight: "500",
+        borderRadius: "6px",
+        border: "none",
+        padding: "10px 20px",
+        marginLeft: "16px",
+        cursor: "pointer",
+      }}
+      declineButtonStyle={{
+        background: "#6b7280",
+        color: "white",
+        fontSize: "14px",
+        fontWeight: "500",
+        borderRadius: "6px",
+        border: "none",
+        padding: "10px 20px",
+        marginLeft: "8px",
+        cursor: "pointer",
+      }}
+      onAccept={() => {
+        console.log('🍪 쿠키 동의됨 - Google Analytics 초기화');
+        setHasCookieConsent(true);
+        initGA();
+        trackPageView('/', 'Clarity DICOM Viewer - Home');
+      }}
+      onDecline={() => {
+        console.log('🍪 쿠키 거부됨 - Google Analytics 비활성화');
+      }}
+    >
+      {t('cookieConsentMessage')}{' '}
+      <Link 
+        to="/privacy-policy" 
+        style={{ 
+          color: "#3b82f6", 
+          textDecoration: "underline" 
+        }}
+      >
+        {t('learnMore')}
+      </Link>
+      .
+    </CookieConsent>
+      )}
+    </>
   );
 }
 

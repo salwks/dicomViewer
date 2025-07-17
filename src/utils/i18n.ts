@@ -23,6 +23,7 @@ export interface TranslationKeys {
   zoom: string;
   contrast: string;
   capture: string;
+  invert: string;
 
   // Sidebar
   seriesInfo: string;
@@ -235,6 +236,28 @@ export interface TranslationKeys {
   debugComplete: string;
   noImagesLoaded: string;
   debugError: string;
+
+  // Feedback modal
+  feedback: string;
+  feedbackTitle: string;
+  feedbackContent: string;
+  feedbackTitlePlaceholder: string;
+  feedbackContentPlaceholder: string;
+  pleaseEnterFeedback: string;
+  feedbackSent: string;
+  feedbackError: string;
+  send: string;
+
+  // Privacy Policy and Cookie Consent
+  privacyPolicy: string;
+  privacyPolicyTitle: string;
+  privacyPolicyContent: string;
+  cookieConsent: string;
+  cookieConsentMessage: string;
+  acceptCookies: string;
+  declineCookies: string;
+  cookieNotice: string;
+  learnMore: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -256,6 +279,7 @@ export const translations: Record<Language, TranslationKeys> = {
     zoom: "Zoom",
     contrast: "Contrast",
     capture: "Capture",
+    invert: "Invert Colors",
 
     // Sidebar
     seriesInfo: "Series Information",
@@ -469,6 +493,50 @@ export const translations: Record<Language, TranslationKeys> = {
     debugComplete: "Debug completed",
     noImagesLoaded: "No images loaded",
     debugError: "Debug error",
+
+    // Feedback modal
+    feedback: "Feedback",
+    feedbackTitle: "Feedback Title",
+    feedbackContent: "Feedback Content", 
+    feedbackTitlePlaceholder: "Enter feedback title...",
+    feedbackContentPlaceholder: "Please share your feedback, suggestions, or report any issues...",
+    pleaseEnterFeedback: "Please enter both title and content",
+    feedbackSent: "Thank you! Your feedback email has been prepared. Please send it from your email client.",
+    feedbackError: "Failed to prepare feedback email. Please try again.",
+    send: "Send",
+
+    // Privacy Policy and Cookie Consent
+    privacyPolicy: "Privacy Policy",
+    privacyPolicyTitle: "Clarity Privacy Policy",
+    privacyPolicyContent: `**Last Updated: July 17, 2025**
+
+This Privacy Policy explains how Clarity ("we," "us," or "our") collects, uses, and discloses information about you.
+
+## 1. Information We Collect
+
+We automatically collect the following information for service improvement using Google Analytics:
+
+**Usage Information**: IP address, browser type, OS, pages viewed, and visit times.
+
+**Data Collection Method**: Data is collected automatically via cookies and tracking scripts from Google Analytics. This information does not personally identify you.
+
+## 2. How We Share Your Information
+
+We share information with Google LLC for the sole purpose of analyzing service usage.
+
+## 3. Your Choices and Opt-Out Rights
+
+You can opt-out of data collection from Google Analytics by installing the Google Analytics Opt-out Browser Add-on, available at: https://tools.google.com/dlpage/gaoptout.
+
+## 4. Contact Us
+
+If you have any questions, please contact us at stra2003@gmail.com.`,
+    cookieConsent: "Cookie Consent",
+    cookieConsentMessage: "We use cookies and Google Analytics to improve our service. By clicking 'Accept', you consent to our use of cookies and analytics tracking. For more information, please read our",
+    acceptCookies: "Accept",
+    declineCookies: "Decline",
+    cookieNotice: "Cookie Notice",
+    learnMore: "Privacy Policy",
   },
 
   KR: {
@@ -489,6 +557,7 @@ export const translations: Record<Language, TranslationKeys> = {
     zoom: "확대/축소",
     contrast: "대비",
     capture: "캡처",
+    invert: "색상 반전",
 
     // Sidebar
     seriesInfo: "시리즈 정보",
@@ -701,6 +770,58 @@ export const translations: Record<Language, TranslationKeys> = {
     debugComplete: "디버그 완료",
     noImagesLoaded: "로드된 이미지가 없습니다",
     debugError: "디버그 오류",
+
+    // Feedback modal
+    feedback: "피드백",
+    feedbackTitle: "피드백 제목",
+    feedbackContent: "피드백 내용",
+    feedbackTitlePlaceholder: "피드백 제목을 입력하세요...",
+    feedbackContentPlaceholder: "피드백, 제안사항, 또는 문제점을 공유해주세요...",
+    pleaseEnterFeedback: "제목과 내용을 모두 입력해주세요",
+    feedbackSent: "감사합니다! 피드백 이메일이 준비되었습니다. 이메일 클라이언트에서 전송해주세요.",
+    feedbackError: "피드백 이메일 준비에 실패했습니다. 다시 시도해주세요.",
+    send: "전송",
+
+    // Privacy Policy and Cookie Consent
+    privacyPolicy: "개인정보처리방침",
+    privacyPolicyTitle: "Clarity 개인정보처리방침",
+    privacyPolicyContent: `**최종 수정일: 2025년 7월 17일**
+
+Clarity(이하 '서비스')는 이용자의 개인정보를 중요시하며, 「개인정보 보호법」을 준수하고 있습니다.
+
+## 1. 수집하는 개인정보의 항목 및 수집 방법
+
+본 서비스는 별도의 회원가입 절차 없이 운영되며, 서비스 품질 향상 및 이용 경험 개선을 위해 아래와 같은 정보가 자동으로 수집될 수 있습니다.
+
+**수집 항목**: IP 주소, 브라우저 종류 및 OS, 방문 일시, 서비스 이용 기록(페이지뷰, 클릭 등)
+
+**수집 방법**: Google Analytics를 통한 자동 수집
+
+**개인 식별 정보**: 위 정보는 통계적 분석을 위해 사용될 뿐, 개인을 직접적으로 식별할 수 있는 정보는 수집하지 않습니다.
+
+## 2. 개인정보의 국외 이전 및 제3자 제공
+
+서비스는 이용자의 정보를 아래와 같이 국외의 제3자에게 제공(처리 위탁)하고 있습니다.
+
+**이전받는 자**: Google LLC (Google Analytics)
+**이전되는 국가**: 미국
+**이전 항목**: 제1항에서 수집하는 모든 정보
+**이용 목적**: 접속 통계 분석
+**보유 및 이용 기간**: 위 이용 목적 달성 시까지
+
+## 3. 분석 도구 차단 방법
+
+이용자는 Google Analytics 차단 브라우저 부가 기능을 설치하여 자신의 정보가 수집되는 것을 거부할 수 있습니다.
+
+## 4. 문의
+
+기타 개인정보 관련 문의는 stra2003@gmail.com로 연락 주시기 바랍니다.`,
+    cookieConsent: "쿠키 동의",
+    cookieConsentMessage: "저희는 서비스 개선을 위해 쿠키와 Google Analytics를 사용합니다. '동의'를 클릭하시면 쿠키 사용과 분석 추적에 동의하는 것입니다. 자세한 내용은",
+    acceptCookies: "동의",
+    declineCookies: "거부",
+    cookieNotice: "쿠키 알림",
+    learnMore: "개인정보처리방침",
   },
 
   JP: {
@@ -721,6 +842,7 @@ export const translations: Record<Language, TranslationKeys> = {
     zoom: "ズーム",
     contrast: "コントラスト",
     capture: "キャプチャ",
+    invert: "色の反転",
 
     // Sidebar
     seriesInfo: "シリーズ情報",
@@ -937,6 +1059,52 @@ export const translations: Record<Language, TranslationKeys> = {
     debugComplete: "デバッグ完了",
     noImagesLoaded: "読み込まれた画像がありません",
     debugError: "デバッグエラー",
+
+    // Feedback modal
+    feedback: "フィードバック",
+    feedbackTitle: "フィードバックタイトル",
+    feedbackContent: "フィードバック内容",
+    feedbackTitlePlaceholder: "フィードバックタイトルを入力してください...",
+    feedbackContentPlaceholder: "フィードバック、提案、または問題点をお聞かせください...",
+    pleaseEnterFeedback: "タイトルと内容の両方を入力してください",
+    feedbackSent: "ありがとうございます！フィードバックメールが準備されました。メールクライアントから送信してください。",
+    feedbackError: "フィードバックメールの準備に失敗しました。再度お試しください。",
+    send: "送信",
+
+    // Privacy Policy and Cookie Consent
+    privacyPolicy: "プライバシーポリシー",
+    privacyPolicyTitle: "Clarity プライバシーポリシー（個人情報保護方針）",
+    privacyPolicyContent: `**最終更新日：2025年7月17日**
+
+Clarity（以下「当サービス」）は、ユーザーの個人情報の重要性を認識し、「個人情報の保護に関する法律」を遵守します。
+
+## 1. 収集する情報と利用目的
+
+サービスの品質向上および利用状況の分析のため、Google Analyticsを通じて以下の情報を自動的に収集します。
+
+**収集項目**: IPアドレス、ブラウザの種類、OS、閲覧ページ、アクセス日時等の利用記録
+
+**利用目的**: サービスの安定提供、維持、改善のための統計的分析
+
+## 2. 第三者への情報提供及び国外移転
+
+Google Analyticsの利用に伴い、収集されたユーザーの情報が米Google LLC等の日本国外にある事業者に転送されることがあります。
+
+## 3. データ収集の無効化（オプトアウト）
+
+ユーザーは、以下のリンクからGoogle Analyticsによるデータ収集を無効化できます。
+
+Google アナリティクス オプトアウト アドオン: https://tools.google.com/dlpage/gaoptout?hl=ja
+
+## 4. お問い合わせ
+
+本ポリシーに関するお問い合わせは、stra2003@gmail.comまでお願いいたします。`,
+    cookieConsent: "クッキー同意",
+    cookieConsentMessage: "サービス改善のため、クッキーとGoogle Analyticsを使用しています。「同意する」をクリックすると、クッキーの使用と分析追跡に同意したことになります。詳細については",
+    acceptCookies: "同意する",
+    declineCookies: "拒否",
+    cookieNotice: "クッキー通知",
+    learnMore: "プライバシーポリシー",
   },
 
   CN: {
@@ -957,6 +1125,7 @@ export const translations: Record<Language, TranslationKeys> = {
     zoom: "缩放",
     contrast: "对比度",
     capture: "捕获",
+    invert: "反转颜色",
 
     // Sidebar
     seriesInfo: "系列信息",
@@ -1167,6 +1336,51 @@ export const translations: Record<Language, TranslationKeys> = {
     debugComplete: "调试完成",
     noImagesLoaded: "未加载图像",
     debugError: "调试错误",
+
+    // Feedback modal
+    feedback: "反馈",
+    feedbackTitle: "反馈标题",
+    feedbackContent: "反馈内容",
+    feedbackTitlePlaceholder: "请输入反馈标题...",
+    feedbackContentPlaceholder: "请分享您的反馈、建议或报告问题...",
+    pleaseEnterFeedback: "请输入标题和内容",
+    feedbackSent: "谢谢！反馈邮件已准备就绪。请从您的邮件客户端发送。",
+    feedbackError: "准备反馈邮件失败。请重试。",
+    send: "发送",
+
+    // Privacy Policy and Cookie Consent
+    privacyPolicy: "隐私政策",
+    privacyPolicyTitle: "Clarity 隐私政策",
+    privacyPolicyContent: `**最后更新日期：2025年7月17日**
+
+Clarity（下称"我们"或"本服务"）尊重并保护所有使用服务用户的个人隐私。
+
+## 1. 我们如何收集和使用您的个人信息
+
+为改善服务质量，我们通过第三方分析工具 Google Analytics 自动收集您的某些信息。
+
+**我们收集的信息**: 设备和日志信息，例如IP地址、浏览器类型、操作系统和您的服务使用记录。
+
+**我们如何使用信息**: 用于统计分析，以了解用户如何使用我们的服务，从而改进和优化用户体验。
+
+## 2. 个人信息的跨境传输
+
+请您知悉，我们使用的分析工具Google Analytics由位于美国的公司Google提供。因此，为实现本政策所述的分析目的，您的个人信息将会被传输至中华人民共和国境外。对于上述个人信息的出境，我们将在获取您的单独同意后进行。
+
+## 3. 您的权利与选择
+
+您可以选择拒绝数据被收集。我们建议在中国大陆的用户通过网络设置来管理第三方追踪脚本的执行。
+
+## 4. 如何联系我们
+
+如果您对本隐私政策有任何疑问，请通过以下方式与我们联系：
+电子邮箱：stra2003@gmail.com`,
+    cookieConsent: "Cookie同意",
+    cookieConsentMessage: "我们使用cookies和Google Analytics来改善我们的服务。点击\"接受\"，您同意我们使用cookies和分析跟踪。更多信息请查看我们的",
+    acceptCookies: "接受",
+    declineCookies: "拒绝",
+    cookieNotice: "Cookie通知",
+    learnMore: "隐私政策",
   },
 };
 
