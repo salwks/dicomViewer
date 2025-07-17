@@ -1023,7 +1023,7 @@ function App() {
                       margin: 0,
                     }}
                   >
-                    {t('appName')} v0.1.0
+                    {t('appName')} v{import.meta.env.VITE_APP_VERSION}
                   </p>
                   
                   {/* Feedback Button */}

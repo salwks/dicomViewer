@@ -293,7 +293,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                 margin: 0,
               }}
             >
-              {t('appName')}
+              {import.meta.env.VITE_APP_NAME}
             </h2>
           </div>
           <div style={{ marginTop: "8px" }}>
@@ -304,7 +304,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
               {t('createdBy')}
             </p>
             <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>
-              {t('versionInfo')}
+              Version: {import.meta.env.VITE_APP_VERSION}
             </p>
           </div>
           <button
