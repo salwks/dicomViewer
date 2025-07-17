@@ -1,6 +1,8 @@
 import React from 'react';
 import { X, FileText, Copy, Search } from 'lucide-react';
 import { validateAnnotationLabel } from '../utils/input-validation';
+import { useUIStore } from '../store/uiStore';
+import { useTranslation } from '../utils/i18n';
 
 interface DicomMetaModalProps {
   isOpen: boolean;
@@ -165,6 +167,10 @@ const commonButtonStyle = {
 export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet, inline = false }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [copiedTag, setCopiedTag] = React.useState<string | null>(null);
+  
+  // 번역 기능 추가
+  const { currentLanguage } = useUIStore();
+  const { t } = useTranslation(currentLanguage);
   const [searchError, setSearchError] = React.useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -213,9 +219,9 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
         } else if (element.vr === 'FL' || element.vr === 'FD') {
           value = dataSet.float(tagKey)?.toString() || dataSet.double(tagKey)?.toString() || '';
         } else if (element.vr === 'SQ') {
-          value = '[Sequence Data]';
+          value = t('sequenceData');
         } else if (element.vr === 'OB' || element.vr === 'OW') {
-          value = '[Binary Data]';
+          value = t('binaryData');
         } else {
           value = dataSet.string(tagKey) || '';
         }
@@ -231,7 +237,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
           tag: tagKey.replace('x', '').toUpperCase(),
           vr: element.vr || 'UN',
           name: tagName,
-          value: value || '(empty)'
+          value: value || t('emptyValue')
         });
       } catch (error) {
         // 파싱 실패 시 기본값 사용
@@ -239,7 +245,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
           tag: tagKey.replace('x', '').toUpperCase(),
           vr: element.vr || 'UN',
           name: dicomTagNames[tagKey] || 'Unknown Tag',
-          value: '(parsing failed)'
+          value: t('parsingFailed')
         });
       }
     });
@@ -315,8 +321,8 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
         <div className="border-b" style={{ borderColor: '#374151', paddingBottom: '16px', marginBottom: '16px', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <FileText className="text-blue-400" size={24} />
-            <h2 className="text-xl font-semibold text-white">DICOM Meta Tags</h2>
-            <span className="text-sm text-gray-300">(총 {dicomTags.length}개의 태그)</span>
+            <h2 className="text-xl font-semibold text-white">{t('dicomMetaTags')}</h2>
+            <span className="text-sm text-gray-300">({dicomTags.length} {t('tagsDisplayed')})</span>
           </div>
           <button
             onClick={onClose}
@@ -340,7 +346,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
-            title="모달 닫기"
+            title={t('closeModal')}
           >
             <X size={20} />
           </button>
@@ -352,7 +358,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
             <Search className="text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="태그 ID, 이름, 값으로 검색..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none px-3"
@@ -371,8 +377,8 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
             </p>
           )}
           <p className="text-sm text-gray-400 mt-2">
-            {filteredTags.length}개의 태그가 표시됨 
-            {searchTerm && ` (전체 ${dicomTags.length}개 중 검색 결과)`}
+            {filteredTags.length} {t('tagsDisplayed')}
+            {searchTerm && ` (${dicomTags.length} total)`}
           </p>
         </div>
 
@@ -388,19 +394,19 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
             <thead className="sticky top-0" style={{ backgroundColor: '#1f2937' }}>
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
-                  Tag ID
+                  {t('tagId')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
                   VR
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
-                  Tag Name
+                  {t('tagName')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
-                  Value
+                  {t('value')}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
-                  Copy
+                  {t('copy')}
                 </th>
               </tr>
             </thead>
@@ -443,7 +449,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
                       }}
-                      title="클립보드에 복사"
+                      title={t('copyToClipboard')}
                     >
                       <Copy size={14} />
                     </button>
@@ -457,7 +463,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
             <div className="text-center py-12">
               <FileText className="mx-auto text-gray-500 mb-4" size={48} />
               <p className="text-gray-400">
-                {searchTerm ? '검색 결과가 없습니다.' : 'DICOM 태그 정보가 없습니다.'}
+                {searchTerm ? t('noSearchResults') : t('noDicomTagInfo')}
               </p>
             </div>
           )}

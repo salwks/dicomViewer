@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import { useSecurityStore } from "./securityStore";
 import { sanitizeAnnotationLabel, XSSProtection } from "../utils/xss-protection";
+import { isLoginEnabled } from "../utils/feature-flags";
 
 // Annotation store interface
 export interface AnnotationStoreState {
@@ -40,13 +41,18 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
       if (currentTool !== toolName) {
         console.log(`Activating tool: ${toolName}`);
         
-        // Security logging for tool activation
-        const securityStore = useSecurityStore.getState();
-        if (securityStore.checkToolAccess(toolName)) {
-          set({ activeTool: toolName });
+        // Security logging for tool activation - only if login is enabled
+        if (isLoginEnabled()) {
+          const securityStore = useSecurityStore.getState();
+          if (securityStore.checkToolAccess(toolName)) {
+            set({ activeTool: toolName });
+          } else {
+            console.warn(`Access denied for tool: ${toolName}`);
+            return;
+          }
         } else {
-          console.warn(`Access denied for tool: ${toolName}`);
-          return;
+          // If login is disabled, allow all tools
+          set({ activeTool: toolName });
         }
       }
     },
@@ -137,8 +143,8 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         const originalLabel = sanitizedAnnotation.data.label;
         sanitizedAnnotation.data.label = sanitizeAnnotationLabel(originalLabel);
         
-        // Log if sanitization occurred
-        if (XSSProtection.wasModified(originalLabel, sanitizedAnnotation.data.label)) {
+        // Log if sanitization occurred - only if login is enabled
+        if (XSSProtection.wasModified(originalLabel, sanitizedAnnotation.data.label) && isLoginEnabled()) {
           const securityStore = useSecurityStore.getState();
           securityStore.logSecurityEvent({
             type: 'ACCESS_DENIED',
@@ -158,8 +164,8 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         const originalText = sanitizedAnnotation.data.text;
         sanitizedAnnotation.data.text = sanitizeAnnotationLabel(originalText);
         
-        // Log if sanitization occurred
-        if (XSSProtection.wasModified(originalText, sanitizedAnnotation.data.text)) {
+        // Log if sanitization occurred - only if login is enabled
+        if (XSSProtection.wasModified(originalText, sanitizedAnnotation.data.text) && isLoginEnabled()) {
           const securityStore = useSecurityStore.getState();
           securityStore.logSecurityEvent({
             type: 'ACCESS_DENIED',
@@ -206,7 +212,7 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         const originalLabel = sanitizedUpdates.data.label;
         sanitizedUpdates.data.label = sanitizeAnnotationLabel(originalLabel);
         
-        if (XSSProtection.wasModified(originalLabel, sanitizedUpdates.data.label)) {
+        if (XSSProtection.wasModified(originalLabel, sanitizedUpdates.data.label) && isLoginEnabled()) {
           const securityStore = useSecurityStore.getState();
           securityStore.logSecurityEvent({
             type: 'ACCESS_DENIED',
@@ -227,7 +233,7 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         const originalText = sanitizedUpdates.data.text;
         sanitizedUpdates.data.text = sanitizeAnnotationLabel(originalText);
         
-        if (XSSProtection.wasModified(originalText, sanitizedUpdates.data.text)) {
+        if (XSSProtection.wasModified(originalText, sanitizedUpdates.data.text) && isLoginEnabled()) {
           const securityStore = useSecurityStore.getState();
           securityStore.logSecurityEvent({
             type: 'ACCESS_DENIED',
@@ -268,19 +274,21 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
       if (!validation.isValid) {
         console.error("🚨 XSS attempt detected in annotation label:", validation.reason);
         
-        // Log security event
-        const securityStore = useSecurityStore.getState();
-        securityStore.logSecurityEvent({
-          type: 'ACCESS_DENIED',
-          details: `XSS attempt detected in annotation label: ${validation.reason}`,
-          severity: 'HIGH',
-          userId: securityStore.currentUser?.username || 'unknown',
-          metadata: {
-            annotationUID,
-            originalInput: newLabel.substring(0, 100), // Log first 100 chars for analysis
-            reason: validation.reason
-          }
-        });
+        // Log security event - only if login is enabled
+        if (isLoginEnabled()) {
+          const securityStore = useSecurityStore.getState();
+          securityStore.logSecurityEvent({
+            type: 'ACCESS_DENIED',
+            details: `XSS attempt detected in annotation label: ${validation.reason}`,
+            severity: 'HIGH',
+            userId: securityStore.currentUser?.username || 'unknown',
+            metadata: {
+              annotationUID,
+              originalInput: newLabel.substring(0, 100), // Log first 100 chars for analysis
+              reason: validation.reason
+            }
+          });
+        }
         
         return; // Reject the input entirely
       }
@@ -295,20 +303,22 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
           sanitized: sanitizedLabel
         });
         
-        // Log sanitization event
-        const securityStore = useSecurityStore.getState();
-        securityStore.logSecurityEvent({
-          type: 'ACCESS_DENIED',
-          details: `Annotation label sanitized - potentially malicious content removed`,
-          severity: 'MEDIUM',
-          userId: securityStore.currentUser?.username || 'unknown',
-          metadata: {
-            annotationUID,
-            originalInput: newLabel,
-            sanitizedInput: sanitizedLabel,
-            stats: XSSProtection.getSanitizationStats(newLabel, sanitizedLabel)
-          }
-        });
+        // Log sanitization event - only if login is enabled
+        if (isLoginEnabled()) {
+          const securityStore = useSecurityStore.getState();
+          securityStore.logSecurityEvent({
+            type: 'ACCESS_DENIED',
+            details: `Annotation label sanitized - potentially malicious content removed`,
+            severity: 'MEDIUM',
+            userId: securityStore.currentUser?.username || 'unknown',
+            metadata: {
+              annotationUID,
+              originalInput: newLabel,
+              sanitizedInput: sanitizedLabel,
+              stats: XSSProtection.getSanitizationStats(newLabel, sanitizedLabel)
+            }
+          });
+        }
       }
 
       console.log(`📝 주석 라벨 업데이트: ${annotationUID} -> "${sanitizedLabel}"`);

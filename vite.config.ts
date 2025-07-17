@@ -4,11 +4,23 @@ import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
+import { wasmResolver } from './vite-wasm-resolver.js';
+import { resolve } from 'path';
+import commonjs from '@rollup/plugin-commonjs';
+import nodeResolve from '@rollup/plugin-node-resolve';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+      // Replace problematic WASM module with dummy implementation
+      '@icr/polyseg-wasm': resolve(__dirname, './src/utils/polyseg-dummy.ts'),
+    },
+  },
   plugins: [
     react(),
+    // wasmResolver(), // Temporarily disabled to debug esbuild error
     wasm(),
     topLevelAwait(),
     
@@ -72,16 +84,62 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === 'development',
     target: 'esnext',
     rollupOptions: {
-      external: ['@icr/polyseg-wasm', 'a']
+      // Simplify plugin configuration to fix esbuild error
+      plugins: [],
+      external: (id) => {
+        // Ensure id is a string before processing
+        if (typeof id !== 'string') {
+          return false;
+        }
+        
+        // External 모든 polyseg 관련 모듈
+        if (id.includes('@icr/polyseg-wasm') || 
+            id.includes('ICRPolySeg') || 
+            id.includes('.wasm') ||
+            id === 'a') {
+          return true;
+        }
+        return false;
+      },
+      onwarn(warning, warn) {
+        // Ignore WASM-related warnings
+        if (warning.code === 'UNRESOLVED_IMPORT' && warning.source?.includes('.wasm')) {
+          return;
+        }
+        // Ignore specific polyseg warnings
+        if (warning.message?.includes('@icr/polyseg-wasm') || warning.message?.includes('ICRPolySeg.wasm')) {
+          return;
+        }
+        // Ignore export warnings for external modules
+        if (warning.code === 'MISSING_EXPORT' && warning.source?.includes('@icr/polyseg-wasm')) {
+          return;
+        }
+        warn(warning);
+      },
+      output: {
+        // Handle WASM files properly
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.wasm')) {
+            return 'assets/[name].[hash][extname]';
+          }
+          return 'assets/[name].[hash][extname]';
+        }
+      }
     }
   },
   define: {
     // Fix for some Cornerstone3D dependencies
     global: 'globalThis',
+    // Disable polyseg WASM module to prevent build issues
+    'process.env.DISABLE_POLYSEG': 'true',
   },
   optimizeDeps: {
     include: ['@cornerstonejs/core', '@cornerstonejs/tools'],
-    exclude: ['@icr/polyseg-wasm', 'a']
+    exclude: [
+      '@icr/polyseg-wasm', 
+      '@icr/polyseg-wasm/dist/ICRPolySeg.wasm',
+      'a'
+    ]
   },
   worker: {
     format: 'es',

@@ -11,7 +11,7 @@ import {
   FlipVertical,
   RotateCw,
   RotateCcw,
-  RotateCcw as Reset,
+  RefreshCw as Reset,
   Tag,
   Ruler,
   Square,
@@ -37,6 +37,8 @@ import { DicomRenderer } from "./components/DicomRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
 import { useAnnotationStore, useViewportStore, useUIStore, useSecurityStore } from "./store";
+import { useTranslation } from "./utils/i18n";
+import LanguageSelector from "./components/LanguageSelector";
 import SecurityLogin from "./components/SecurityLogin";
 import LoginModern from "./components/LoginModern";
 import SecurityDashboard from "./components/SecurityDashboard";
@@ -74,6 +76,14 @@ function App() {
   const { isAuthenticated, currentUser, checkAuthentication } = useSecurityStore();
   const [showSecurityDashboard, setShowSecurityDashboard] = useState(false);
   
+  // UI Store - get login enabled flag and language
+  const {
+    isLicenseModalOpen,
+    toggleLicenseModal,
+    isLoginEnabled,
+    currentLanguage,
+  } = useUIStore();
+  
   // 디버깅을 위해 전역으로 노출
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,11 +92,15 @@ function App() {
     }
   }, []);
   
-  // Check authentication on app load
+  // Check authentication on app load (only if login is enabled)
   useEffect(() => {
-    console.log('🔐 App: Checking authentication on load');
-    const authResult = checkAuthentication();
-    console.log('🔐 App: Authentication check result:', authResult);
+    if (isLoginEnabled) {
+      console.log('🔐 App: Checking authentication on load');
+      const authResult = checkAuthentication();
+      console.log('🔐 App: Authentication check result:', authResult);
+    } else {
+      console.log('🔐 App: Login disabled - skipping authentication check');
+    }
     
     // Initialize error reporting
     initializeErrorReporting({
@@ -97,7 +111,7 @@ function App() {
     }).catch(error => {
       console.error('Failed to initialize error reporting:', error);
     });
-  }, [checkAuthentication]);
+  }, [checkAuthentication, isLoginEnabled]);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,10 +150,8 @@ function App() {
     captureViewportAsPng,
   } = useViewportStore();
 
-  const {
-    isLicenseModalOpen,
-    toggleLicenseModal,
-  } = useUIStore();
+  // 번역 함수
+  const { t } = useTranslation(currentLanguage);
 
   // 주석은 이제 Zustand 스토어에서 관리됨
 
@@ -162,7 +174,7 @@ function App() {
 
   const saveAnnotationEdit = () => {
     if (!editingAnnotationId || !editingValue.trim()) {
-      setError("주석 라벨을 입력해주세요.");
+      setError(t('pleaseEnterAnnotationLabel'));
       return;
     }
 
@@ -193,10 +205,10 @@ function App() {
     );
 
     if (sanitizedLabel !== editingValue.trim()) {
-      setToastMessage(`⚠️ 라벨이 보안상 수정되었습니다: "${sanitizedLabel}"`);
+      setToastMessage(`⚠️ ${t('labelSanitized')}: "${sanitizedLabel}"`);
       setShowToast(true);
     } else {
-      setToastMessage(`✓ 주석 라벨이 저장되었습니다`);
+      setToastMessage(`✓ ${t('annotationSaved')}`);
       setShowToast(true);
     }
     
@@ -235,14 +247,16 @@ function App() {
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
       if (files.length > 0) {
-        // Security check for file access with enhanced validation
+        // Security check for file access with enhanced validation (only if login is enabled)
         const securityStore = useSecurityStore.getState();
         const validFiles = files.filter(file => {
-          // 1. 기존 보안 검사
-          const hasAccess = securityStore.checkFileAccess(file.name);
-          if (!hasAccess) {
-            console.warn(`Access denied for file: ${file.name}`);
-            return false;
+          // 1. 보안 검사 (로그인 기능이 활성화된 경우에만)
+          if (isLoginEnabled) {
+            const hasAccess = securityStore.checkFileAccess(file.name);
+            if (!hasAccess) {
+              console.warn(`Access denied for file: ${file.name}`);
+              return false;
+            }
           }
 
           // 2. 파일명 검증
@@ -258,7 +272,7 @@ function App() {
 
           if (fileValidation.warnings.length > 0) {
             console.warn(`파일명 경고 (${file.name}):`, fileValidation.warnings);
-            setToastMessage(`⚠️ 파일 경고: ${fileValidation.warnings.join(', ')}`);
+            setToastMessage(`⚠️ ${t('fileWarning')}: ${fileValidation.warnings.join(', ')}`);
             setShowToast(true);
           }
 
@@ -268,7 +282,10 @@ function App() {
         if (validFiles.length > 0) {
           handleFiles(validFiles);
         } else {
-          setError("Access denied: Invalid file type or insufficient permissions");
+          const errorMessage = isLoginEnabled 
+            ? "Access denied: Invalid file type or insufficient permissions"
+            : "Invalid file type. Please select a DICOM file (.dcm)";
+          setError(errorMessage);
         }
       }
       // 🔥 핵심: input 요소 초기화로 같은 파일 재선택 허용
@@ -337,14 +354,16 @@ function App() {
     const files = Array.from(e.dataTransfer.files);
     console.log("🎯 드래그앤드롭으로 파일 처리 시작");
     
-    // Security check for file access with enhanced validation
+    // Security check for file access with enhanced validation (only if login is enabled)
     const securityStore = useSecurityStore.getState();
     const validFiles = files.filter(file => {
-      // 1. 기존 보안 검사
-      const hasAccess = securityStore.checkFileAccess(file.name);
-      if (!hasAccess) {
-        console.warn(`Access denied for file: ${file.name}`);
-        return false;
+      // 1. 보안 검사 (로그인 기능이 활성화된 경우에만)
+      if (isLoginEnabled) {
+        const hasAccess = securityStore.checkFileAccess(file.name);
+        if (!hasAccess) {
+          console.warn(`Access denied for file: ${file.name}`);
+          return false;
+        }
       }
 
       // 2. 파일명 검증 (드래그앤드롭에도 동일한 검증 적용)
@@ -360,7 +379,7 @@ function App() {
 
       if (fileValidation.warnings.length > 0) {
         console.warn(`드래그앤드롭 파일명 경고 (${file.name}):`, fileValidation.warnings);
-        setToastMessage(`⚠️ 파일 경고: ${fileValidation.warnings.join(', ')}`);
+        setToastMessage(`⚠️ ${t('fileWarning')}: ${fileValidation.warnings.join(', ')}`);
         setShowToast(true);
       }
 
@@ -370,7 +389,10 @@ function App() {
     if (validFiles.length > 0) {
       handleFiles(validFiles);
     } else {
-      setError("Access denied: Invalid file type or insufficient permissions");
+      const errorMessage = isLoginEnabled 
+        ? "Access denied: Invalid file type or insufficient permissions"
+        : "Invalid file type. Please select a DICOM file (.dcm)";
+      setError(errorMessage);
     }
   };
 
@@ -397,7 +419,7 @@ function App() {
     setStoreError(null);
 
     // 🔥 Toast 메시지 표시
-    setToastMessage(`✓ ${loadedFiles.length}개 파일 렌더링 완료`);
+    setToastMessage(`✓ ${loadedFiles.length}${t('filesRendered')}`);
     setShowToast(true);
 
     // 5초 후 toast 자동 숨김
@@ -423,8 +445,8 @@ function App() {
     console.log("💥 파일 로딩 실패 - 모든 상태 정리됨");
   };
 
-  // Security gate - show login if not authenticated
-  if (!isAuthenticated) {
+  // Security gate - show login if not authenticated (only if login feature is enabled)
+  if (isLoginEnabled && !isAuthenticated) {
     return (
       <AuthErrorBoundary>
         <LoginModern onLoginSuccess={() => setShowSecurityDashboard(false)} />
@@ -449,33 +471,36 @@ function App() {
           <div className="header-content">
             <div className="header-left">
               <Layout className="header-icon" />
-              <h1>Clarity</h1>
-              <span className="version">Alpha</span>
+              <h1>{t('appName')}</h1>
+              <span className="version">{t('appVersion')}</span>
             </div>
 
             <div className="header-right">
-              <div className="security-info">
-                <span className="user-info">
-                  {currentUser?.username} ({currentUser?.role})
-                </span>
-                <button
-                  onClick={() => setShowSecurityDashboard(true)}
-                  className="security-dashboard-btn"
-                  style={{
-                    ...commonButtonStyle,
-                    padding: "8px 12px",
-                    backgroundColor: "#1f2937",
-                    color: "white",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    marginRight: "8px",
-                  }}
-                  title="Security Dashboard"
-                >
-                  <Shield size={14} />
-                </button>
-              </div>
-              <span className="status-ready">Ready</span>
+              {isLoginEnabled && (
+                <div className="security-info">
+                  <span className="user-info">
+                    {currentUser?.username} ({currentUser?.role})
+                  </span>
+                  <button
+                    onClick={() => setShowSecurityDashboard(true)}
+                    className="security-dashboard-btn"
+                    style={{
+                      ...commonButtonStyle,
+                      padding: "8px 12px",
+                      backgroundColor: "#1f2937",
+                      color: "white",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      marginRight: "8px",
+                    }}
+                    title={t('securityDashboard')}
+                  >
+                    <Shield size={14} />
+                  </button>
+                </div>
+              )}
+              <LanguageSelector className="mr-3" />
+              <span className="status-ready">{t('ready')}</span>
             </div>
           </div>
         </header>
@@ -499,7 +524,7 @@ function App() {
                 <div className="sidebar-section">
                   <h3 className="sidebar-section-title">
                     <Upload size={16} />
-                    파일 관리
+                    {t('fileManagementSection')}
                   </h3>
                   <div className="file-upload-section">
                     <button
@@ -533,10 +558,10 @@ function App() {
                           e.currentTarget.style.backgroundColor = "#3b82f6";
                         }
                       }}
-                      title="DICOM 파일 업로드 (.dcm)"
+                      title={t('upload')}
                     >
                       <Upload size={16} />
-                      <span>DICOM 파일 불러오기</span>
+                      <span>{t('upload')}</span>
                     </button>
                   </div>
                 </div>
@@ -545,16 +570,16 @@ function App() {
                 <div className="sidebar-section">
                   <h3 className="sidebar-section-title">
                     <FileText size={16} />
-                    파일 정보
+{t('seriesInfo')}
                   </h3>
                   {loadedFiles.length > 0 ? (
                     <div className="series-info">
                       <div className="info-item">
-                        <label>로드된 파일:</label>
-                        <span>{loadedFiles.length}개</span>
+                        <label>{t('loadedFiles')}:</label>
+                        <span>{loadedFiles.length}{t('files')}</span>
                       </div>
                       <div className="info-item">
-                        <label>렌더링 상태:</label>
+                        <label>{t('renderingStatus')}:</label>
                         <span
                           style={{
                             color: renderingSuccess
@@ -565,21 +590,21 @@ function App() {
                           }}
                         >
                           {renderingSuccess
-                            ? "✅ 완료"
+                            ? `✅ ${t('success')}`
                             : isLoading
-                            ? "⏳ 진행중"
-                            : "❌ 실패"}
+                            ? `⏳ ${t('processing')}`
+                            : `❌ ${t('failed')}`}
                         </span>
                       </div>
                       {loadedFiles.slice(0, 3).map((file, index) => (
                         <div key={index} className="info-item">
-                          <label>파일 {index + 1}:</label>
+                          <label>{t('fileNumber').replace('{number}', String(index + 1))}:</label>
                           <span>{file.name}</span>
                         </div>
                       ))}
                       {loadedFiles.length > 3 && (
                         <div className="info-item">
-                          <span>... 및 {loadedFiles.length - 3}개 더</span>
+                          <span>{t('andMoreFiles').replace('{count}', String(loadedFiles.length - 3))}</span>
                         </div>
                       )}
 
@@ -619,22 +644,22 @@ function App() {
                             }}
                             title={
                               isMetaModalOpen
-                                ? "Meta Tag 창 닫기"
-                                : "DICOM 파일의 모든 메타 태그 정보를 확인합니다"
+                                ? t('closeMetaTagWindow')
+                                : t('allMetaTags')
                             }
                           >
                             <Tag size={14} />
                             <span>
                               {isMetaModalOpen
-                                ? "Meta Tag 닫기"
-                                : "Meta Tag 보기"}
+                                ? t('closeMetaModal')
+                                : t('viewMetaTags')}
                             </span>
                           </button>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <p className="no-data">파일이 로드되지 않았습니다</p>
+                    <p className="no-data">{t('fileNotLoaded')}</p>
                   )}
                 </div>
 
@@ -649,7 +674,7 @@ function App() {
                 >
                   <h3 className="sidebar-section-title">
                     <FileText size={16} />
-                    주석 목록 ({annotations.length}개)
+{t('annotations')} ({annotations.length})
                   </h3>
 
                   {annotations.length > 0 ? (
@@ -717,7 +742,7 @@ function App() {
                                         outline: "none",
                                         fontWeight: "500",
                                       }}
-                                      placeholder="주석 이름 입력..."
+                                      placeholder={t('enterAnnotationName')}
                                     />
                                   ) : (
                                     <span
@@ -752,7 +777,7 @@ function App() {
                                         e.currentTarget.style.backgroundColor =
                                           "transparent";
                                       }}
-                                      title="클릭하여 이름 편집"
+                                      title={t('clickToEdit')}
                                     >
                                       {annotation.data?.label ||
                                         `${annotation.toolName} #${index + 1}`}
@@ -787,7 +812,7 @@ function App() {
                                   );
                                   removeAnnotation(annotation.annotationUID);
                                 }}
-                                title="주석 삭제"
+                                title={t('deleteAnnotation')}
                                 style={{
                                   ...commonButtonStyle,
                                   color: "#ef4444",
@@ -843,14 +868,14 @@ function App() {
                           onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = "#ef4444";
                           }}
-                          title="모든 주석을 삭제합니다"
+                          title={t('deleteAllAnnotations')}
                         >
-                          모든 주석 지우기
+{t('deleteAllAnnotations')}
                         </button>
                       </div>
                     </>
                   ) : (
-                    <p className="no-data">주석이 없습니다</p>
+                    <p className="no-data">{t('noAnnotations')}</p>
                   )}
                 </div>
 
@@ -883,7 +908,7 @@ function App() {
                       margin: 0,
                     }}
                   >
-                    Clarity v0.1.0
+                    {t('appName')} v0.1.0
                   </p>
                   <button
                     onClick={() => {
@@ -908,9 +933,9 @@ function App() {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = "#3b82f6";
                     }}
-                    title="오픈소스 라이선스 정보 보기"
+                    title={t('license')}
                   >
-                    오픈소스 라이선스
+{t('license')}
                   </button>
                 </div>
               </div>
@@ -923,7 +948,7 @@ function App() {
             <div className="toolbar">
               {/* Basic Tools Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">기본 도구</label>
+                <label className="toolbar-label">{t('basicTools')}</label>
                 <div className="toolbar-group">
                   {[
                     {
@@ -939,12 +964,12 @@ function App() {
                     {
                       tool: "WindowLevel",
                       icon: Contrast,
-                      tooltip: "Window Level Tool - 창 레벨 조정",
+                      tooltip: t('windowLevel'),
                     },
                     {
                       tool: "Magnify",
                       icon: SearchIcon,
-                      tooltip: "Magnify Tool - 돋보기",
+                      tooltip: t('magnifyTool'),
                     },
                   ].map(({ tool, icon: Icon, tooltip }) => (
                     <button
@@ -965,13 +990,13 @@ function App() {
 
               {/* Measurement Tools Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">측정 도구</label>
+                <label className="toolbar-label">{t('measurementTools')}</label>
                 <div className="toolbar-group">
                   {[
                     {
                       tool: "Length",
                       icon: Ruler,
-                      tooltip: "Length Tool - 길이 측정",
+                      tooltip: t('lengthTool'),
                     },
                     {
                       tool: "Angle",
@@ -986,7 +1011,7 @@ function App() {
                     {
                       tool: "Bidirectional",
                       icon: Move3D,
-                      tooltip: "Bidirectional Tool - 양방향 측정",
+                      tooltip: t('bidirectionalTool'),
                     },
                   ].map(({ tool, icon: Icon, tooltip }) => (
                     <button
@@ -1007,13 +1032,13 @@ function App() {
 
               {/* ROI Tools Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">ROI 도구</label>
+                <label className="toolbar-label">{t('roiTools')}</label>
                 <div className="toolbar-group">
                   {[
                     {
                       tool: "RectangleROI",
                       icon: Square,
-                      tooltip: "Rectangle ROI - 사각형 관심영역",
+                      tooltip: t('rectangleROI'),
                     },
                     {
                       tool: "EllipticalROI",
@@ -1023,7 +1048,7 @@ function App() {
                     {
                       tool: "CircleROI",
                       icon: Circle,
-                      tooltip: "Circle ROI - 원형 관심영역",
+                      tooltip: t('circleROI'),
                     },
                   ].map(({ tool, icon: Icon, tooltip }) => (
                     <button
@@ -1044,7 +1069,7 @@ function App() {
 
               {/* Advanced Drawing Tools Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">고급 그리기</label>
+                <label className="toolbar-label">{t('advancedDrawing')}</label>
                 <div className="toolbar-group">
                   {[
                     {
@@ -1076,19 +1101,19 @@ function App() {
 
               {/* Annotation Tools Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">주석 도구</label>
+                <label className="toolbar-label">{t('annotationTools')}</label>
                 <div className="toolbar-group">
                   {[
                     {
                       tool: "ArrowAnnotate",
                       icon: ArrowUpRight,
                       tooltip:
-                        "Text Annotation - 텍스트 주석 (화살표 + 텍스트)",
+                        t('textAnnotation'),
                     },
                     {
                       tool: "Probe",
                       icon: Target,
-                      tooltip: "Probe Tool - 정보 탐침",
+                      tooltip: t('informationProbe'),
                     },
                   ].map(({ tool, icon: Icon, tooltip }) => (
                     <button
@@ -1109,7 +1134,7 @@ function App() {
 
               {/* Image Manipulation Section */}
               <div className="toolbar-section">
-                <label className="toolbar-label">이미지 조작</label>
+                <label className="toolbar-label">{t('imageManipulation')}</label>
                 <div className="toolbar-group">
                   <button
                     className={`toolbar-button ${
@@ -1117,7 +1142,7 @@ function App() {
                     }`}
                     onClick={() => flipImage("horizontal")}
                     disabled={isLoading}
-                    title="수평 뒤집기 (Flip Horizontal)"
+                    title={t('flipHorizontal')}
                     style={commonButtonStyle}
                   >
                     <FlipHorizontal size={16} />
@@ -1128,7 +1153,7 @@ function App() {
                     }`}
                     onClick={() => flipImage("vertical")}
                     disabled={isLoading}
-                    title="수직 뒤집기 (Flip Vertical)"
+                    title={t('flipVertical')}
                     style={commonButtonStyle}
                   >
                     <FlipVertical size={16} />
@@ -1137,7 +1162,7 @@ function App() {
                     className="toolbar-button"
                     onClick={() => rotateImage("left")}
                     disabled={isLoading}
-                    title="왼쪽으로 90도 회전 (Rotate Left)"
+                    title={t('rotateCounterclockwise')}
                     style={commonButtonStyle}
                   >
                     <RotateCcw size={16} />
@@ -1146,7 +1171,7 @@ function App() {
                     className="toolbar-button"
                     onClick={() => rotateImage("right")}
                     disabled={isLoading}
-                    title="오른쪽으로 90도 회전 (Rotate Right)"
+                    title={t('rotateClockwise')}
                     style={commonButtonStyle}
                   >
                     <RotateCw size={16} />
@@ -1155,7 +1180,7 @@ function App() {
                     className="toolbar-button"
                     onClick={resetImageTransform}
                     disabled={isLoading}
-                    title={`이미지 변환 리셋 (현재: ${currentRotation}도, H:${isFlippedHorizontal}, V:${isFlippedVertical})`}
+                    title={t('reset')}
                     style={commonButtonStyle}
                   >
                     <Reset size={16} />
@@ -1167,7 +1192,7 @@ function App() {
                       captureViewportAsPng();
                     }}
                     disabled={isLoading || !renderingSuccess}
-                    title="현재 뷰포트 화면을 PNG 이미지로 캡처하여 저장합니다"
+                    title={t('capture')}
                     style={commonButtonStyle}
                   >
                     <Camera size={16} />
@@ -1222,8 +1247,8 @@ function App() {
                   <div className="drop-overlay">
                     <div className="drop-message">
                       <Layout className="drop-icon" />
-                      <p>DICOM 파일을 여기에 드롭하세요</p>
-                      <small>.dcm 파일을 지원합니다</small>
+                      <p>{t('dragAndDrop')}</p>
+                      <small>{t('supportedFormats')}</small>
                     </div>
                   </div>
                 )}
@@ -1267,9 +1292,9 @@ function App() {
                 {!isLoading && !error && loadedFiles.length === 0 && (
                   <div className="empty-state">
                     <Layout className="empty-icon" />
-                    <h3>DICOM 이미지가 로드되지 않았습니다</h3>
-                    <p>파일을 드래그하거나 "파일 불러오기" 버튼을 클릭하세요</p>
-                    <small>지원 형식: .dcm</small>
+                    <h3>{t('clickToUpload')}</h3>
+                    <p>{t('dragAndDrop')}</p>
+                    <small>{t('supportedFormats')}</small>
                   </div>
                 )}
 

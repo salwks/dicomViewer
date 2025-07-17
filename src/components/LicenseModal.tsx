@@ -1,5 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "../utils/i18n";
+import { useUIStore } from "../store/uiStore";
 
 interface LicenseModalProps {
   isOpen: boolean;
@@ -214,6 +216,9 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { currentLanguage } = useUIStore();
+  const { t } = useTranslation(currentLanguage);
+  
   console.log("🔥 LicenseModal 렌더됨, isOpen:", isOpen, "inline:", inline);
 
   if (!isOpen) {
@@ -288,18 +293,18 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                 margin: 0,
               }}
             >
-              Clarity
+              {t('appName')}
             </h2>
           </div>
           <div style={{ marginTop: "8px" }}>
             <p style={{ fontSize: "14px", color: "#d1d5db", margin: 0 }}>
-              DICOM Medical Image Viewer
+              {t('appDescription')}
             </p>
             <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>
-              Created by stra2003@gmail.com
+              {t('createdBy')}
             </p>
             <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>
-              Version 0.1.0 - Alpha Release
+              {t('versionInfo')}
             </p>
           </div>
           <button
@@ -324,7 +329,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
             }}
-            title="모달 닫기"
+            title={t('closeModal')}
           >
             <X size={20} />
           </button>
@@ -349,7 +354,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                   marginBottom: "12px",
                 }}
               >
-                Runtime Dependencies ({mainDependencies.length})
+                {t('runtimeDependencies')} ({mainDependencies.length})
               </h3>
               <div className="grid gap-2">
                 {mainDependencies.map((dep) => (
@@ -380,7 +385,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                             margin: 0,
                           }}
                         >
-                          Version: {dep.version}
+                          {t('versionLabel')}: {dep.version}
                         </p>
                       </div>
                       <span
@@ -417,7 +422,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                   borderTop: "1px solid #374151",
                 }}
               >
-                Development Dependencies ({devDependencies.length})
+                {t('developmentDependencies')} ({devDependencies.length})
               </h3>
               <div className="grid gap-2">
                 {devDependencies.map((dep) => (
@@ -448,7 +453,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                             margin: 0,
                           }}
                         >
-                          Version: {dep.version}
+                          {t('versionLabel')}: {dep.version}
                         </p>
                       </div>
                       <span
@@ -474,7 +479,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
           {dependencies.length === 0 && (
             <div className="text-center py-12">
               <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-                라이브러리 정보가 없습니다.
+                {t('noLibraryInfo')}
               </p>
             </div>
           )}
@@ -498,11 +503,10 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                 margin: 0,
               }}
             >
-              이 애플리케이션은 위에 나열된 오픈소스 라이브러리들을 사용하여
-              제작되었습니다.
+              {t('licenseDescription')}
             </p>
             <p style={{ fontSize: "8px", color: "#6b7280", margin: 0 }}>
-              모든 라이브러리는 각각의 라이선스 조건에 따라 사용됩니다.
+              {t('licenseConditions')}
             </p>
           </div>
         </div>

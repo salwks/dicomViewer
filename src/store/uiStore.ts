@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import { isLoginEnabled } from "../utils/feature-flags";
+import { Language, DEFAULT_LANGUAGE } from "../utils/i18n";
 
 // UI store interface
 export interface UIStoreState {
@@ -8,6 +10,8 @@ export interface UIStoreState {
   error: string | null;
   sidebarOpen: boolean;
   isLicenseModalOpen: boolean;
+  isLoginEnabled: boolean;
+  currentLanguage: Language;
 
   // Actions
   setLoading: (loading: boolean) => void;
@@ -17,6 +21,7 @@ export interface UIStoreState {
   toggleLicenseModal: () => void;
   setLicenseModalOpen: (open: boolean) => void;
   clearError: () => void;
+  setLanguage: (language: Language) => void;
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -26,6 +31,8 @@ export const useUIStore = create<UIStoreState>()(
     error: null,
     sidebarOpen: true,
     isLicenseModalOpen: false,
+    isLoginEnabled: isLoginEnabled(),
+    currentLanguage: (localStorage.getItem('clarity-language') as Language) || DEFAULT_LANGUAGE,
 
     // Actions
     setLoading: (loading: boolean) => {
@@ -58,6 +65,12 @@ export const useUIStore = create<UIStoreState>()(
     clearError: () => {
       set({ error: null });
     },
+
+    setLanguage: (language: Language) => {
+      set({ currentLanguage: language });
+      // 언어 변경을 localStorage에 저장
+      localStorage.setItem('clarity-language', language);
+    },
   }))
 );
 
@@ -66,3 +79,5 @@ export const selectIsLoading = (state: UIStoreState) => state.isLoading;
 export const selectError = (state: UIStoreState) => state.error;
 export const selectSidebarOpen = (state: UIStoreState) => state.sidebarOpen;
 export const selectLicenseModalOpen = (state: UIStoreState) => state.isLicenseModalOpen;
+export const selectIsLoginEnabled = (state: UIStoreState) => state.isLoginEnabled;
+export const selectCurrentLanguage = (state: UIStoreState) => state.currentLanguage;
