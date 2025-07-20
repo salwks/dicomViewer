@@ -51,6 +51,7 @@ const defaultConfig: SecurityHeadersConfig = {
       "'self'",
       'https:', // Allow HTTPS connections for DICOM servers
       'wss:', // Allow WebSocket connections
+      'data:', // Required for WASM and data URI connections
     ],
     'worker-src': [
       "'self'",
@@ -337,6 +338,7 @@ export const medicalCSPConfig: Record<string, string[]> = {
     'wss:', // WebSocket connections for real-time medical data
     'ws:', // WebSocket connections (development)
     'blob:', // Blob URL connections
+    'data:', // Required for WASM and data URI connections
   ],
   'worker-src': [
     "'self'",

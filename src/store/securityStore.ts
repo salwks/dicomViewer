@@ -91,7 +91,7 @@ const defaultSettings: SecuritySettings = {
   requireStrongPassword: true,
   enableAuditLogging: true,
   enableEncryption: true,
-  allowedFileTypes: ['.dcm', '.dicom', '.nii', '.nii.gz'],
+  allowedFileTypes: ['.dcm', '.dicom', '.nii', '.nii.gz', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif'],
   maxFileSize: 500, // 500MB
   enableExportLogging: true,
 };

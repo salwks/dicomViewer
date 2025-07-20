@@ -46,6 +46,7 @@
     "@cornerstonejs/tools": "^1.77.9",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
     "@types/crypto-js": "^4.2.2",
+    "cornerstone-web-image-loader": "^2.1.1",
     "crypto-js": "^4.2.0",
     "dcmjs": "^0.43.0",
     "dicom-parser": "^1.8.21",

@@ -9,12 +9,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { DicomViewport } from './DicomViewport';
-import { Grid, Monitor } from 'lucide-react';
 
 interface MultiViewportRendererProps {
   files: File[];
   selectedFiles: File[];
-  layout: 'single' | '1x2' | '2x2';
+  layout?: string; // optional로 변경, 실제로는 selectedFiles.length로 결정
   onError: (error: string) => void;
   onSuccess: (message: string) => void;
   className?: string;
@@ -28,19 +27,11 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
   onSuccess,
   className = ''
 }) => {
-  // 🔍 디버그 로그
-  console.log('🔍 MultiViewportRenderer Props:', {
-    filesCount: files.length,
-    selectedFilesCount: selectedFiles.length,
-    layout,
-    selectedFileNames: selectedFiles.map(f => f.name)
-  });
-
   // 단일 이미지 처리 - DicomViewport 직접 사용 (useDicomLoader 충돌 방지)
-  if (layout === 'single' || selectedFiles.length <= 1) {
+  
+  if (selectedFiles.length <= 1) {
     // 요구사항: 체크된 파일만 표시, 체크가 없으면 빈 상태
     const file = selectedFiles.length > 0 ? selectedFiles[0] : null;
-    console.log('🔍 Single viewport - file:', file?.name || 'null');
     return (
       <div className={`single-viewport-container ${className}`} style={{ width: '100%', height: '100%' }}>
         {file ? (
@@ -67,41 +58,51 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
     );
   }
 
-  // 다중 뷰포트 - CSS Grid로 레이아웃 분할하고 각각 독립적인 DicomViewport 사용
+  // 다중 뷰포트 - 선택된 파일 수에 따라 동적 그리드 레이아웃
   const getGridStyle = () => {
-    switch (layout) {
-      case '1x2':
-        return {
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: '1fr',
-          gap: '4px',
-          width: '100%',
-          height: '100%'
-        };
-      case '2x2':
-        return {
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: '1fr 1fr',
-          gap: '4px',
-          width: '100%',
-          height: '100%'
-        };
-      default:
-        return {
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gridTemplateRows: '1fr',
-          gap: '4px',
-          width: '100%',
-          height: '100%'
-        };
+    const fileCount = selectedFiles.length;
+    if (fileCount <= 1) {
+      return {
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gridTemplateRows: '1fr',
+        gap: '4px',
+        width: '100%',
+        height: '100%'
+      };
+    } else if (fileCount <= 2) {
+      return {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr',
+        gap: '4px',
+        width: '100%',
+        height: '100%'
+      };
+    } else if (fileCount <= 4) {
+      return {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        gap: '4px',
+        width: '100%',
+        height: '100%'
+      };
+    } else {
+      // 4개 이상인 경우 스크롤 가능한 세로 레이아웃
+      return {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: `repeat(${Math.ceil(fileCount / 2)}, 1fr)`,
+        gap: '4px',
+        width: '100%',
+        height: 'auto',
+        minHeight: '100%'
+      };
     }
   };
 
-  const displayCount = layout === '2x2' ? 4 : 2;
-  const displayFiles = selectedFiles.slice(0, displayCount);
+  const displayFiles = selectedFiles;
 
   // 뷰포트 오버레이 컴포넌트
   const ViewportOverlay: React.FC<{ file?: File; index: number }> = ({ file, index }) => (
@@ -172,9 +173,11 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
   );
 
   return (
-    <div className={`multi-viewport-container ${className}`} style={getGridStyle()}>
-      {Array.from({ length: displayCount }).map((_, index) => {
-        const file = displayFiles[index];
+    <div className={`multi-viewport-container ${className}`} style={{
+      ...getGridStyle(),
+      border: '2px solid red', // 디버그용 - 컨테이너 확인
+    }}>
+      {displayFiles.map((file, index) => {
         const viewportId = `viewport-${index}`;
         const renderingEngineId = `rendering-engine-${index}`;
         
@@ -182,10 +185,10 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
           <div key={`viewport-${index}`} style={{ 
             position: 'relative',
             backgroundColor: '#1a1a1a',
-            border: '1px solid #333',
+            border: '2px solid yellow', // 디버그용 - 각 뷰포트 확인
             borderRadius: '8px',
             overflow: 'hidden',
-            minHeight: '200px'
+            minHeight: '400px'
           }}>
             {/* 뷰포트 번호 */}
             <div style={{

@@ -102,7 +102,17 @@ async function performGlobalInitialization(): Promise<boolean> {
     // 이미지 로더 등록
     imageLoader.registerImageLoader('wadouri', cornerstoneDICOMImageLoader.wadouri.loadImage);
     imageLoader.registerImageLoader('wadors', cornerstoneDICOMImageLoader.wadors.loadImage);
-    debugLogger.success('✅ DICOM Image Loader 및 웹 워커 설정 완료');
+    
+    // 웹 이미지 로더 등록 (공식 라이브러리 사용)
+    cornerstoneWebImageLoader.external.cornerstone = { imageLoader };
+    cornerstoneWebImageLoader.configure({
+      beforeSend: function(xhr: any) {
+        // CORS 설정
+        xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+      }
+    });
+    
+    debugLogger.success('✅ DICOM Image Loader 및 웹 이미지 로더 설정 완료');
 
     // 4. 모든 도구 등록 (중복 등록 방지)
     debugLogger.log('🛠️ 도구 등록 시작...');

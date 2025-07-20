@@ -391,14 +391,19 @@ export class DICOMInputValidator {
       return result;
     }
 
-    // DICOM 파일 확장자 검사
-    const allowedExtensions = ['.dcm', '.dicom', '.nii', '.nii.gz'];
+    // DICOM 및 일반 이미지 파일 확장자 검사
+    const allowedExtensions = [
+      // DICOM formats
+      '.dcm', '.dicom', '.nii', '.nii.gz',
+      // Standard image formats
+      '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif'
+    ];
     const hasValidExtension = allowedExtensions.some(ext => 
       fileName.toLowerCase().endsWith(ext)
     );
     
     if (!hasValidExtension) {
-      result.warnings.push('File extension not recognized as medical imaging format');
+      result.warnings.push('File extension not recognized as supported format');
       result.securityLevel = 'WARNING';
     }
 

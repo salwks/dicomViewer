@@ -27,6 +27,7 @@ import {
   annotation,
   Enums as ToolsEnums
 } from '@cornerstonejs/tools';
+import dicomParser from 'dicom-parser';
 import { debugLogger } from '../utils/debug-logger';
 import { initializeCornerstoneGlobally } from '../utils/cornerstone-global-init';
 import { useAnnotationStore, useViewportStore } from '../store';
@@ -524,16 +525,115 @@ const DicomViewportComponent = ({
           throw new Error(`뷰포트 ${viewportId}를 찾을 수 없습니다`);
         }
 
-        // 파일을 Blob URL로 변환
-        const arrayBuffer = await file.arrayBuffer();
-        const byteArray = new Uint8Array(arrayBuffer);
-        const blob = new Blob([byteArray], { type: 'application/dicom' });
-        const url = URL.createObjectURL(blob);
-        const imageId = `wadouri:${url}`;
+        // 파일 타입에 따라 다른 처리
+        const fileName = file.name.toLowerCase();
+        const isDicomFile = fileName.endsWith('.dcm') || fileName.endsWith('.dicom') || 
+                           fileName.endsWith('.nii') || fileName.endsWith('.nii.gz');
+        const isImageFile = fileName.match(/\.(jpg|jpeg|png|bmp|tiff|tif|gif)$/);
+        
+        let imageId: string;
+        
+        if (isDicomFile) {
+          // DICOM 파일 처리
+          const arrayBuffer = await file.arrayBuffer();
+          const byteArray = new Uint8Array(arrayBuffer);
+          
+          // DICOM 파싱 및 데이터셋 저장 (첫 번째 뷰포트만)
+          if (viewportId.includes('single') || viewportId.includes('0')) {
+            try {
+              const dataSet = dicomParser.parseDicom(byteArray);
+              
+              // 스토어에 DICOM 데이터셋 저장
+              const { setDicomDataSet } = useViewportStore.getState();
+              setDicomDataSet(dataSet);
+              
+              debugLogger.log('💾 DICOM 데이터셋 스토어에 저장:', {
+                modality: dataSet.string('x00080060'),
+                rows: dataSet.uint16('x00280010'),
+                columns: dataSet.uint16('x00280011'),
+                studyDate: dataSet.string('x00080020')
+              });
+            } catch (parseError) {
+              debugLogger.warn('⚠️ DICOM 파싱 실패 (표시는 계속):', parseError);
+            }
+          }
+          
+          const blob = new Blob([byteArray], { type: 'application/dicom' });
+          const url = URL.createObjectURL(blob);
+          imageId = `wadouri:${url}`;
+          
+        } else if (isImageFile) {
+          // 일반 이미지 파일 처리
+          const url = URL.createObjectURL(file);
+          // cornerstone-web-image-loader는 blob URL을 직접 처리합니다
+          imageId = url;
+          
+          // 일반 이미지의 경우 가상 DICOM 정보 생성 (첫 번째 뷰포트만)
+          if (viewportId.includes('single') || viewportId.includes('0')) {
+            const { setDicomDataSet } = useViewportStore.getState();
+            
+            // 이미지 로드하여 크기 정보 가져오기
+            const img = new Image();
+            const imageLoadPromise = new Promise<void>((resolve) => {
+              img.onload = () => {
+                // 가상 DICOM 데이터 생성
+                const virtualDicomData = {
+                  string: (tag: string) => {
+                    switch (tag) {
+                      case 'x00080060': return 'IMAGE'; // Modality
+                      case 'x00080020': return new Date().toISOString().split('T')[0].replace(/-/g, ''); // Study Date
+                      default: return '';
+                    }
+                  },
+                  uint16: (tag: string) => {
+                    switch (tag) {
+                      case 'x00280010': return img.height; // Rows
+                      case 'x00280011': return img.width; // Columns
+                      default: return 0;
+                    }
+                  }
+                };
+                
+                setDicomDataSet(virtualDicomData);
+                debugLogger.log('💾 일반 이미지의 가상 DICOM 정보 저장:', {
+                  modality: 'IMAGE',
+                  width: img.width,
+                  height: img.height,
+                  fileName: file.name
+                });
+                resolve();
+              };
+            });
+            
+            img.src = url;
+            await imageLoadPromise;
+          }
+          
+        } else {
+          throw new Error(`지원되지 않는 파일 형식: ${file.name}`);
+        }
 
         // 뷰포트에 이미지 설정
         await viewport.setStack([imageId]);
         viewport.render();
+
+        // Canvas 스타일 강제 적용 - 디버그용
+        if (viewport.canvas) {
+          viewport.canvas.style.border = '5px solid magenta';
+          viewport.canvas.style.position = 'absolute';
+          viewport.canvas.style.top = '0';
+          viewport.canvas.style.left = '0';
+          viewport.canvas.style.zIndex = '999';
+          viewport.canvas.style.pointerEvents = 'auto';
+          
+          console.log('🔧 Canvas 스타일 적용:', {
+            canvas: viewport.canvas,
+            width: viewport.canvas.width,
+            height: viewport.canvas.height,
+            display: viewport.canvas.style.display,
+            visibility: viewport.canvas.style.visibility
+          });
+        }
 
         debugLogger.success(`✅ 뷰포트 ${viewportId} 이미지 로딩 완료`);
         onSuccess(`파일 ${file.name} 로딩 완료`);
@@ -600,9 +700,10 @@ const DicomViewportComponent = ({
       style={{
         width: '100%',
         height: '100%',
-        minHeight: '400px',
         backgroundColor: '#000000',
-        position: 'relative'
+        position: 'relative',
+        border: '3px solid lime', // 디버그용 - DicomViewport 확인
+        minHeight: '200px' // 최소 높이 보장
       }}
     />
   );
