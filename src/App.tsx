@@ -39,7 +39,6 @@ import {
   Shield,
   Monitor,
 } from "lucide-react";
-import { DicomRenderer } from "./components/DicomRenderer";
 import MultiViewportRenderer from "./components/MultiViewportRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
@@ -417,8 +416,8 @@ function App() {
           
           if (filesToAdd.length > 0) {
             handleFiles([...loadedFiles, ...filesToAdd]);
-            // 새로 추가된 첫 번째 파일을 기본으로 선택
-            setSelectedFiles([filesToAdd[0]]);
+            // 새로 추가된 모든 파일을 선택 목록에 추가 (기존 선택 유지)
+            setSelectedFiles(prev => [...prev, ...filesToAdd]);
           }
         } else {
           const errorMessage = isLoginEnabled 
@@ -477,9 +476,9 @@ function App() {
       setIsLoading(true);
       setLoadedFiles(dicomFiles);
 
-      console.log("🎯 DicomRenderer로 파일 전달 완료");
+      console.log("🎯 MultiViewportRenderer로 파일 전달 완료");
 
-      // DicomRenderer에서 실제 렌더링이 수행됩니다
+      // MultiViewportRenderer에서 실제 렌더링이 수행됩니다
       // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
     } catch (error) {
       console.error("❌ 파일 처리 중 오류:", error);
@@ -534,8 +533,8 @@ function App() {
       
       if (filesToAdd.length > 0) {
         handleFiles([...loadedFiles, ...filesToAdd]);
-        // 새로 추가된 첫 번째 파일을 기본으로 선택
-        setSelectedFiles([filesToAdd[0]]);
+        // 새로 추가된 모든 파일을 선택 목록에 추가 (기존 선택 유지)
+        setSelectedFiles(prev => [...prev, ...filesToAdd]);
       }
     } else {
       const errorMessage = isLoginEnabled 
@@ -967,7 +966,7 @@ function App() {
                             if (selectedFiles.includes(file)) {
                               setSelectedFiles(selectedFiles.filter(f => f !== file));
                             } else {
-                              const maxFiles = viewportLayout === '2x2' ? 4 : viewportLayout === '1x2' ? 2 : 1;
+                              const maxFiles = viewportLayout === '2x' ? 4 : 4; // 모든 레이아웃에서 최대 4개 파일 지원
                               if (selectedFiles.length < maxFiles) {
                                 setSelectedFiles([...selectedFiles, file]);
                               }
@@ -1705,8 +1704,10 @@ function App() {
                 }}>
                   {loadedFiles.length > 0 && !isDragging && (
                     <DicomErrorBoundary>
-                      <DicomRenderer
-                        files={selectedFiles.length > 0 ? selectedFiles : [loadedFiles[0]]}
+                      <MultiViewportRenderer
+                        files={loadedFiles}
+                        selectedFiles={selectedFiles.length > 0 ? selectedFiles : [loadedFiles[0]]}
+                        layout={viewportLayout === '2x' ? '2x2' : selectedFiles.length > 1 ? '1x2' : 'single'}
                         onError={handleRenderingError}
                         onSuccess={handleRenderingSuccess}
                       />

@@ -33,6 +33,9 @@ import { useAnnotationStore, useViewportStore } from '../store';
 // 측정값 변환 import 제거 - 간단한 mm 변환만 사용
 
 interface DicomViewportProps {
+  viewportId?: string;
+  renderingEngineId?: string;
+  file?: File;
   onError: (error: string) => void;
   onSuccess: (message: string) => void;
 }
@@ -41,7 +44,13 @@ interface DicomViewportProps {
  * 뷰포트만 담당하는 컴포넌트 - 한 번만 초기화됨
  * 이미지 로딩은 별도로 처리
  */
-const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
+const DicomViewportComponent = ({ 
+  viewportId = 'dicom-viewport', 
+  renderingEngineId = 'dicom-rendering-engine',
+  file,
+  onError, 
+  onSuccess 
+}: DicomViewportProps) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const renderingEngineRef = useRef<RenderingEngine | null>(null);
   const toolGroupRef = useRef<any>(null);
@@ -169,9 +178,7 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
         // Cornerstone3D 전역 초기화 확인
         await initializeCornerstoneGlobally();
 
-        const renderingEngineId = 'dicom-rendering-engine';
-        const viewportId = 'dicom-viewport';
-        const toolGroupId = 'dicom-tool-group';
+        const toolGroupId = `${viewportId}-tool-group`;
 
         // 기존 렌더링 엔진 정리
         if (renderingEngineRef.current) {
@@ -499,6 +506,93 @@ const DicomViewportComponent = ({ onError, onSuccess }: DicomViewportProps) => {
       debugLogger.log('📡 뷰포트 준비 완료 이벤트 전송');
     }
   }, [isViewportInitialized.current]);
+
+  // 파일이 변경될 때 이미지 로딩
+  useEffect(() => {
+    if (!file || !isViewportInitialized.current || !renderingEngineRef.current) {
+      return;
+    }
+
+    const loadImage = async () => {
+      try {
+        debugLogger.log(`🔄 뷰포트 ${viewportId}에 파일 로딩 시작:`, file.name);
+        
+        const renderingEngine = renderingEngineRef.current;
+        const viewport = renderingEngine?.getViewport(viewportId) as Types.IStackViewport;
+        
+        if (!viewport) {
+          throw new Error(`뷰포트 ${viewportId}를 찾을 수 없습니다`);
+        }
+
+        // 파일을 Blob URL로 변환
+        const arrayBuffer = await file.arrayBuffer();
+        const byteArray = new Uint8Array(arrayBuffer);
+        const blob = new Blob([byteArray], { type: 'application/dicom' });
+        const url = URL.createObjectURL(blob);
+        const imageId = `wadouri:${url}`;
+
+        // 뷰포트에 이미지 설정
+        await viewport.setStack([imageId]);
+        viewport.render();
+
+        debugLogger.success(`✅ 뷰포트 ${viewportId} 이미지 로딩 완료`);
+        onSuccess(`파일 ${file.name} 로딩 완료`);
+
+      } catch (error) {
+        debugLogger.error(`❌ 뷰포트 ${viewportId} 이미지 로딩 실패:`, error);
+        onError(`파일 ${file.name} 로딩 실패: ${error}`);
+      }
+    };
+
+    loadImage();
+  }, [file, viewportId, isViewportInitialized.current]);
+
+  // 🔧 뷰포트 크기 재조정 처리 (레이아웃 변경 시)
+  useEffect(() => {
+    if (!isViewportInitialized.current || !renderingEngineRef.current || !viewportRef.current) {
+      return;
+    }
+
+    const resizeViewport = () => {
+      try {
+        const renderingEngine = renderingEngineRef.current;
+        const viewport = renderingEngine?.getViewport(viewportId) as Types.IStackViewport;
+        
+        if (viewport && viewportRef.current) {
+          // 컨테이너 크기 확인
+          const containerRect = viewportRef.current.getBoundingClientRect();
+          debugLogger.log(`🔧 뷰포트 ${viewportId} 크기 재조정:`, {
+            width: containerRect.width,
+            height: containerRect.height
+          });
+
+          // 렌더링 엔진에서 뷰포트 크기 재계산
+          renderingEngine.resize(true);
+          
+          // 뷰포트 다시 렌더링
+          viewport.render();
+          
+          debugLogger.success(`✅ 뷰포트 ${viewportId} 크기 재조정 완료`);
+        }
+      } catch (error) {
+        debugLogger.error(`❌ 뷰포트 ${viewportId} 크기 재조정 실패:`, error);
+      }
+    };
+
+    // ResizeObserver로 컨테이너 크기 변경 감지
+    const resizeObserver = new ResizeObserver(() => {
+      // 디바운싱으로 불필요한 호출 방지
+      setTimeout(resizeViewport, 100);
+    });
+
+    if (viewportRef.current) {
+      resizeObserver.observe(viewportRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [viewportId, isViewportInitialized.current]);
 
   return (
     <div 
