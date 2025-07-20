@@ -28,9 +28,19 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
   onSuccess,
   className = ''
 }) => {
+  // 🔍 디버그 로그
+  console.log('🔍 MultiViewportRenderer Props:', {
+    filesCount: files.length,
+    selectedFilesCount: selectedFiles.length,
+    layout,
+    selectedFileNames: selectedFiles.map(f => f.name)
+  });
+
   // 단일 이미지 처리 - DicomViewport 직접 사용 (useDicomLoader 충돌 방지)
   if (layout === 'single' || selectedFiles.length <= 1) {
-    const file = selectedFiles.length > 0 ? selectedFiles[0] : files[0];
+    // 요구사항: 체크된 파일만 표시, 체크가 없으면 빈 상태
+    const file = selectedFiles.length > 0 ? selectedFiles[0] : null;
+    console.log('🔍 Single viewport - file:', file?.name || 'null');
     return (
       <div className={`single-viewport-container ${className}`} style={{ width: '100%', height: '100%' }}>
         {file ? (
@@ -47,9 +57,10 @@ const MultiViewportRenderer: React.FC<MultiViewportRendererProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            color: '#666'
+            color: '#666',
+            fontSize: '16px'
           }}>
-            No file selected
+            {files.length > 0 ? 'Select files to display' : 'No files loaded'}
           </div>
         )}
       </div>

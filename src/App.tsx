@@ -950,7 +950,7 @@ function App() {
                         </button>
                       </div>
                       
-                      {loadedFiles.length > 1 && (
+                      {loadedFiles.length >= 1 && (
                         <div className="file-selection-list">
                         {loadedFiles.map((file, index) => (
                           <div key={index} className="file-selection-item" style={{
@@ -1704,9 +1704,25 @@ function App() {
                 }}>
                   {loadedFiles.length > 0 && !isDragging && (
                     <DicomErrorBoundary>
+                      {/* 🔍 디버그 정보 */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div style={{ 
+                          position: 'absolute', 
+                          top: '10px', 
+                          left: '10px', 
+                          background: 'rgba(0,0,0,0.8)', 
+                          color: 'white', 
+                          padding: '8px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px',
+                          zIndex: 1000 
+                        }}>
+                          Files: {loadedFiles.length} | Selected: {selectedFiles.length} | Layout: {viewportLayout}
+                        </div>
+                      )}
                       <MultiViewportRenderer
                         files={loadedFiles}
-                        selectedFiles={selectedFiles.length > 0 ? selectedFiles : [loadedFiles[0]]}
+                        selectedFiles={selectedFiles}
                         layout={viewportLayout === '2x' ? '2x2' : selectedFiles.length > 1 ? '1x2' : 'single'}
                         onError={handleRenderingError}
                         onSuccess={handleRenderingSuccess}
