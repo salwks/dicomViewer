@@ -10,16 +10,33 @@ import { useSecurityStore } from "./securityStore";
 import { sanitizeAnnotationLabel, XSSProtection } from "../utils/xss-protection";
 import { isLoginEnabled } from "../utils/feature-flags";
 
+// Viewport tool state interface
+export interface ViewportToolState {
+  toolName: string | null;
+  fileType: 'dicom' | 'image' | null;
+  isToolsEnabled: boolean;
+}
+
 // Annotation store interface
 export interface AnnotationStoreState {
   // State
   annotations: AnnotationData[];
   selectedAnnotationUID: string | null;
-  activeTool: string | null;
+  activeTool: string | null; // 하위 호환성을 위해 유지
+  
+  // New viewport-based state
+  activeViewportId: string | null;
+  viewportToolStates: Record<string, ViewportToolState>;
 
   // Actions
   setActiveTool: (toolName: string) => void;
   activateToolInViewport: (toolName: string, toolGroupRef: any) => boolean;
+  
+  // New viewport-based actions
+  setActiveViewport: (viewportId: string) => void;
+  setViewportToolState: (viewportId: string, toolState: ViewportToolState) => void;
+  activateToolInActiveViewport: (toolName: string) => boolean;
+  getActiveViewportToolState: () => ViewportToolState | null;
   addAnnotation: (annotation: RequiredAnnotationData) => void;
   updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => void;
   updateAnnotationLabel: (annotationUID: string, newLabel: string) => void;
@@ -33,7 +50,11 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
     // Initial state
     annotations: [],
     selectedAnnotationUID: null,
-    activeTool: null,
+    activeTool: 'Pan', // 기본 도구를 Pan으로 설정 (하위 호환성)
+    
+    // New viewport-based state
+    activeViewportId: null,
+    viewportToolStates: {},
 
     // Actions
     setActiveTool: (toolName: string) => {
@@ -132,6 +153,91 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         console.error(`Failed to activate tool ${toolName}:`, error);
         return false;
       }
+    },
+
+    // New viewport-based actions
+    setActiveViewport: (viewportId: string) => {
+      console.log(`🎯 활성 뷰포트 변경: ${viewportId}`);
+      set({ activeViewportId: viewportId });
+      
+      // 활성 뷰포트의 도구 상태를 전역 activeTool에 동기화 (하위 호환성)
+      const { viewportToolStates } = get();
+      const viewportState = viewportToolStates[viewportId];
+      if (viewportState && viewportState.toolName) {
+        set({ activeTool: viewportState.toolName });
+        console.log(`🔧 활성 뷰포트 변경으로 전역 activeTool 업데이트: ${viewportState.toolName}`);
+      } else {
+        // 뷰포트 상태가 없으면 Pan으로 기본 설정
+        set({ activeTool: 'Pan' });
+        console.log(`🔧 뷰포트 상태가 없어 Pan으로 기본 설정`);
+      }
+    },
+
+    setViewportToolState: (viewportId: string, toolState: ViewportToolState) => {
+      console.log(`🔧 뷰포트 도구 상태 설정: ${viewportId}`, toolState);
+      set((state) => ({
+        viewportToolStates: {
+          ...state.viewportToolStates,
+          [viewportId]: toolState
+        }
+      }));
+      
+      // 활성 뷰포트라면 전역 activeTool도 즉시 업데이트 (하위 호환성)
+      const { activeViewportId } = get();
+      if (activeViewportId === viewportId && toolState.toolName) {
+        set({ activeTool: toolState.toolName });
+        console.log(`🔧 활성 뷰포트 도구 상태 변경으로 전역 activeTool 업데이트: ${toolState.toolName}`);
+      }
+    },
+
+    activateToolInActiveViewport: (toolName: string) => {
+      const { activeViewportId, viewportToolStates } = get();
+      
+      if (!activeViewportId) {
+        console.warn("활성 뷰포트가 없습니다");
+        return false;
+      }
+      
+      const viewportState = viewportToolStates[activeViewportId];
+      if (!viewportState) {
+        console.warn(`뷰포트 ${activeViewportId}의 상태를 찾을 수 없습니다`);
+        return false;
+      }
+      
+      // 파일 타입에 따른 도구 사용 가능 여부 확인
+      if (!viewportState.isToolsEnabled) {
+        console.warn(`뷰포트 ${activeViewportId}에서 도구 사용이 비활성화되어 있습니다 (파일 타입: ${viewportState.fileType})`);
+        return false;
+      }
+      
+      // 도구 그룹 참조 찾기
+      const toolGroupRef = (window as any)[`cornerstoneToolGroup_${activeViewportId}`];
+      if (!toolGroupRef) {
+        console.warn(`뷰포트 ${activeViewportId}의 도구 그룹을 찾을 수 없습니다`);
+        return false;
+      }
+      
+      // 기존 activateToolInViewport 로직 재사용
+      const success = get().activateToolInViewport(toolName, { current: toolGroupRef });
+      
+      if (success) {
+        // 뷰포트 상태 업데이트
+        get().setViewportToolState(activeViewportId, {
+          ...viewportState,
+          toolName: toolName
+        });
+        
+        // 전역 activeTool도 업데이트 (UI 버튼 활성화 표시용)
+        set({ activeTool: toolName });
+      }
+      
+      return success;
+    },
+
+    getActiveViewportToolState: () => {
+      const { activeViewportId, viewportToolStates } = get();
+      if (!activeViewportId) return null;
+      return viewportToolStates[activeViewportId] || null;
     },
 
     addAnnotation: (newAnnotation: RequiredAnnotationData) => {

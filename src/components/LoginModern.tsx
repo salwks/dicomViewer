@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Lock, User, Eye, EyeOff, Shield, AlertTriangle, CheckCircle, Heart, Monitor } from 'lucide-react';
 import { useSecurityStore } from '../store';
 import { validateUsername } from '../utils/input-validation';
+import { useTranslation } from '../utils/i18n';
+import { useUIStore } from '../store/uiStore';
 
 interface LoginModernProps {
   onLoginSuccess?: () => void;
@@ -24,6 +26,10 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
     loginAttempts,
     settings 
   } = useSecurityStore();
+  
+  // Translation hook
+  const { currentLanguage } = useUIStore();
+  const { t } = useTranslation(currentLanguage);
 
   // Check if account is locked and show countdown
   const [lockoutCountdown, setLockoutCountdown] = useState(0);
@@ -47,7 +53,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
 
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      setSuccess(`Welcome back, ${currentUser.username}!`);
+      setSuccess(t('userGreeting').replace('{username}', currentUser.username));
       onLoginSuccess?.();
     }
   }, [isAuthenticated, currentUser, onLoginSuccess]);
@@ -61,13 +67,13 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
     try {
       // 기본 입력 검증
       if (!username || username.trim() === '') {
-        setError('사용자명을 입력해주세요.');
+        setError(t('usernameRequired'));
         setIsLoading(false);
         return;
       }
 
       if (!password || password.trim() === '') {
-        setError('비밀번호를 입력해주세요.');
+        setError(t('passwordRequired'));
         setIsLoading(false);
         return;
       }
@@ -85,7 +91,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
       const result = await login(username.trim(), password);
       
       if (result) {
-        setSuccess('Login successful!');
+        setSuccess(t('loginSuccessful'));
         setUsername('');
         setPassword('');
         
@@ -94,15 +100,15 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
         }
       } else {
         if (isLocked) {
-          setError('Account is locked due to too many failed attempts.');
+          setError(t('accountLockedMessage'));
         } else {
           const remainingAttempts = settings.maxFailedAttempts - loginAttempts;
-          setError(`Invalid credentials. ${remainingAttempts} attempts remaining.`);
+          setError(t('invalidCredentials').replace('{count}', remainingAttempts.toString()));
         }
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Login failed. Please try again.');
+      setError(t('loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -153,30 +159,30 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
             </div>
             
             <h2 className="text-2xl font-bold text-gray-50 mb-2">
-              Welcome Back!
+              {t('welcomeBack')}
             </h2>
             
             <p className="text-gray-400 mb-6">
-              Hello, <strong className="text-gray-50">{currentUser.username}</strong>
+              {t('userGreeting').replace('{username}', '')} <strong className="text-gray-50">{currentUser.username}</strong>
             </p>
             
             <div className="bg-gray-700 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Role</span>
+                <span className="text-sm text-gray-400">{t('roleDescription')}</span>
                 <span className={`text-sm font-semibold ${getUserRoleColor(currentUser.role)}`}>
                   {currentUser.role}
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Session ID</span>
+                <span className="text-sm text-gray-400">{t('sessionId')}</span>
                 <span className="text-xs font-mono text-gray-300">
                   {currentUser.id}
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Login Time</span>
+                <span className="text-sm text-gray-400">{t('loginTime')}</span>
                 <span className="text-xs text-gray-300">
                   {new Date(currentUser.loginTime).toLocaleString()}
                 </span>
@@ -185,7 +191,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
             
             <div className="mt-6 p-3 bg-green-900/30 border border-green-700 rounded-lg">
               <p className="text-sm text-green-400">
-                🎉 Authentication successful! Access granted to DICOM viewer.
+                {t('authenticationSuccess')}
               </p>
             </div>
           </div>
@@ -226,22 +232,22 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                 </h1>
                 <div className="w-24 h-1 bg-white/40 rounded-full mx-auto mb-8"></div>
                 <p className="text-blue-100 text-xl leading-relaxed font-light">
-                  Advanced DICOM<br />Medical Imaging Viewer
+                  {t('appDescription')}
                 </p>
               </div>
               
               <div className="space-y-6">
                 <div className="flex items-center justify-center text-blue-100">
                   <div className="w-3 h-3 bg-white rounded-full mr-4 opacity-60"></div>
-                  <span className="text-base font-medium">Secure Authentication</span>
+                  <span className="text-base font-medium">{t('secureAuth')}</span>
                 </div>
                 <div className="flex items-center justify-center text-blue-100">
                   <div className="w-3 h-3 bg-white rounded-full mr-4 opacity-60"></div>
-                  <span className="text-base font-medium">HIPAA Compliant</span>
+                  <span className="text-base font-medium">{t('hipaaCompliant')}</span>
                 </div>
                 <div className="flex items-center justify-center text-blue-100">
                   <div className="w-3 h-3 bg-white rounded-full mr-4 opacity-60"></div>
-                  <span className="text-base font-medium">Professional Grade</span>
+                  <span className="text-base font-medium">{t('professionalGrade')}</span>
                 </div>
               </div>
             </div>
@@ -254,10 +260,10 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
               {/* 폼 헤더 - 중앙 정렬 */}
               <div className="mb-12 text-center">
                 <h2 className="text-3xl font-semibold text-gray-50 mb-4">
-                  로그인
+                  {t('login')}
                 </h2>
                 <p className="text-gray-400 text-base">
-                  의료 영상 시스템에 안전하게 접속하세요
+                  {t('loginSubtitle')}
                 </p>
                 <div className="w-16 h-0.5 bg-blue-600 mx-auto mt-4"></div>
               </div>
@@ -268,9 +274,9 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                   <div className="flex items-center">
                     <AlertTriangle className="text-red-400 mr-3" size={20} />
                     <div>
-                      <p className="font-semibold text-red-300">계정이 잠겼습니다</p>
+                      <p className="font-semibold text-red-300">{t('accountLocked')}</p>
                       <p className="text-sm text-red-400">
-                        {formatCountdown(lockoutCountdown)} 후 다시 시도하세요
+                        {t('tryAgainIn').replace('{time}', formatCountdown(lockoutCountdown))}
                       </p>
                     </div>
                   </div>
@@ -301,7 +307,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                 {/* 사용자명 입력 */}
                 <div>
                   <label htmlFor="username" className="block text-sm font-medium text-gray-400 mb-3">
-                    사용자명
+                    {t('username')}
                   </label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
@@ -315,7 +321,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                                transition-all duration-200 ease-in-out
                                disabled:opacity-50 disabled:cursor-not-allowed
                                hover:border-gray-500"
-                      placeholder="사용자명을 입력하세요"
+                      placeholder={t('usernamePlaceholder')}
                       required
                       disabled={isLoading || (isLocked && lockoutCountdown > 0)}
                     />
@@ -325,7 +331,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                 {/* 비밀번호 입력 */}
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-3">
-                    비밀번호
+                    {t('password')}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
@@ -339,7 +345,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                                transition-all duration-200 ease-in-out
                                disabled:opacity-50 disabled:cursor-not-allowed
                                hover:border-gray-500"
-                      placeholder="비밀번호를 입력하세요"
+                      placeholder={t('passwordPlaceholder')}
                       required
                       disabled={isLoading || (isLocked && lockoutCountdown > 0)}
                     />
@@ -369,7 +375,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                     {isLoading && (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                     )}
-                    {isLoading ? '인증 중...' : '로그인'}
+                    {isLoading ? t('authenticating') : t('loginButton')}
                   </div>
                 </button>
               </form>
@@ -390,10 +396,10 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                 <h4 className="text-base font-bold text-gray-300 mb-5 text-center">데모 계정</h4>
                 <div className="space-y-3">
                   {[
-                    { role: 'admin', pass: 'admin123', desc: '관리자', permissions: '모든 권한', color: 'bg-red-500' },
-                    { role: 'radiologist', pass: 'radio123', desc: '방사선과 의사', permissions: '진단 권한', color: 'bg-blue-500' },
-                    { role: 'technician', pass: 'tech123', desc: '기사', permissions: '촬영 권한', color: 'bg-green-500' },
-                    { role: 'viewer', pass: 'view123', desc: '뷰어', permissions: '보기 전용', color: 'bg-gray-500' }
+                    { role: 'admin', pass: 'admin123', desc: t('adminRole'), permissions: t('allPermissions'), color: 'bg-red-500' },
+                    { role: 'radiologist', pass: 'radio123', desc: t('radiologistRole'), permissions: t('diagnosticPermissions'), color: 'bg-blue-500' },
+                    { role: 'technician', pass: 'tech123', desc: t('technicianRole'), permissions: t('imagingPermissions'), color: 'bg-green-500' },
+                    { role: 'viewer', pass: 'view123', desc: t('viewerRole'), permissions: t('viewOnlyPermissions'), color: 'bg-gray-500' }
                   ].map((account, index) => (
                     <div key={index} className="flex items-center justify-between p-4 bg-gray-800/60 rounded-lg border border-gray-600/30 hover:bg-gray-800 transition-all duration-200">
                       <div className="flex items-center space-x-4">
@@ -417,7 +423,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                         }}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95"
                       >
-                        사용
+                        {t('useButton')}
                       </button>
                     </div>
                   ))}
@@ -429,7 +435,7 @@ export const LoginModern: React.FC<LoginModernProps> = ({ onLoginSuccess }) => {
                 <div className="inline-flex items-center text-sm text-gray-500 bg-gray-700/30 px-4 py-2 rounded-full">
                   <Shield className="mr-2" size={16} />
                   <span>
-                    최대 시도: {settings.maxFailedAttempts}회 • 세션: {settings.sessionTimeout}분
+                    {t('maxAttempts')}: {settings.maxFailedAttempts}회 • {t('sessionTimeout')}: {settings.sessionTimeout}분
                   </span>
                 </div>
               </div>

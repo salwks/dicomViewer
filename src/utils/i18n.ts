@@ -258,6 +258,70 @@ export interface TranslationKeys {
   declineCookies: string;
   cookieNotice: string;
   learnMore: string;
+
+  // New hardcoded texts that need i18n
+  layoutAutoAdapt: string;
+  imageFileSelected: string;
+  panToolDescription: string;
+  zoomToolDescription: string;
+  angleToolDescription: string;
+  cobbAngleDescription: string;
+  maxFilesReached: string;
+  removeFile: string;
+  clearAllFiles: string;
+  clearAllFilesCount: string;
+  viewDicomTags: string;
+  unsupportedFiles: string;
+  fileLoadingError: string;
+  viewportNotFound: string;
+  renderingEngineNotFound: string;
+  imageRotationFailed: string;
+  imageFlipFailed: string;
+  imageTransformReset: string;
+  imageTransformResetFailed: string;
+  dicomDatasetSaved: string;
+  highQualityCaptureFailed: string;
+  html2canvasLoading: string;
+  highQualityCaptureStart: string;
+  captureComplete: string;
+  screenCaptureFailed: string;
+  renderingEngineNotFoundError: string;
+  viewportNotFoundError: string;
+  viewportElementNotFound: string;
+  blobCreationFailed: string;
+  toolGroupCreationFailed: string;
+  unsupportedFileFormat: string;
+  activateViewportFirst: string;
+  viewportToolsDisabled: string;
+  toolNotAvailableForFileType: string;
+  canvasRenderingNotSupported: string;
+  toolActivationFailed: string;
+  activeViewportNotFound: string;
+  viewportStateNotFound: string;
+  toolGroupNotFound: string;
+  noActiveViewport: string;
+  selectFiles: string;
+  noFilesLoaded: string;
+
+  // Additional login screen texts
+  adminRole: string;
+  radiologistRole: string;
+  technicianRole: string;
+  viewerRole: string;
+  roleDescription: string;
+  permissionsLabel: string;
+  allPermissions: string;
+  diagnosticPermissions: string;
+  imagingPermissions: string;
+  viewOnlyPermissions: string;
+  sessionId: string;
+  loginTime: string;
+  maxAttempts: string;
+  sessionTimeout: string;
+  tryAgainIn: string;
+  loginFailed: string;
+  loginSuccessful: string;
+  securityDescription: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -537,6 +601,70 @@ If you have any questions, please contact us at stra2003@gmail.com.`,
     declineCookies: "Decline",
     cookieNotice: "Cookie Notice",
     learnMore: "Privacy Policy",
+
+    // New hardcoded texts that need i18n
+    layoutAutoAdapt: "Layout adapts automatically: 1 file (1x1) → 2 files (1x2) → 3-4 files (2x2)",
+    imageFileSelected: "📷 Image file selected. Tool functions are only available for DICOM files.",
+    panToolDescription: "Pan Tool - Move screen",
+    zoomToolDescription: "Zoom Tool - Zoom in/out",
+    angleToolDescription: "Angle Tool - Measure angle",
+    cobbAngleDescription: "Cobb Angle Tool - Cobb angle",
+    maxFilesReached: "Maximum 4 files reached",
+    removeFile: "Remove file",
+    clearAllFiles: "Clear all files",
+    clearAllFilesCount: "Clear All Files ({count})",
+    viewDicomTags: "View DICOM Tags",
+    unsupportedFiles: "No supported files. Please select DICOM (.dcm) or image files (.jpg, .png, etc.).",
+    fileLoadingError: "An error occurred while loading the file.",
+    viewportNotFound: "Viewport {id} not found.",
+    renderingEngineNotFound: "Rendering engine not found.",
+    imageRotationFailed: "Image rotation failed:",
+    imageFlipFailed: "Image flip failed:",
+    imageTransformReset: "Image transform reset complete",
+    imageTransformResetFailed: "Image transform reset failed:",
+    dicomDatasetSaved: "DICOM dataset saved",
+    highQualityCaptureFailed: "High quality capture failed, trying fallback method:",
+    html2canvasLoading: "Loading HTML2Canvas library...",
+    highQualityCaptureStart: "Starting high quality capture (scale: {scale})...",
+    captureComplete: "Capture complete: {width}x{height}",
+    screenCaptureFailed: "Screen capture completely failed.",
+    renderingEngineNotFoundError: "Rendering engine not found.",
+    viewportNotFoundError: "Viewport ({id}) not found.",
+    viewportElementNotFound: "Viewport DOM element not found.",
+    blobCreationFailed: "Blob creation failed",
+    toolGroupCreationFailed: "Tool group creation failed",
+    unsupportedFileFormat: "Unsupported file format: {name}",
+    activateViewportFirst: "No active viewport. Please select a viewport first.",
+    viewportToolsDisabled: "Tools are disabled in viewport {id} (file type: {type}).",
+    toolNotAvailableForFileType: "{tool} tool is not available for {type} files. Images are rendered directly to Canvas and do not support CornerstoneJS tools.",
+    canvasRenderingNotSupported: "{tool} tool is not available for image files. Images are rendered directly to Canvas and do not support CornerstoneJS tools.",
+    toolActivationFailed: "Tool activation failed in active viewport {id}",
+    activeViewportNotFound: "Active viewport state not found.",
+    viewportStateNotFound: "Viewport {id} state not found.",
+    toolGroupNotFound: "Tool group for viewport {id} not found.",
+    noActiveViewport: "No active viewport",
+    selectFiles: "Select files to display",
+    noFilesLoaded: "No files loaded",
+
+    // Additional login screen texts
+    adminRole: "Administrator",
+    radiologistRole: "Radiologist",
+    technicianRole: "Technician",
+    viewerRole: "Viewer",
+    roleDescription: "Role",
+    permissionsLabel: "Permissions",
+    allPermissions: "All permissions",
+    diagnosticPermissions: "Diagnostic permissions",
+    imagingPermissions: "Imaging permissions",
+    viewOnlyPermissions: "View only",
+    sessionId: "Session ID",
+    loginTime: "Login Time",
+    maxAttempts: "Max attempts",
+    sessionTimeout: "Session",
+    tryAgainIn: "Try again in {time}",
+    loginFailed: "Login failed. Please try again.",
+    loginSuccessful: "Login successful!",
+    securityDescription: "Secure medical imaging system access",
   },
 
   KR: {
@@ -822,6 +950,70 @@ Clarity(이하 '서비스')는 이용자의 개인정보를 중요시하며, 「
     declineCookies: "거부",
     cookieNotice: "쿠키 알림",
     learnMore: "개인정보처리방침",
+
+    // New hardcoded texts that need i18n
+    layoutAutoAdapt: "레이아웃 자동 조정: 1개 파일 (1x1) → 2개 파일 (1x2) → 3-4개 파일 (2x2)",
+    imageFileSelected: "📷 이미지 파일이 선택되었습니다. 도구 기능은 DICOM 파일에서만 사용 가능합니다.",
+    panToolDescription: "Pan 도구 - 화면 이동",
+    zoomToolDescription: "Zoom 도구 - 확대/축소",
+    angleToolDescription: "Angle 도구 - 각도 측정",
+    cobbAngleDescription: "Cobb Angle 도구 - 콥 각도",
+    maxFilesReached: "최대 4개 파일에 도달했습니다",
+    removeFile: "파일 제거",
+    clearAllFiles: "모든 파일 지우기",
+    clearAllFilesCount: "모든 파일 지우기 ({count}개)",
+    viewDicomTags: "DICOM 태그 보기",
+    unsupportedFiles: "지원되는 파일이 없습니다. DICOM (.dcm) 또는 이미지 파일 (.jpg, .png 등)을 선택해주세요.",
+    fileLoadingError: "파일 로드 중 오류가 발생했습니다.",
+    viewportNotFound: "뷰포트 {id}를 찾을 수 없습니다.",
+    renderingEngineNotFound: "렌더링 엔진을 찾을 수 없습니다.",
+    imageRotationFailed: "이미지 회전 실패:",
+    imageFlipFailed: "이미지 뒤집기 실패:",
+    imageTransformReset: "이미지 변환 리셋 완료",
+    imageTransformResetFailed: "이미지 변환 리셋 실패:",
+    dicomDatasetSaved: "DICOM 데이터셋 저장 완료",
+    highQualityCaptureFailed: "고해상도 캡처 실패, 기본 방법 시도:",
+    html2canvasLoading: "HTML2Canvas 라이브러리 로딩...",
+    highQualityCaptureStart: "고해상도 캡처 시작 (scale: {scale})...",
+    captureComplete: "캡처 완료: {width}x{height}",
+    screenCaptureFailed: "화면 캡처에 완전히 실패했습니다.",
+    renderingEngineNotFoundError: "렌더링 엔진을 찾을 수 없습니다.",
+    viewportNotFoundError: "뷰포트({id})를 찾을 수 없습니다.",
+    viewportElementNotFound: "뷰포트 DOM 요소를 찾을 수 없습니다.",
+    blobCreationFailed: "Blob 생성 실패",
+    toolGroupCreationFailed: "도구 그룹 생성 실패",
+    unsupportedFileFormat: "지원되지 않는 파일 형식: {name}",
+    activateViewportFirst: "활성 뷰포트가 없습니다. 뷰포트를 먼저 선택해주세요.",
+    viewportToolsDisabled: "뷰포트 {id}에서 도구 사용이 비활성화되어 있습니다 (파일 타입: {type}).",
+    toolNotAvailableForFileType: "{tool} 도구는 {type} 파일에서 사용할 수 없습니다. 이미지는 Canvas에 직접 렌더링되어 CornerstoneJS 도구를 지원하지 않습니다.",
+    canvasRenderingNotSupported: "{tool} 도구는 이미지 파일에서 사용할 수 없습니다. 이미지는 Canvas에 직접 렌더링되어 CornerstoneJS 도구를 지원하지 않습니다.",
+    toolActivationFailed: "활성 뷰포트 {id}에서 도구 활성화 실패",
+    activeViewportNotFound: "활성 뷰포트의 상태를 찾을 수 없습니다.",
+    viewportStateNotFound: "뷰포트 {id}의 상태를 찾을 수 없습니다.",
+    toolGroupNotFound: "뷰포트 {id}의 도구 그룹을 찾을 수 없습니다.",
+    noActiveViewport: "활성 뷰포트가 없습니다",
+    selectFiles: "표시할 파일을 선택하세요",
+    noFilesLoaded: "로드된 파일이 없습니다",
+
+    // Additional login screen texts
+    adminRole: "관리자",
+    radiologistRole: "방사선과 의사",
+    technicianRole: "기사",
+    viewerRole: "뷰어",
+    roleDescription: "역할",
+    permissionsLabel: "권한",
+    allPermissions: "모든 권한",
+    diagnosticPermissions: "진단 권한",
+    imagingPermissions: "촬영 권한",
+    viewOnlyPermissions: "보기 전용",
+    sessionId: "세션 ID",
+    loginTime: "로그인 시간",
+    maxAttempts: "최대 시도",
+    sessionTimeout: "세션",
+    tryAgainIn: "{time} 후 다시 시도하세요",
+    loginFailed: "로그인 실패. 다시 시도해주세요.",
+    loginSuccessful: "로그인 성공!",
+    securityDescription: "안전한 의료 영상 시스템 접속",
   },
 
   JP: {
@@ -1105,6 +1297,70 @@ Google アナリティクス オプトアウト アドオン: https://tools.goog
     declineCookies: "拒否",
     cookieNotice: "クッキー通知",
     learnMore: "プライバシーポリシー",
+
+    // New hardcoded texts that need i18n
+    layoutAutoAdapt: "レイアウト自動調整: 1ファイル (1x1) → 2ファイル (1x2) → 3-4ファイル (2x2)",
+    imageFileSelected: "📷 画像ファイルが選択されています。ツール機能はDICOMファイルでのみ利用可能です。",
+    panToolDescription: "パンツール - 画面移動",
+    zoomToolDescription: "ズームツール - 拡大/縮小",
+    angleToolDescription: "角度ツール - 角度測定",
+    cobbAngleDescription: "コブ角ツール - コブ角",
+    maxFilesReached: "最大4ファイルに達しました",
+    removeFile: "ファイル削除",
+    clearAllFiles: "すべてのファイルをクリア",
+    clearAllFilesCount: "すべてのファイルをクリア ({count}個)",
+    viewDicomTags: "DICOMタグを表示",
+    unsupportedFiles: "サポートされているファイルがありません。DICOM (.dcm) または画像ファイル (.jpg, .png など) を選択してください。",
+    fileLoadingError: "ファイル読み込み中にエラーが発生しました。",
+    viewportNotFound: "ビューポート {id} が見つかりません。",
+    renderingEngineNotFound: "レンダリングエンジンが見つかりません。",
+    imageRotationFailed: "画像回転に失敗:",
+    imageFlipFailed: "画像反転に失敗:",
+    imageTransformReset: "画像変換リセット完了",
+    imageTransformResetFailed: "画像変換リセット失敗:",
+    dicomDatasetSaved: "DICOMデータセット保存完了",
+    highQualityCaptureFailed: "高品質キャプチャ失敗、フォールバック方法を試行:",
+    html2canvasLoading: "HTML2Canvasライブラリ読み込み中...",
+    highQualityCaptureStart: "高品質キャプチャ開始 (scale: {scale})...",
+    captureComplete: "キャプチャ完了: {width}x{height}",
+    screenCaptureFailed: "画面キャプチャに完全に失敗しました。",
+    renderingEngineNotFoundError: "レンダリングエンジンが見つかりません。",
+    viewportNotFoundError: "ビューポート ({id}) が見つかりません。",
+    viewportElementNotFound: "ビューポートDOM要素が見つかりません。",
+    blobCreationFailed: "Blob作成失敗",
+    toolGroupCreationFailed: "ツールグループ作成失敗",
+    unsupportedFileFormat: "サポートされていないファイル形式: {name}",
+    activateViewportFirst: "アクティブなビューポートがありません。最初にビューポートを選択してください。",
+    viewportToolsDisabled: "ビューポート {id} でツールが無効化されています (ファイルタイプ: {type})。",
+    toolNotAvailableForFileType: "{tool} ツールは {type} ファイルでは利用できません。画像はCanvasに直接レンダリングされ、CornerstoneJSツールをサポートしていません。",
+    canvasRenderingNotSupported: "{tool} ツールは画像ファイルでは利用できません。画像はCanvasに直接レンダリングされ、CornerstoneJSツールをサポートしていません。",
+    toolActivationFailed: "アクティブビューポート {id} でツール有効化失敗",
+    activeViewportNotFound: "アクティブビューポートの状態が見つかりません。",
+    viewportStateNotFound: "ビューポート {id} の状態が見つかりません。",
+    toolGroupNotFound: "ビューポート {id} のツールグループが見つかりません。",
+    noActiveViewport: "アクティブビューポートがありません",
+    selectFiles: "表示するファイルを選択",
+    noFilesLoaded: "読み込まれたファイルがありません",
+
+    // Additional login screen texts
+    adminRole: "管理者",
+    radiologistRole: "放射線科医",
+    technicianRole: "技師",
+    viewerRole: "ビューアー",
+    roleDescription: "役割",
+    permissionsLabel: "権限",
+    allPermissions: "すべての権限",
+    diagnosticPermissions: "診断権限",
+    imagingPermissions: "撮影権限",
+    viewOnlyPermissions: "閲覧のみ",
+    sessionId: "セッションID",
+    loginTime: "ログイン時刻",
+    maxAttempts: "最大試行回数",
+    sessionTimeout: "セッション",
+    tryAgainIn: "{time} 後に再試行してください",
+    loginFailed: "ログインに失敗しました。再試行してください。",
+    loginSuccessful: "ログイン成功！",
+    securityDescription: "安全な医療画像システムアクセス",
   },
 
   CN: {
@@ -1381,6 +1637,70 @@ Clarity（下称"我们"或"本服务"）尊重并保护所有使用服务用户
     declineCookies: "拒绝",
     cookieNotice: "Cookie通知",
     learnMore: "隐私政策",
+
+    // New hardcoded texts that need i18n
+    layoutAutoAdapt: "布局自动调整: 1个文件 (1x1) → 2个文件 (1x2) → 3-4个文件 (2x2)",
+    imageFileSelected: "📷 已选择图像文件。工具功能仅适用于DICOM文件。",
+    panToolDescription: "平移工具 - 移动屏幕",
+    zoomToolDescription: "缩放工具 - 放大/缩小",
+    angleToolDescription: "角度工具 - 测量角度",
+    cobbAngleDescription: "Cobb角度工具 - Cobb角",
+    maxFilesReached: "已达到最大4个文件",
+    removeFile: "删除文件",
+    clearAllFiles: "清除所有文件",
+    clearAllFilesCount: "清除所有文件 ({count}个)",
+    viewDicomTags: "查看DICOM标签",
+    unsupportedFiles: "没有支持的文件。请选择DICOM (.dcm) 或图像文件 (.jpg, .png等)。",
+    fileLoadingError: "加载文件时发生错误。",
+    viewportNotFound: "未找到视口 {id}。",
+    renderingEngineNotFound: "未找到渲染引擎。",
+    imageRotationFailed: "图像旋转失败:",
+    imageFlipFailed: "图像翻转失败:",
+    imageTransformReset: "图像变换重置完成",
+    imageTransformResetFailed: "图像变换重置失败:",
+    dicomDatasetSaved: "DICOM数据集保存完成",
+    highQualityCaptureFailed: "高质量捕获失败，尝试备用方法:",
+    html2canvasLoading: "正在加载HTML2Canvas库...",
+    highQualityCaptureStart: "开始高质量捕获 (scale: {scale})...",
+    captureComplete: "捕获完成: {width}x{height}",
+    screenCaptureFailed: "屏幕捕获完全失败。",
+    renderingEngineNotFoundError: "未找到渲染引擎。",
+    viewportNotFoundError: "未找到视口 ({id})。",
+    viewportElementNotFound: "未找到视口DOM元素。",
+    blobCreationFailed: "Blob创建失败",
+    toolGroupCreationFailed: "工具组创建失败",
+    unsupportedFileFormat: "不支持的文件格式: {name}",
+    activateViewportFirst: "没有活动视口。请先选择视口。",
+    viewportToolsDisabled: "视口 {id} 中的工具已禁用 (文件类型: {type})。",
+    toolNotAvailableForFileType: "{tool} 工具不适用于 {type} 文件。图像直接渲染到Canvas，不支持CornerstoneJS工具。",
+    canvasRenderingNotSupported: "{tool} 工具不适用于图像文件。图像直接渲染到Canvas，不支持CornerstoneJS工具。",
+    toolActivationFailed: "活动视口 {id} 中工具激活失败",
+    activeViewportNotFound: "未找到活动视口状态。",
+    viewportStateNotFound: "未找到视口 {id} 状态。",
+    toolGroupNotFound: "未找到视口 {id} 的工具组。",
+    noActiveViewport: "没有活动视口",
+    selectFiles: "选择要显示的文件",
+    noFilesLoaded: "未加载文件",
+
+    // Additional login screen texts
+    adminRole: "管理员",
+    radiologistRole: "放射科医生",
+    technicianRole: "技师",
+    viewerRole: "查看者",
+    roleDescription: "角色",
+    permissionsLabel: "权限",
+    allPermissions: "所有权限",
+    diagnosticPermissions: "诊断权限",
+    imagingPermissions: "成像权限",
+    viewOnlyPermissions: "仅查看",
+    sessionId: "会话ID",
+    loginTime: "登录时间",
+    maxAttempts: "最大尝试",
+    sessionTimeout: "会话",
+    tryAgainIn: "{time} 后重试",
+    loginFailed: "登录失败。请重试。",
+    loginSuccessful: "登录成功！",
+    securityDescription: "安全医疗影像系统访问",
   },
 };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import CookieConsent from "react-cookie-consent";
 import { trackPageView, trackDicomViewerEvents, initGA } from "./analytics";
@@ -39,7 +39,6 @@ import {
   Shield,
   Monitor,
 } from "lucide-react";
-import { DicomRenderer } from "./components/DicomRenderer";
 import MultiViewportRenderer from "./components/MultiViewportRenderer";
 import { DicomMetaModal } from "./components/DicomMetaModal";
 import { LicenseModal } from "./components/LicenseModal";
@@ -169,7 +168,8 @@ function App() {
   );
   const [editingValue, setEditingValue] = useState("");
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
-  const [viewportLayout, setViewportLayout] = useState<'1x' | '2x'>('1x');
+  // 각 파일별 DICOM 데이터셋 저장
+  const [fileDataSets, setFileDataSets] = useState<Map<string, any>>(new Map());
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -191,6 +191,10 @@ function App() {
     clearAllAnnotations,
     removeAnnotation,
     updateAnnotationLabel,
+    // New viewport-based state
+    activeViewportId,
+    activateToolInActiveViewport,
+    getActiveViewportToolState,
   } = useAnnotationStore();
 
   const {
@@ -207,11 +211,47 @@ function App() {
   // 번역 함수
   const { t } = useTranslation(currentLanguage);
 
+  // 뷰포트 기반 도구 선택 함수
+  const handleToolSelection = (toolName: string) => {
+    const activeViewportState = getActiveViewportToolState();
+    
+    if (!activeViewportId) {
+      console.warn(t('activateViewportFirst'));
+      return;
+    }
+    
+    if (!activeViewportState) {
+      console.warn(t('activeViewportNotFound'));
+      return;
+    }
+    
+    // 이미지 파일에서는 모든 도구 사용 불가
+    if (activeViewportState.fileType === 'image') {
+      console.warn(t('canvasRenderingNotSupported').replace('{tool}', toolName));
+      return;
+    }
+    
+    // DICOM 파일에서 도구 사용 가능 여부 확인
+    if (activeViewportState.fileType === 'dicom' && !activeViewportState.isToolsEnabled) {
+      console.warn(t('toolNotAvailableForFileType').replace('{tool}', toolName).replace('{type}', activeViewportState.fileType || 'unknown'));
+      return;
+    }
+    
+    // 활성 뷰포트에서 도구 활성화
+    const success = activateToolInActiveViewport(toolName);
+    
+    if (success) {
+      console.log(`✅ ${t('toolActivated').replace('{tool}', toolName).replace('{id}', activeViewportId)}`);
+    } else {
+      console.error(`❌ ${t('toolActivationFailed').replace('{tool}', toolName).replace('{id}', activeViewportId)}`);
+    }
+  };
+
   // 키보드 단축키 설정
   const { getShortcutForTool } = useKeyboardShortcuts({
     onToolSelect: (toolName) => {
       console.log(`🎯 Shortcut activated: ${toolName}`);
-      setActiveTool(toolName);
+      handleToolSelection(toolName);
       // Google Analytics 키보드 단축키 사용 추적
       const shortcut = getShortcutForTool(toolName);
       if (shortcut) {
@@ -282,7 +322,7 @@ function App() {
       
       return () => clearTimeout(timer);
     }
-  }, [viewportLayout, selectedFiles]);
+  }, [selectedFiles]);
 
   // 주석은 이제 Zustand 스토어에서 관리됨
 
@@ -361,20 +401,67 @@ function App() {
     }
   };
 
-  // Initialize default tool
-  useEffect(() => {
-    if (!activeTool) {
-      setActiveTool("WindowLevel"); // Set default tool to WindowLevel
-      console.log("기본 도구로 WindowLevel 설정");
+  // Default tool is now initialized in annotationStore as 'Pan' - this useEffect is no longer needed
+
+  // DICOM 데이터셋 수집 콜백
+  const handleDicomDataSet = (fileName: string, dataSet: any) => {
+    setFileDataSets(prev => {
+      const newMap = new Map(prev);
+      newMap.set(fileName, dataSet);
+      return newMap;
+    });
+  };
+
+  // 모달에 전달할 fileData 준비
+  const getFileDataForModal = () => {
+    return selectedFiles
+      .filter(file => {
+        const fileName = file.name.toLowerCase();
+        return fileName.endsWith('.dcm') || fileName.endsWith('.dicom');
+      })
+      .map(file => ({
+        fileName: file.name,
+        dataSet: fileDataSets.get(file.name) || null
+      }))
+      .filter(item => item.dataSet !== null);
+  };
+
+  // 현재 선택된 파일이 이미지 파일인지 확인 (useMemo로 최적화)
+  const hasImageFiles = useMemo(() => {
+    return selectedFiles.some(file => {
+      const fileName = file.name.toLowerCase();
+      return fileName.match(/\.(jpg|jpeg|png|bmp|tiff|tif|gif)$/);
+    });
+  }, [selectedFiles]);
+
+  // 활성 뷰포트에서 도구 사용 가능 여부 확인
+  const isToolAvailableInActiveViewport = (toolName: string) => {
+    const activeViewportState = getActiveViewportToolState();
+    
+    if (!activeViewportId || !activeViewportState) {
+      return false;
     }
-  }, [activeTool, setActiveTool]);
+    
+    // 이미지 파일에서는 모든 도구 비활성화 (Canvas 직접 렌더링으로 CornerstoneJS 도구 사용 불가)
+    if (activeViewportState.fileType === 'image') {
+      return false;
+    }
+    
+    // DICOM 파일에서만 도구 사용 가능
+    if (activeViewportState.fileType === 'dicom') {
+      return activeViewportState.isToolsEnabled;
+    }
+    
+    // 파일이 로드되지 않은 경우 도구 비활성화
+    return false;
+  };
 
   // 파일 업로드 핸들러
   const handleFileUpload = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.multiple = true;
-    input.accept = ".dcm,application/dicom";
+    input.accept = ".dcm,.dicom,application/dicom,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif";
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
       if (files.length > 0) {
@@ -417,13 +504,13 @@ function App() {
           
           if (filesToAdd.length > 0) {
             handleFiles([...loadedFiles, ...filesToAdd]);
-            // 새로 추가된 첫 번째 파일을 기본으로 선택
-            setSelectedFiles([filesToAdd[0]]);
+            // 새로 추가된 모든 파일을 선택 목록에 추가 (기존 선택 유지)
+            setSelectedFiles(prev => [...prev, ...filesToAdd]);
           }
         } else {
           const errorMessage = isLoginEnabled 
             ? "Access denied: Invalid file type or insufficient permissions"
-            : "Invalid file type. Please select a DICOM file (.dcm)";
+            : "Invalid file type. Please select a DICOM file (.dcm) or image file (.jpg, .png, etc.)";
           setError(errorMessage);
         }
       }
@@ -457,29 +544,35 @@ function App() {
 
     console.log("✅ 모든 상태 초기화 완료");
 
-    const dicomFiles = files.filter(
-      (file) =>
-        file.name.toLowerCase().endsWith(".dcm") ||
-        file.type === "application/dicom"
+    const supportedFiles = files.filter(
+      (file) => {
+        const fileName = file.name.toLowerCase();
+        return (
+          fileName.endsWith(".dcm") ||
+          fileName.endsWith(".dicom") ||
+          file.type === "application/dicom" ||
+          fileName.match(/\.(jpg|jpeg|png|bmp|tiff|tif|gif)$/)
+        );
+      }
     );
 
-    if (dicomFiles.length === 0) {
-      setError("DICOM 파일이 없습니다. .dcm 파일을 선택해주세요.");
+    if (supportedFiles.length === 0) {
+      setError("지원되는 파일이 없습니다. DICOM (.dcm) 또는 이미지 파일 (.jpg, .png 등)을 선택해주세요.");
       return;
     }
 
     try {
-      console.log(`📁 ${dicomFiles.length}개의 DICOM 파일 처리 시작`);
+      console.log(`📁 ${supportedFiles.length}개의 파일 처리 시작`);
 
       // 4단계: 새로운 로딩 시작 (잠시 대기 후 실행으로 상태 변화 보장)
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       setIsLoading(true);
-      setLoadedFiles(dicomFiles);
+      setLoadedFiles(supportedFiles);
 
-      console.log("🎯 DicomRenderer로 파일 전달 완료");
+      console.log("🎯 MultiViewportRenderer로 파일 전달 완료");
 
-      // DicomRenderer에서 실제 렌더링이 수행됩니다
+      // MultiViewportRenderer에서 실제 렌더링이 수행됩니다
       // 로딩 상태는 onRenderingSuccess/onRenderingError 콜백에서 해제됩니다
     } catch (error) {
       console.error("❌ 파일 처리 중 오류:", error);
@@ -534,13 +627,13 @@ function App() {
       
       if (filesToAdd.length > 0) {
         handleFiles([...loadedFiles, ...filesToAdd]);
-        // 새로 추가된 첫 번째 파일을 기본으로 선택
-        setSelectedFiles([filesToAdd[0]]);
+        // 새로 추가된 모든 파일을 선택 목록에 추가 (기존 선택 유지)
+        setSelectedFiles(prev => [...prev, ...filesToAdd]);
       }
     } else {
       const errorMessage = isLoginEnabled 
         ? "Access denied: Invalid file type or insufficient permissions"
-        : "Invalid file type. Please select a DICOM file (.dcm)";
+        : "Invalid file type. Please select a DICOM file (.dcm) or image file (.jpg, .png, etc.)";
       setError(errorMessage);
     }
   };
@@ -727,95 +820,134 @@ function App() {
 
                 {/* Series Information */}
                 <div className="sidebar-section">
-                  <h3 className="sidebar-section-title">
-                    <FileText size={16} />
-{t('seriesInfo')}
+                  <h3 className="sidebar-section-title" style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "space-between" 
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <FileText size={16} />
+                      {t('seriesInfo')}
+                    </div>
+                    {/* DICOM Tag Button */}
+                    {loadedFiles.some(file => {
+                      const fileName = file.name.toLowerCase();
+                      return fileName.endsWith('.dcm') || fileName.endsWith('.dicom');
+                    }) && (
+                      <button
+                        onClick={() => setIsMetaModalOpen(!isMetaModalOpen)}
+                        style={{
+                          ...commonButtonStyle,
+                          padding: "4px 6px",
+                          backgroundColor: isMetaModalOpen ? "#dc2626" : "#059669",
+                          color: "white",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = isMetaModalOpen ? "#b91c1c" : "#047857";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = isMetaModalOpen ? "#dc2626" : "#059669";
+                        }}
+                        title="View DICOM Tags"
+                      >
+                        <Tag size={12} />
+                        Tags
+                      </button>
+                    )}
                   </h3>
                   {loadedFiles.length > 0 ? (
                     <div className="series-info">
-                      <div className="info-item">
-                        <label>{t('loadedFiles')}:</label>
-                        <span>{loadedFiles.length}{t('files')}</span>
-                      </div>
-                      <div className="info-item">
-                        <label>{t('renderingStatus')}:</label>
-                        <span
-                          style={{
-                            color: renderingSuccess
-                              ? "#10b981"
-                              : isLoading
-                              ? "#f59e0b"
-                              : "#ef4444",
+                      {/* File Selection List - Previous Viewport Management Style */}
+                      <div className="file-selection-list">
+                        {loadedFiles.map((file, index) => (
+                          <div key={index} className="file-selection-item" style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "8px",
+                            backgroundColor: selectedFiles.includes(file) ? "#3b82f6" : "#374151",
+                            borderRadius: "6px",
+                            marginBottom: "4px",
+                            cursor: "pointer",
                           }}
-                        >
-                          {renderingSuccess
-                            ? `✅ ${t('success')}`
-                            : isLoading
-                            ? `⏳ ${t('processing')}`
-                            : `❌ ${t('failed')}`}
-                        </span>
-                      </div>
-                      {loadedFiles.slice(0, 3).map((file, index) => (
-                        <div key={index} className="info-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div>
-                            <label>{t('fileNumber').replace('{number}', String(index + 1))}:</label>
-                            <span>{file.name}</span>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const newFiles = loadedFiles.filter((_, i) => i !== index);
-                              setLoadedFiles(newFiles);
-                              // 선택된 파일에서도 제거
-                              setSelectedFiles(prev => prev.filter(f => f !== file));
-                              // 파일이 모두 삭제되면 상태 초기화
-                              if (newFiles.length === 0) {
-                                setRenderingSuccess(false);
-                                setError(null);
-                                clearAllAnnotations();
+                          onClick={() => {
+                            if (selectedFiles.includes(file)) {
+                              setSelectedFiles(selectedFiles.filter(f => f !== file));
+                            } else {
+                              const maxFiles = 4; // 최대 4개 파일 지원
+                              if (selectedFiles.length < maxFiles) {
+                                setSelectedFiles([...selectedFiles, file]);
                               }
-                            }}
-                            style={{
-                              ...commonButtonStyle,
-                              color: "#ef4444",
-                              padding: "2px 4px",
-                              borderRadius: "4px",
+                            }
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedFiles.includes(file)}
+                              onChange={() => {}}
+                              style={{ marginRight: "8px" }}
+                            />
+                            <span style={{ 
                               fontSize: "12px",
-                              marginLeft: "8px",
-                            }}
-                            title="Remove file"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ))}
-                      {loadedFiles.length > 3 && (
-                        <div className="info-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span>{t('andMoreFiles').replace('{count}', String(loadedFiles.length - 3))}</span>
-                          <button
-                            onClick={() => {
-                              setLoadedFiles([]);
-                              setSelectedFiles([]);
-                              setRenderingSuccess(false);
-                              setError(null);
-                              clearAllAnnotations();
-                            }}
-                            style={{
-                              ...commonButtonStyle,
-                              backgroundColor: "#ef4444",
-                              color: "white",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "11px",
-                              marginLeft: "8px",
-                            }}
-                            title="Clear all files"
-                          >
-                            Clear All
-                          </button>
-                        </div>
-                      )}
+                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
+                              marginRight: "8px",
+                              fontWeight: "bold"
+                            }}>
+                              {selectedFiles.includes(file) ? selectedFiles.indexOf(file) + 1 : ''}
+                            </span>
+                            <span style={{ 
+                              fontSize: "12px",
+                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap"
+                            }}>
+                              {file.name}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newFiles = loadedFiles.filter(f => f !== file);
+                                setLoadedFiles(newFiles);
+                                setSelectedFiles(prev => prev.filter(f => f !== file));
+                                // 파일이 모두 삭제되면 상태 초기화
+                                if (newFiles.length === 0) {
+                                  setRenderingSuccess(false);
+                                  setError(null);
+                                  clearAllAnnotations();
+                                }
+                              }}
+                              style={{
+                                ...commonButtonStyle,
+                                color: "#ef4444",
+                                padding: "2px 4px",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                marginLeft: "8px",
+                              }}
+                              title="Remove file"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                       
-                      {/* 전체 파일 삭제 버튼 */}
+                      <div style={{ 
+                        fontSize: "11px", 
+                        color: "#9ca3af", 
+                        marginTop: "8px",
+                        textAlign: "center"
+                      }}>
+{t('layoutAutoAdapt')}
+                      </div>
+                      
+                      {/* Clear All Files Button */}
                       {loadedFiles.length > 0 && (
                         <div className="info-item" style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #404040" }}>
                           <button
@@ -842,7 +974,7 @@ function App() {
                             title="Clear all files"
                           >
                             <X size={14} />
-                            Clear All Files ({loadedFiles.length})
+{t('clearAllFilesCount').replace('{count}', loadedFiles.length.toString())}
                           </button>
                         </div>
                       )}
@@ -903,142 +1035,6 @@ function App() {
                 </div>
 
                 {/* Multi-File Selection */}
-                {loadedFiles.length >= 1 && (
-                  <div className="sidebar-section">
-                    <h3 className="sidebar-section-title">
-                      <Grid size={16} />
-                      Viewport 관리
-                    </h3>
-                    <div className="file-selection-section">
-                      <div className="layout-buttons" style={{ marginBottom: "12px" }}>
-                        <button
-                          onClick={() => setViewportLayout('1x')}
-                          className={`layout-btn ${viewportLayout === '1x' ? 'active' : ''}`}
-                          style={{
-                            ...commonButtonStyle,
-                            padding: "8px 12px",
-                            backgroundColor: viewportLayout === '1x' ? "#3b82f6" : "#6b7280",
-                            color: "white",
-                            borderRadius: "6px",
-                            fontSize: "12px",
-                            marginRight: "8px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <Monitor size={14} />
-                          1x
-                        </button>
-                        <button
-                          onClick={() => setViewportLayout('2x')}
-                          className={`layout-btn ${viewportLayout === '2x' ? 'active' : ''}`}
-                          style={{
-                            ...commonButtonStyle,
-                            padding: "8px 12px",
-                            backgroundColor: viewportLayout === '2x' ? "#3b82f6" : "#6b7280",
-                            color: "white",
-                            borderRadius: "6px",
-                            fontSize: "12px",
-                            marginRight: "8px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <Grid size={14} />
-                          2x
-                        </button>
-                      </div>
-                      
-                      {loadedFiles.length > 1 && (
-                        <div className="file-selection-list">
-                        {loadedFiles.map((file, index) => (
-                          <div key={index} className="file-selection-item" style={{
-                            display: "flex",
-                            alignItems: "center",
-                            padding: "8px",
-                            backgroundColor: selectedFiles.includes(file) ? "#3b82f6" : "#374151",
-                            borderRadius: "6px",
-                            marginBottom: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => {
-                            if (selectedFiles.includes(file)) {
-                              setSelectedFiles(selectedFiles.filter(f => f !== file));
-                            } else {
-                              const maxFiles = viewportLayout === '2x2' ? 4 : viewportLayout === '1x2' ? 2 : 1;
-                              if (selectedFiles.length < maxFiles) {
-                                setSelectedFiles([...selectedFiles, file]);
-                              }
-                            }
-                          }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedFiles.includes(file)}
-                              onChange={() => {}}
-                              style={{ marginRight: "8px" }}
-                            />
-                            <span style={{ 
-                              fontSize: "12px",
-                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
-                              marginRight: "8px",
-                              fontWeight: "bold"
-                            }}>
-                              {selectedFiles.includes(file) ? selectedFiles.indexOf(file) + 1 : ''}
-                            </span>
-                            <span style={{ 
-                              fontSize: "12px",
-                              color: selectedFiles.includes(file) ? "white" : "#d1d5db",
-                              flex: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap"
-                            }}>
-                              {file.name}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newFiles = loadedFiles.filter(f => f !== file);
-                                setLoadedFiles(newFiles);
-                                setSelectedFiles(prev => prev.filter(f => f !== file));
-                                // 파일이 모두 삭제되면 상태 초기화
-                                if (newFiles.length === 0) {
-                                  setRenderingSuccess(false);
-                                  setError(null);
-                                  clearAllAnnotations();
-                                }
-                              }}
-                              style={{
-                                ...commonButtonStyle,
-                                color: "#ef4444",
-                                padding: "2px 4px",
-                                borderRadius: "4px",
-                                fontSize: "12px",
-                                marginLeft: "8px",
-                              }}
-                              title="Remove file"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                        </div>
-                      )}
-                      
-                      <div style={{ 
-                        fontSize: "11px", 
-                        color: "#9ca3af", 
-                        marginTop: "8px",
-                        textAlign: "center"
-                      }}>
-                        {viewportLayout === '2x' ? 'Select up to 4 files for 2x layout' : 
-                         '1x layout adapts to selected files (1x1→1x2→1x3→1x4)'}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* 주석 정보 */}
                 <div
@@ -1297,7 +1293,7 @@ function App() {
                     style={{
                       ...commonButtonStyle,
                       color: "#10b981",
-                      fontSize: "8px",
+                      fontSize: "10px",
                       textDecoration: "underline",
                       padding: "2px 0",
                       transition: "color 0.2s",
@@ -1330,7 +1326,7 @@ function App() {
                     style={{
                       ...commonButtonStyle,
                       color: "#3b82f6",
-                      fontSize: "8px",
+                      fontSize: "10px",
                       textDecoration: "underline",
                       padding: "2px 0",
                       transition: "color 0.2s",
@@ -1354,6 +1350,23 @@ function App() {
           <main className={`main-content ${sidebarOpen ? "with-sidebar" : ""}`}>
             {/* Toolbar */}
             <div className="toolbar">
+              {/* Image File Notice */}
+              {hasImageFiles && (
+                <div style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #f59e0b',
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  color: '#92400e',
+                  textAlign: 'center'
+                }}>
+{t('imageFileSelected')}
+                </div>
+              )}
+              
               {/* Basic Tools Section */}
               <div className="toolbar-section">
                 <label className="toolbar-label">{t('basicTools')}</label>
@@ -1389,10 +1402,10 @@ function App() {
                           activeTool === tool ? "active" : ""
                         }`}
                         onClick={() => {
-                          setActiveTool(tool);
+                          handleToolSelection(tool);
                           trackDicomViewerEvents.toolUsage(tool);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || !isToolAvailableInActiveViewport(tool)}
                         title={tooltipWithShortcut}
                         style={commonButtonStyle}
                       >
@@ -1438,10 +1451,10 @@ function App() {
                           activeTool === tool ? "active" : ""
                         }`}
                         onClick={() => {
-                          setActiveTool(tool);
+                          handleToolSelection(tool);
                           trackDicomViewerEvents.toolUsage(tool);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || !isToolAvailableInActiveViewport(tool)}
                         title={tooltipWithShortcut}
                         style={commonButtonStyle}
                       >
@@ -1482,10 +1495,10 @@ function App() {
                           activeTool === tool ? "active" : ""
                         }`}
                         onClick={() => {
-                          setActiveTool(tool);
+                          handleToolSelection(tool);
                           trackDicomViewerEvents.toolUsage(tool);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || !isToolAvailableInActiveViewport(tool)}
                         title={tooltipWithShortcut}
                         style={commonButtonStyle}
                       >
@@ -1521,10 +1534,10 @@ function App() {
                           activeTool === tool ? "active" : ""
                         }`}
                         onClick={() => {
-                          setActiveTool(tool);
+                          handleToolSelection(tool);
                           trackDicomViewerEvents.toolUsage(tool);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || !isToolAvailableInActiveViewport(tool)}
                         title={tooltipWithShortcut}
                         style={commonButtonStyle}
                       >
@@ -1561,10 +1574,10 @@ function App() {
                           activeTool === tool ? "active" : ""
                         }`}
                         onClick={() => {
-                          setActiveTool(tool);
+                          handleToolSelection(tool);
                           trackDicomViewerEvents.toolUsage(tool);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || !isToolAvailableInActiveViewport(tool)}
                         title={tooltipWithShortcut}
                         style={commonButtonStyle}
                       >
@@ -1682,7 +1695,19 @@ function App() {
               <div className="viewport-container-inner">
                 {/* Viewport info */}
                 <div className="viewport-info">
-                  <span className="engine-indicator">Tool: {activeTool}</span>
+                  <span className="engine-indicator">
+                    Tool: {activeTool}
+                    {activeViewportId && (
+                      <>
+                        {" | "}
+                        Active: {activeViewportId}
+                        {(() => {
+                          const state = getActiveViewportToolState();
+                          return state ? ` (${state.fileType}, ${state.isToolsEnabled ? 'tools enabled' : 'tools disabled'})` : '';
+                        })()}
+                      </>
+                    )}
+                  </span>
                 </div>
 
                 {/* Drop Zone Overlay */}
@@ -1705,10 +1730,29 @@ function App() {
                 }}>
                   {loadedFiles.length > 0 && !isDragging && (
                     <DicomErrorBoundary>
-                      <DicomRenderer
-                        files={selectedFiles.length > 0 ? selectedFiles : [loadedFiles[0]]}
+                      {/* 🔍 디버그 정보 */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div style={{ 
+                          position: 'absolute', 
+                          top: '10px', 
+                          left: '10px', 
+                          background: 'rgba(0,0,0,0.8)', 
+                          color: 'white', 
+                          padding: '8px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px',
+                          zIndex: 1000 
+                        }}>
+                          Files: {loadedFiles.length} | Selected: {selectedFiles.length} | Layout: auto
+                        </div>
+                      )}
+                      <MultiViewportRenderer
+                        files={loadedFiles}
+                        selectedFiles={selectedFiles}
+                        layout="auto"
                         onError={handleRenderingError}
                         onSuccess={handleRenderingSuccess}
+                        onDicomDataSet={handleDicomDataSet}
                       />
                     </DicomErrorBoundary>
                   )}
@@ -1733,6 +1777,7 @@ function App() {
                       isOpen={true}
                       onClose={() => setIsMetaModalOpen(false)}
                       dataSet={currentDicomDataSet}
+                      fileData={getFileDataForModal()}
                       inline={true}
                     />
                   </div>

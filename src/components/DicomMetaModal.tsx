@@ -4,10 +4,16 @@ import { validateAnnotationLabel } from '../utils/input-validation';
 import { useUIStore } from '../store/uiStore';
 import { useTranslation } from '../utils/i18n';
 
+interface DicomFileData {
+  fileName: string;
+  dataSet: any;
+}
+
 interface DicomMetaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  dataSet: any;
+  dataSet?: any; // 기존 단일 파일 모드 호환성
+  fileData?: DicomFileData[]; // 새로운 다중 파일 모드
   inline?: boolean; // inline 모드 추가
 }
 
@@ -163,14 +169,19 @@ const commonButtonStyle = {
   lineHeight: 'inherit'
 };
 
-export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet, inline = false }) => {
+export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose, dataSet, fileData, inline = false }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [copiedTag, setCopiedTag] = React.useState<string | null>(null);
+  const [activeTabIndex, setActiveTabIndex] = React.useState(0);
   
   // 번역 기능 추가
   const { currentLanguage } = useUIStore();
   const { t } = useTranslation(currentLanguage);
   const [searchError, setSearchError] = React.useState<string | null>(null);
+
+  // 다중 파일 모드 또는 단일 파일 모드 결정
+  const isMultiFileMode = fileData && fileData.length > 0;
+  const currentDataSet = isMultiFileMode ? fileData[activeTabIndex]?.dataSet : dataSet;
 
   if (!isOpen) return null;
 
@@ -202,27 +213,27 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
   const extractDicomTags = (): DicomTag[] => {
     const tags: DicomTag[] = [];
     
-    if (!dataSet || !dataSet.elements) {
+    if (!currentDataSet || !currentDataSet.elements) {
       return tags;
     }
 
-    Object.keys(dataSet.elements).forEach(tagKey => {
-      const element = dataSet.elements[tagKey];
+    Object.keys(currentDataSet.elements).forEach(tagKey => {
+      const element = currentDataSet.elements[tagKey];
       
       try {
         let value = '';
         
         // 다양한 VR(Value Representation) 타입에 따른 값 추출
         if (element.vr === 'US' || element.vr === 'UL') {
-          value = dataSet.uint16(tagKey)?.toString() || dataSet.uint32(tagKey)?.toString() || '';
+          value = currentDataSet.uint16(tagKey)?.toString() || currentDataSet.uint32(tagKey)?.toString() || '';
         } else if (element.vr === 'FL' || element.vr === 'FD') {
-          value = dataSet.float(tagKey)?.toString() || dataSet.double(tagKey)?.toString() || '';
+          value = currentDataSet.float(tagKey)?.toString() || currentDataSet.double(tagKey)?.toString() || '';
         } else if (element.vr === 'SQ') {
           value = t('sequenceData');
         } else if (element.vr === 'OB' || element.vr === 'OW') {
           value = t('binaryData');
         } else {
-          value = dataSet.string(tagKey) || '';
+          value = currentDataSet.string(tagKey) || '';
         }
 
         // 긴 값은 잘라서 표시
@@ -305,7 +316,7 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
       {/* 스크롤바 스타일 추가 */}
       <style>{scrollContainerStyle}</style>
       
-      <div className="rounded-lg shadow-xl flex flex-col" style={{
+      <div className="rounded-lg shadow-xl" style={{
         width: '100%',
         height: '100%',
         maxWidth: 'none',
@@ -314,10 +325,18 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
         minHeight: inline ? 'auto' : '500px',
         backgroundColor: '#222222',
         color: '#ffffff',
-        padding: '40px'
+        padding: '40px',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* 모달 헤더 */}
-        <div className="border-b" style={{ borderColor: '#374151', paddingBottom: '16px', marginBottom: '16px', position: 'relative' }}>
+        <div className="border-b" style={{ 
+          borderColor: '#374151', 
+          paddingBottom: '16px', 
+          marginBottom: '16px', 
+          position: 'relative',
+          flexShrink: 0 // 헤더 크기 고정
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <FileText className="text-blue-400" size={24} />
             <h2 className="text-xl font-semibold text-white">{t('dicomMetaTags')}</h2>
@@ -351,8 +370,66 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
           </button>
         </div>
 
+        {/* 탭 메뉴 (다중 파일 모드일 때만 표시) */}
+        {isMultiFileMode && (
+          <div style={{ 
+            borderBottom: '1px solid #374151', 
+            marginBottom: '16px',
+            paddingBottom: '0',
+            flexShrink: 0 // 탭 크기 고정
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              overflowX: 'auto',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#4a5568 #2d3748'
+            }}>
+              {fileData?.map((file, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveTabIndex(index)}
+                  style={{
+                    ...commonButtonStyle,
+                    padding: '8px 16px',
+                    backgroundColor: activeTabIndex === index ? '#3b82f6' : 'transparent',
+                    color: activeTabIndex === index ? 'white' : '#9ca3af',
+                    borderBottom: activeTabIndex === index ? '2px solid #3b82f6' : '2px solid transparent',
+                    borderRadius: '0',
+                    whiteSpace: 'nowrap',
+                    fontSize: '14px',
+                    fontWeight: activeTabIndex === index ? '600' : '400',
+                    transition: 'all 0.2s',
+                    minWidth: '120px',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTabIndex !== index) {
+                      e.currentTarget.style.backgroundColor = '#374151';
+                      e.currentTarget.style.color = '#ffffff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTabIndex !== index) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    }
+                  }}
+                  title={file.fileName}
+                >
+                  {file.fileName.length > 15 ? `${file.fileName.substring(0, 15)}...` : file.fileName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 검색 바 */}
-        <div className="border-b" style={{ borderColor: '#374151', paddingBottom: '16px', marginBottom: '16px' }}>
+        <div className="border-b" style={{ 
+          borderColor: '#374151', 
+          paddingBottom: '16px', 
+          marginBottom: '16px',
+          flexShrink: 0 // 검색바 크기 고정
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Search className="text-gray-400" size={16} />
             <input
@@ -383,28 +460,69 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
 
         {/* 테이블 컨테이너 - 완벽한 스크롤 구현 */}
         <div 
-          className="flex-1 meta-tag-scroll-container" 
+          className="meta-tag-scroll-container" 
           style={{
-            height: 'calc(100% - 120px)', // 헤더와 검색바만 제외한 높이 계산
+            flex: 1, // 남은 공간을 모두 차지
+            overflowY: 'auto', // 세로 스크롤 활성화
+            overflowX: 'hidden', // 가로 스크롤 숨김
             minHeight: '200px' // 최소 높이 보장
           }}
         >
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse" style={{ 
+            display: 'table',
+            tableLayout: 'fixed', // 고정 레이아웃으로 열 너비 제어
+            width: '100%'
+          }}>
             <thead className="sticky top-0" style={{ backgroundColor: '#1f2937' }}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
+                <th 
+                  className="text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" 
+                  style={{ 
+                    borderColor: '#374151',
+                    padding: '12px 4px',
+                    width: '120px' // 고정 너비
+                  }}
+                >
                   {t('tagId')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
+                <th 
+                  className="text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" 
+                  style={{ 
+                    borderColor: '#374151',
+                    padding: '12px 4px',
+                    width: '50px' // 고정 너비
+                  }}
+                >
                   VR
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
+                <th 
+                  className="text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" 
+                  style={{ 
+                    borderColor: '#374151',
+                    padding: '12px 4px',
+                    width: '200px' // 고정 너비
+                  }}
+                >
                   {t('tagName')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
+                <th 
+                  className="text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b" 
+                  style={{ 
+                    borderColor: '#374151',
+                    padding: '12px 4px',
+                    width: 'auto' // 나머지 공간을 모두 차지
+                  }}
+                >
                   {t('value')}
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b" style={{ borderColor: '#374151' }}>
+                <th 
+                  className="text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b" 
+                  style={{ 
+                    borderColor: '#374151',
+                    padding: '12px 4px',
+                    width: '60px' // 고정 너비
+                  }}
+                >
                   {t('copy')}
                 </th>
               </tr>
@@ -415,19 +533,63 @@ export const DicomMetaModal: React.FC<DicomMetaModalProps> = ({ isOpen, onClose,
                   backgroundColor: index % 2 === 0 ? '#2d3748' : '#374151',
                   borderBottomColor: '#4a5568'
                 }}>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-200">
+                  <td 
+                    className="text-sm font-mono text-gray-200"
+                    style={{ 
+                      padding: '12px 4px',
+                      width: '120px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
                     ({tag.tag.substring(0, 4)},{tag.tag.substring(4, 8)})
                   </td>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-300">
+                  <td 
+                    className="text-sm font-mono text-gray-300"
+                    style={{ 
+                      padding: '12px 4px',
+                      width: '50px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
                     {tag.vr}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-200">
+                  <td 
+                    className="text-sm text-gray-200"
+                    style={{ 
+                      padding: '12px 4px',
+                      width: '200px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title={tag.name}
+                  >
                     {tag.name}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-300 max-w-md">
-                    <div className="break-words">{tag.value}</div>
+                  <td 
+                    className="text-sm text-gray-300"
+                    style={{ 
+                      padding: '12px 4px',
+                      width: 'auto',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title={tag.value}
+                  >
+                    {tag.value}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td 
+                    className="text-center"
+                    style={{ 
+                      padding: '12px 4px',
+                      width: '60px'
+                    }}
+                  >
                     <button
                       onClick={() => copyToClipboard(`${tag.name}: ${tag.value}`, tag.tag)}
                       className={`rounded transition-colors ${

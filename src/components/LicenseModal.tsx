@@ -497,7 +497,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
           <div style={{ textAlign: "center" }}>
             <p
               style={{
-                fontSize: "8px",
+                fontSize: "10px",
                 color: "#9ca3af",
                 marginBottom: "4px",
                 margin: 0,
@@ -505,7 +505,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
             >
               {t('licenseDescription')}
             </p>
-            <p style={{ fontSize: "8px", color: "#6b7280", margin: 0 }}>
+            <p style={{ fontSize: "10px", color: "#6b7280", margin: 0 }}>
               {t('licenseConditions')}
             </p>
           </div>

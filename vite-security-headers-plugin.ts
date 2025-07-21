@@ -30,6 +30,7 @@ const defaultConfig: SecurityHeadersConfig = {
       "'self'",
       "'unsafe-inline'", // Required for some medical imaging libraries
       "'unsafe-eval'", // Required for WebAssembly in Cornerstone3D
+      "'wasm-unsafe-eval'", // Required for WebAssembly evaluation
       'blob:', // Required for web workers
       'data:', // Required for inline data
     ],
@@ -51,6 +52,7 @@ const defaultConfig: SecurityHeadersConfig = {
       "'self'",
       'https:', // Allow HTTPS connections for DICOM servers
       'wss:', // Allow WebSocket connections
+      'data:', // Required for WASM data URLs in DICOM processing
     ],
     'worker-src': [
       "'self'",
@@ -315,6 +317,7 @@ export const medicalCSPConfig: Record<string, string[]> = {
     "'self'",
     "'unsafe-inline'", // Required for Cornerstone3D dynamic script generation
     "'unsafe-eval'", // Required for WebAssembly processing and Cornerstone3D
+    "'wasm-unsafe-eval'", // Required for WebAssembly evaluation
     'blob:', // Required for web workers (DICOM image processing)
     'data:', // Required for inline scripts in medical libraries
     'https://cdn.skypack.dev', // Required for dynamic imports in capture functionality
@@ -337,6 +340,7 @@ export const medicalCSPConfig: Record<string, string[]> = {
     'wss:', // WebSocket connections for real-time medical data
     'ws:', // WebSocket connections (development)
     'blob:', // Blob URL connections
+    'data:', // Required for WASM data URLs in DICOM processing
   ],
   'worker-src': [
     "'self'",
