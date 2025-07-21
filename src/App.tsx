@@ -206,10 +206,46 @@ function App() {
     isFlippedVertical,
     currentDicomDataSet,
     captureViewportAsPng,
+    activeViewportId: viewportStoreActiveId,
+    setActiveViewport: setActiveViewportInStore,
   } = useViewportStore();
 
   // 번역 함수
   const { t } = useTranslation(currentLanguage);
+
+  // 활성 뷰포트 확인 및 자동 설정 안전장치
+  const ensureActiveViewport = () => {
+    if (!activeViewportId && !viewportStoreActiveId) {
+      // 첫 번째 사용 가능한 뷰포트를 찾아서 활성화
+      const firstViewport = selectedFiles.length <= 1 ? 'single-viewport' : 'viewport-0';
+      console.log(`🔧 활성 뷰포트가 없음. ${firstViewport}를 자동 설정`);
+      setActiveViewportInStore(firstViewport);
+      return firstViewport;
+    }
+    return activeViewportId || viewportStoreActiveId;
+  };
+
+  // 안전한 이미지 변환 함수들
+  const safeFlipImage = (direction: 'horizontal' | 'vertical') => {
+    ensureActiveViewport();
+    flipImage(direction);
+  };
+
+  const safeRotateImage = (direction: 'left' | 'right') => {
+    ensureActiveViewport();
+    rotateImage(direction);
+  };
+
+  const safeCaptureViewport = () => {
+    console.log("📸 화면 캡처 버튼 클릭됨");
+    ensureActiveViewport();
+    captureViewportAsPng();
+  };
+
+  const safeResetImageTransform = () => {
+    ensureActiveViewport();
+    resetImageTransform();
+  };
 
   // 뷰포트 기반 도구 선택 함수
   const handleToolSelection = (toolName: string) => {
@@ -806,12 +842,12 @@ function App() {
                           e.currentTarget.style.backgroundColor = "#3b82f6";
                         }
                       }}
-                      title={loadedFiles.length >= 4 ? "Maximum 4 files reached" : t('upload')}
+                      title={loadedFiles.length >= 4 ? t('maxFilesReached') : t('upload')}
                     >
                       <Upload size={16} />
                       <span>
-                        {loadedFiles.length >= 4 ? `Max Files (${loadedFiles.length}/4)` : 
-                         loadedFiles.length > 0 ? `Add More (${loadedFiles.length}/4)` : 
+                        {loadedFiles.length >= 4 ? `${t('maxFiles')} (${loadedFiles.length}/4)` : 
+                         loadedFiles.length > 0 ? `${t('addMore')} (${loadedFiles.length}/4)` : 
                          t('upload')}
                       </span>
                     </button>
@@ -979,55 +1015,6 @@ function App() {
                         </div>
                       )}
 
-                      {/* Meta Tag 토글 버튼 */}
-                      {renderingSuccess && currentDicomDataSet && (
-                        <div
-                          className="info-item"
-                          style={{ marginTop: "12px" }}
-                        >
-                          <button
-                            onClick={() => setIsMetaModalOpen(!isMetaModalOpen)}
-                            style={{
-                              ...commonButtonStyle,
-                              width: "100%",
-                              padding: "8px 12px",
-                              backgroundColor: isMetaModalOpen
-                                ? "#dc2626"
-                                : "#059669",
-                              color: "white",
-                              borderRadius: "6px",
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "8px",
-                              transition: "background-color 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                isMetaModalOpen ? "#b91c1c" : "#047857";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                isMetaModalOpen ? "#dc2626" : "#059669";
-                            }}
-                            title={
-                              isMetaModalOpen
-                                ? t('closeMetaTagWindow')
-                                : t('allMetaTags')
-                            }
-                          >
-                            <Tag size={14} />
-                            <span>
-                              {isMetaModalOpen
-                                ? t('closeMetaModal')
-                                : t('viewMetaTags')}
-                            </span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <p className="no-data">{t('fileNotLoaded')}</p>
@@ -1067,7 +1054,7 @@ function App() {
                       >
                         {annotations.map((annotation, index) => (
                           <div
-                            key={annotation.annotationUID}
+                            key={`app-${index}-${annotation.annotationUID}`}
                             className="annotation-item"
                             style={{
                               marginBottom: "4px",
@@ -1596,7 +1583,7 @@ function App() {
                     className={`toolbar-button ${
                       isFlippedHorizontal ? "active" : ""
                     }`}
-                    onClick={() => flipImage("horizontal")}
+                    onClick={() => safeFlipImage("horizontal")}
                     disabled={isLoading}
                     title={t('flipHorizontal')}
                     style={commonButtonStyle}
@@ -1607,7 +1594,7 @@ function App() {
                     className={`toolbar-button ${
                       isFlippedVertical ? "active" : ""
                     }`}
-                    onClick={() => flipImage("vertical")}
+                    onClick={() => safeFlipImage("vertical")}
                     disabled={isLoading}
                     title={t('flipVertical')}
                     style={commonButtonStyle}
@@ -1616,7 +1603,7 @@ function App() {
                   </button>
                   <button
                     className="toolbar-button"
-                    onClick={() => rotateImage("left")}
+                    onClick={() => safeRotateImage("left")}
                     disabled={isLoading}
                     title={t('rotateCounterclockwise')}
                     style={commonButtonStyle}
@@ -1625,7 +1612,7 @@ function App() {
                   </button>
                   <button
                     className="toolbar-button"
-                    onClick={() => rotateImage("right")}
+                    onClick={() => safeRotateImage("right")}
                     disabled={isLoading}
                     title={t('rotateClockwise')}
                     style={commonButtonStyle}
@@ -1634,7 +1621,7 @@ function App() {
                   </button>
                   <button
                     className="toolbar-button"
-                    onClick={resetImageTransform}
+                    onClick={safeResetImageTransform}
                     disabled={isLoading}
                     title={t('reset')}
                     style={commonButtonStyle}
@@ -1643,10 +1630,7 @@ function App() {
                   </button>
                   <button
                     className="toolbar-button"
-                    onClick={() => {
-                      console.log("📸 화면 캡처 버튼 클릭됨");
-                      captureViewportAsPng();
-                    }}
+                    onClick={safeCaptureViewport}
                     disabled={isLoading || !renderingSuccess}
                     title={t('capture')}
                     style={commonButtonStyle}

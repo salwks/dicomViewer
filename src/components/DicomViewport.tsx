@@ -74,7 +74,8 @@ const DicomViewportComponent = ({
   } = useAnnotationStore();
 
   const {
-    currentDicomDataSet
+    currentDicomDataSet,
+    setActiveViewport: setActiveViewportInStore
   } = useViewportStore();
 
   /**
@@ -295,7 +296,8 @@ const DicomViewportComponent = ({
         // 첫 번째 뷰포트(또는 단일 뷰포트)를 활성 뷰포트로 설정
         if (!activeViewportId || viewportId === 'single-viewport' || viewportId.includes('viewport-0')) {
           setActiveViewport(viewportId);
-          console.log(`🎯 ${viewportId}을(를) 활성 뷰포트로 설정`);
+          setActiveViewportInStore(viewportId);
+          console.log(`🎯 ${viewportId}을(를) 활성 뷰포트로 설정 (양쪽 스토어 동기화)`);
         }
         
         // 초기화 완료 후 상태 확인
@@ -836,7 +838,8 @@ const DicomViewportComponent = ({
   const handleViewportClick = () => {
     if (activeViewportId !== viewportId) {
       setActiveViewport(viewportId);
-      console.log(`🎯 뷰포트 ${viewportId}이(가) 활성화되었습니다`);
+      setActiveViewportInStore(viewportId);
+      console.log(`🎯 뷰포트 ${viewportId}이(가) 활성화되었습니다 (양쪽 스토어 동기화)`);
     }
   };
 

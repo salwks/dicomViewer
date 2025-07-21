@@ -82,7 +82,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             {annotations.length > 0 ? (
               <div className="annotations-list">
                 {annotations.map((annotation) => (
-                  <div key={annotation.annotationUID} className="annotation-item">
+                  <div key={`sidebar-${annotation.annotationUID}`} className="annotation-item">
                     <div className="annotation-header">
                       <span className="annotation-tool">{annotation.toolName}</span>
                       <span className="annotation-id">

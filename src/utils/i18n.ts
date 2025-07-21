@@ -123,6 +123,9 @@ export interface TranslationKeys {
   tagsDisplayed: string;
   renderingSuccessful: string;
   renderingFailed: string;
+  addMore: string;
+  maxFiles: string;
+  maxFilesReached: string;
   processing: string;
   noMetaData: string;
   metaTagInfo: string;
@@ -266,7 +269,6 @@ export interface TranslationKeys {
   zoomToolDescription: string;
   angleToolDescription: string;
   cobbAngleDescription: string;
-  maxFilesReached: string;
   removeFile: string;
   clearAllFiles: string;
   clearAllFilesCount: string;
@@ -442,6 +444,9 @@ export const translations: Record<Language, TranslationKeys> = {
     tagsDisplayed: "tags displayed",
     renderingSuccessful: "Successful",
     renderingFailed: "Failed",
+    addMore: "Add More",
+    maxFiles: "Max Files",
+    maxFilesReached: "Maximum 4 files reached",
     processing: "Processing",
     noMetaData: "No metadata available",
     metaTagInfo: "Meta Tag Information",
@@ -609,7 +614,6 @@ If you have any questions, please contact us at stra2003@gmail.com.`,
     zoomToolDescription: "Zoom Tool - Zoom in/out",
     angleToolDescription: "Angle Tool - Measure angle",
     cobbAngleDescription: "Cobb Angle Tool - Cobb angle",
-    maxFilesReached: "Maximum 4 files reached",
     removeFile: "Remove file",
     clearAllFiles: "Clear all files",
     clearAllFilesCount: "Clear All Files ({count})",
@@ -784,6 +788,9 @@ If you have any questions, please contact us at stra2003@gmail.com.`,
     tagsDisplayed: "개의 태그가 표시됨",
     renderingSuccessful: "성공",
     renderingFailed: "실패",
+    addMore: "더 추가",
+    maxFiles: "최대 파일",
+    maxFilesReached: "최대 4개 파일에 도달했습니다",
     processing: "처리 중",
     noMetaData: "메타데이터가 없습니다",
     metaTagInfo: "메타 태그 정보",
@@ -958,7 +965,6 @@ Clarity(이하 '서비스')는 이용자의 개인정보를 중요시하며, 「
     zoomToolDescription: "Zoom 도구 - 확대/축소",
     angleToolDescription: "Angle 도구 - 각도 측정",
     cobbAngleDescription: "Cobb Angle 도구 - 콥 각도",
-    maxFilesReached: "최대 4개 파일에 도달했습니다",
     removeFile: "파일 제거",
     clearAllFiles: "모든 파일 지우기",
     clearAllFilesCount: "모든 파일 지우기 ({count}개)",
@@ -1134,6 +1140,9 @@ Clarity(이하 '서비스')는 이용자의 개인정보를 중요시하며, 「
     tagsDisplayed: "個のタグが表示されています",
     renderingSuccessful: "成功",
     renderingFailed: "失敗",
+    addMore: "さらに追加",
+    maxFiles: "最大ファイル",
+    maxFilesReached: "最大4ファイルに達しました",
     processing: "処理中",
     noMetaData: "メタデータがありません",
     metaTagInfo: "メタタグ情報",
@@ -1305,7 +1314,6 @@ Google アナリティクス オプトアウト アドオン: https://tools.goog
     zoomToolDescription: "ズームツール - 拡大/縮小",
     angleToolDescription: "角度ツール - 角度測定",
     cobbAngleDescription: "コブ角ツール - コブ角",
-    maxFilesReached: "最大4ファイルに達しました",
     removeFile: "ファイル削除",
     clearAllFiles: "すべてのファイルをクリア",
     clearAllFilesCount: "すべてのファイルをクリア ({count}個)",
@@ -1480,6 +1488,9 @@ Google アナリティクス オプトアウト アドオン: https://tools.goog
     tagsDisplayed: "个标签已显示",
     renderingSuccessful: "成功",
     renderingFailed: "失败",
+    addMore: "添加更多",
+    maxFiles: "最大文件",
+    maxFilesReached: "已达到最大4个文件",
     processing: "处理中",
     noMetaData: "无元数据",
     metaTagInfo: "元标签信息",
@@ -1645,7 +1656,6 @@ Clarity（下称"我们"或"本服务"）尊重并保护所有使用服务用户
     zoomToolDescription: "缩放工具 - 放大/缩小",
     angleToolDescription: "角度工具 - 测量角度",
     cobbAngleDescription: "Cobb角度工具 - Cobb角",
-    maxFilesReached: "已达到最大4个文件",
     removeFile: "删除文件",
     clearAllFiles: "清除所有文件",
     clearAllFilesCount: "清除所有文件 ({count}个)",

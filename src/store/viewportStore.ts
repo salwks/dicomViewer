@@ -22,6 +22,13 @@ const defaultWindowLevelPresets: WindowLevelPreset[] = [
   { name: "Mediastinum", windowCenter: 50, windowWidth: 350 },
 ];
 
+// Viewport transform state interface
+export interface ViewportTransformState {
+  rotation: number;
+  isFlippedHorizontal: boolean;
+  isFlippedVertical: boolean;
+}
+
 // Viewport store interface
 export interface ViewportStoreState {
   // State
@@ -35,6 +42,9 @@ export interface ViewportStoreState {
   toolGroups: Map<string, ToolGroupConfig>;
   windowLevelPresets: WindowLevelPreset[];
   currentWindowLevel: WindowLevelConfig | null;
+  // Per-viewport transform states
+  viewportTransforms: Map<string, ViewportTransformState>;
+  // Legacy global state for backward compatibility
   currentRotation: number;
   isFlippedHorizontal: boolean;
   isFlippedVertical: boolean;
@@ -45,11 +55,17 @@ export interface ViewportStoreState {
   setLayout: (layout: LayoutType) => void;
   loadSeries: (series: SeriesInfo) => void;
   setWindowLevel: (config: WindowLevelConfig) => void;
+  // New viewport-specific transform actions
+  rotateViewport: (viewportId: string, direction: 'left' | 'right') => void;
+  flipViewport: (viewportId: string, direction: 'horizontal' | 'vertical') => void;
+  resetViewportTransform: (viewportId: string) => void;
+  getViewportTransform: (viewportId: string) => ViewportTransformState;
+  // Legacy actions for backward compatibility
   rotateImage: (direction: 'left' | 'right') => void;
   flipImage: (direction: 'horizontal' | 'vertical') => void;
   resetImageTransform: () => void;
   setDicomDataSet: (dataSet: any) => void;
-  captureViewportAsPng: () => Promise<void>;
+  captureViewportAsPng: (viewportId?: string) => Promise<void>;
   prepareViewportForCapture: (viewportId: string) => Promise<{ viewport: any; viewportElement: Element; }>;
   captureWithHTML2Canvas: (viewportElement: Element) => Promise<HTMLCanvasElement>;
   downloadCanvasAsFile: (canvas: HTMLCanvasElement) => Promise<void>;
@@ -69,6 +85,9 @@ export const useViewportStore = create<ViewportStoreState>()(
     toolGroups: new Map(),
     windowLevelPresets: defaultWindowLevelPresets,
     currentWindowLevel: null,
+    // Per-viewport transform states
+    viewportTransforms: new Map(),
+    // Legacy global state for backward compatibility
     currentRotation: 0,
     isFlippedHorizontal: false,
     isFlippedVertical: false,
@@ -76,7 +95,18 @@ export const useViewportStore = create<ViewportStoreState>()(
 
     // Actions
     setActiveViewport: (viewportId: string) => {
+      // Update active viewport
       set({ activeViewportId: viewportId });
+      
+      // Sync legacy state with the new active viewport's transform state
+      const transform = get().getViewportTransform(viewportId);
+      set({
+        currentRotation: transform.rotation,
+        isFlippedHorizontal: transform.isFlippedHorizontal,
+        isFlippedVertical: transform.isFlippedVertical
+      });
+      
+      console.log(`🎯 활성 뷰포트 변경: ${viewportId}, 변환 상태 동기화 완료`);
     },
 
     setLayout: (layout: LayoutType) => {
@@ -126,105 +156,216 @@ export const useViewportStore = create<ViewportStoreState>()(
       );
     },
 
-    rotateImage: (direction: 'left' | 'right') => {
-      const { currentRotation } = get();
-      const rotationChange = direction === 'right' ? 90 : -90;
-      const newRotation = (currentRotation + rotationChange) % 360;
+    // Helper function to get viewport transform state
+    getViewportTransform: (viewportId: string): ViewportTransformState => {
+      const { viewportTransforms } = get();
+      return viewportTransforms.get(viewportId) || {
+        rotation: 0,
+        isFlippedHorizontal: false,
+        isFlippedVertical: false
+      };
+    },
+
+    // Helper function to find rendering engine and viewport  
+    _getViewportInstance: (viewportId: string): { renderingEngine: any; viewport: any } => {
+      // Try to get the specific rendering engine for this viewport
+      const renderingEngineId = `rendering-engine-${viewportId.split('-').pop()}`;
+      let renderingEngine = (window as any)[`cornerstoneRenderingEngine_${viewportId}`] || 
+                           (window as any).cornerstoneRenderingEngine;
       
-      set({ currentRotation: newRotation });
+      if (!renderingEngine) {
+        // Try to get from getRenderingEngine
+        try {
+          renderingEngine = getRenderingEngine(renderingEngineId) || getRenderingEngine('dicom-rendering-engine');
+        } catch (error) {
+          console.warn(`No rendering engine found for ${renderingEngineId}, trying default`);
+        }
+      }
+      
+      if (!renderingEngine) {
+        throw new Error(`렌더링 엔진을 찾을 수 없습니다`);
+      }
+
+      const viewport = renderingEngine.getViewport(viewportId);
+      if (!viewport) {
+        throw new Error(`뷰포트 ${viewportId}를 찾을 수 없습니다`);
+      }
+
+      return { renderingEngine, viewport };
+    },
+
+    // New viewport-specific transform functions
+    rotateViewport: (viewportId: string, direction: 'left' | 'right') => {
+      const { viewportTransforms } = get();
+      const currentTransform = get().getViewportTransform(viewportId);
+      const rotationChange = direction === 'right' ? 90 : -90;
+      const newRotation = (currentTransform.rotation + rotationChange) % 360;
       
       try {
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (renderingEngine) {
-          const viewport = renderingEngine.getViewport("dicom-viewport");
-          if (viewport) {
-            viewport.setRotation(newRotation);
-            renderingEngine.render();
-            console.log(`🔄 이미지 회전: ${direction} (${newRotation}도)`);
+        const { renderingEngine, viewport } = get()._getViewportInstance(viewportId);
+        
+        // Apply rotation to viewport using Cornerstone3D API
+        if (viewport.setRotation) {
+          viewport.setRotation(newRotation);
+        } else {
+          // Fallback: use camera manipulation
+          const camera = viewport.getCamera();
+          if (camera) {
+            const radians = (newRotation * Math.PI) / 180;
+            const cos = Math.cos(radians);
+            const sin = Math.sin(radians);
+            const newViewUp: [number, number, number] = [cos, sin, 0];
+            viewport.setCamera({ ...camera, viewUp: newViewUp });
           }
         }
+        
+        renderingEngine.render();
+
+        // Update state
+        const updatedTransforms = new Map(viewportTransforms);
+        updatedTransforms.set(viewportId, {
+          ...currentTransform,
+          rotation: newRotation
+        });
+        set({ viewportTransforms: updatedTransforms });
+
+        // Update legacy state if this is the active viewport
+        const { activeViewportId } = get();
+        if (activeViewportId === viewportId) {
+          set({ currentRotation: newRotation });
+        }
+
+        console.log(`🔄 뷰포트 ${viewportId} 이미지 회전: ${direction} (${newRotation}도)`);
       } catch (error) {
-        console.error("이미지 회전 실패:", error);
+        console.error(`❌ 뷰포트 ${viewportId} 이미지 회전 실패:`, error);
       }
+    },
+
+    flipViewport: (viewportId: string, direction: 'horizontal' | 'vertical') => {
+      const { viewportTransforms } = get();
+      const currentTransform = get().getViewportTransform(viewportId);
+      const isHorizontal = direction === 'horizontal';
+      
+      const newTransform = {
+        ...currentTransform,
+        isFlippedHorizontal: isHorizontal ? !currentTransform.isFlippedHorizontal : currentTransform.isFlippedHorizontal,
+        isFlippedVertical: !isHorizontal ? !currentTransform.isFlippedVertical : currentTransform.isFlippedVertical
+      };
+
+      try {
+        const { renderingEngine, viewport } = get()._getViewportInstance(viewportId);
+        
+        // Apply flip using Cornerstone3D API
+        if (viewport.flip) {
+          const flipDirection = {
+            flipHorizontal: newTransform.isFlippedHorizontal,
+            flipVertical: newTransform.isFlippedVertical
+          };
+          viewport.flip(flipDirection);
+        }
+        
+        renderingEngine.render();
+
+        // Update state
+        const updatedTransforms = new Map(viewportTransforms);
+        updatedTransforms.set(viewportId, newTransform);
+        set({ viewportTransforms: updatedTransforms });
+
+        // Update legacy state if this is the active viewport
+        const { activeViewportId } = get();
+        if (activeViewportId === viewportId) {
+          set({ 
+            isFlippedHorizontal: newTransform.isFlippedHorizontal,
+            isFlippedVertical: newTransform.isFlippedVertical
+          });
+        }
+
+        console.log(`🔄 뷰포트 ${viewportId} 이미지 뒤집기: ${direction} (H:${newTransform.isFlippedHorizontal}, V:${newTransform.isFlippedVertical})`);
+      } catch (error) {
+        console.error(`❌ 뷰포트 ${viewportId} 이미지 뒤집기 실패:`, error);
+      }
+    },
+
+    resetViewportTransform: (viewportId: string) => {
+      const { viewportTransforms } = get();
+      const currentTransform = get().getViewportTransform(viewportId);
+      
+      try {
+        const { renderingEngine, viewport } = get()._getViewportInstance(viewportId);
+        
+        // Reset rotation
+        if (viewport.setRotation) {
+          viewport.setRotation(0);
+        } else {
+          // Fallback: reset camera
+          const camera = viewport.getCamera();
+          if (camera) {
+            viewport.setCamera({ ...camera, viewUp: [1, 0, 0] });
+          }
+        }
+        
+        // Reset flips by applying current flip states again (toggle off)
+        if (viewport.flip && (currentTransform.isFlippedHorizontal || currentTransform.isFlippedVertical)) {
+          const flipDirection = {
+            flipHorizontal: currentTransform.isFlippedHorizontal,
+            flipVertical: currentTransform.isFlippedVertical
+          };
+          viewport.flip(flipDirection);
+        }
+        
+        renderingEngine.render();
+
+        // Update state
+        const updatedTransforms = new Map(viewportTransforms);
+        updatedTransforms.set(viewportId, {
+          rotation: 0,
+          isFlippedHorizontal: false,
+          isFlippedVertical: false
+        });
+        set({ viewportTransforms: updatedTransforms });
+
+        // Update legacy state if this is the active viewport
+        const { activeViewportId } = get();
+        if (activeViewportId === viewportId) {
+          set({ 
+            currentRotation: 0,
+            isFlippedHorizontal: false,
+            isFlippedVertical: false
+          });
+        }
+
+        console.log(`✅ 뷰포트 ${viewportId} 이미지 변환 리셋 완료`);
+      } catch (error) {
+        console.error(`❌ 뷰포트 ${viewportId} 이미지 변환 리셋 실패:`, error);
+      }
+    },
+
+    // Legacy functions for backward compatibility - now work with active viewport
+    rotateImage: (direction: 'left' | 'right') => {
+      const { activeViewportId } = get();
+      if (!activeViewportId) {
+        console.warn("활성 뷰포트가 없습니다. 뷰포트를 먼저 선택해주세요.");
+        return;
+      }
+      get().rotateViewport(activeViewportId, direction);
     },
 
     flipImage: (direction: 'horizontal' | 'vertical') => {
-      const state = get();
-      const isHorizontal = direction === 'horizontal';
-      const newFlipState = {
-        isFlippedHorizontal: isHorizontal ? !state.isFlippedHorizontal : state.isFlippedHorizontal,
-        isFlippedVertical: !isHorizontal ? !state.isFlippedVertical : state.isFlippedVertical
-      };
-      
-      set(newFlipState);
-      
-      try {
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (renderingEngine) {
-          const viewport = renderingEngine.getViewport("dicom-viewport");
-          if (viewport) {
-            if (isHorizontal) {
-              viewport.flip({ flipHorizontal: true });
-              console.log("🔄 수평 뒤집기 실행");
-            } else {
-              viewport.flip({ flipVertical: true });
-              console.log("🔄 수직 뒤집기 실행");
-            }
-            
-            renderingEngine.render();
-            console.log(`✅ 이미지 뒤집기 성공: ${direction} (H:${newFlipState.isFlippedHorizontal}, V:${newFlipState.isFlippedVertical})`);
-          } else {
-            console.error("❌ 뷰포트를 찾을 수 없습니다");
-          }
-        } else {
-          console.error("❌ 렌더링 엔진을 찾을 수 없습니다");
-        }
-      } catch (error) {
-        console.error("❌ 이미지 뒤집기 실패:", error);
-        set({
-          isFlippedHorizontal: state.isFlippedHorizontal,
-          isFlippedVertical: state.isFlippedVertical
-        });
+      const { activeViewportId } = get();
+      if (!activeViewportId) {
+        console.warn("활성 뷰포트가 없습니다. 뷰포트를 먼저 선택해주세요.");
+        return;
       }
+      get().flipViewport(activeViewportId, direction);
     },
 
     resetImageTransform: () => {
-      const oldState = get();
-      
-      set({
-        currentRotation: 0,
-        isFlippedHorizontal: false,
-        isFlippedVertical: false
-      });
-      
-      try {
-        const renderingEngine = (window as any).cornerstoneRenderingEngine;
-        if (renderingEngine) {
-          const viewport = renderingEngine.getViewport("dicom-viewport");
-          if (viewport) {
-            viewport.setRotation(0);
-            
-            if (oldState.isFlippedHorizontal) {
-              viewport.flip({ flipHorizontal: true });
-              console.log("🔄 수평 뒤집기 리셋");
-            }
-            if (oldState.isFlippedVertical) {
-              viewport.flip({ flipVertical: true });
-              console.log("🔄 수직 뒤집기 리셋");
-            }
-            
-            renderingEngine.render();
-            console.log("✅ 이미지 변환 리셋 완료");
-          }
-        }
-      } catch (error) {
-        console.error("❌ 이미지 변환 리셋 실패:", error);
-        set({
-          currentRotation: oldState.currentRotation,
-          isFlippedHorizontal: oldState.isFlippedHorizontal,
-          isFlippedVertical: oldState.isFlippedVertical
-        });
+      const { activeViewportId } = get();
+      if (!activeViewportId) {
+        console.warn("활성 뷰포트가 없습니다. 뷰포트를 먼저 선택해주세요.");
+        return;
       }
+      get().resetViewportTransform(activeViewportId);
     },
 
     setDicomDataSet: (dataSet: any) => {
@@ -232,86 +373,102 @@ export const useViewportStore = create<ViewportStoreState>()(
       console.log("💾 DICOM 데이터셋 저장 완료");
     },
 
-    captureViewportAsPng: async () => {
-      const viewportId = 'dicom-viewport';
-      debugLogger.log(`📸 뷰포트 캡처 시작...`);
+    captureViewportAsPng: async (viewportId?: string) => {
+      // Use provided viewportId or active viewport
+      const targetViewportId = viewportId || get().activeViewportId;
+      
+      if (!targetViewportId) {
+        console.warn("활성 뷰포트가 없습니다. 뷰포트를 먼저 선택해주세요.");
+        alert("캡처할 뷰포트가 선택되지 않았습니다.");
+        return;
+      }
+
+      debugLogger.log(`📸 뷰포트 ${targetViewportId} 캡처 시작...`);
 
       // Security logging for viewport capture
       const securityStore = useSecurityStore.getState();
       securityStore.logSecurityEvent({
         type: 'EXPORT',
-        details: `Viewport capture initiated for ${viewportId}`,
+        details: `Viewport capture initiated for ${targetViewportId}`,
         severity: 'MEDIUM',
         userId: securityStore.currentUser?.username || 'unknown',
         metadata: {
-          viewportId,
+          viewportId: targetViewportId,
           action: 'capture_viewport_png',
           timestamp: new Date().toISOString()
         }
       });
 
       try {
-        const { viewport, viewportElement } = await get().prepareViewportForCapture(viewportId);
+        const { viewport, viewportElement } = await get().prepareViewportForCapture(targetViewportId);
         const canvas = await get().captureWithHTML2Canvas(viewportElement);
         await get().downloadCanvasAsFile(canvas);
         
         // Log successful export
         securityStore.logSecurityEvent({
           type: 'EXPORT',
-          details: `Viewport capture completed successfully for ${viewportId}`,
+          details: `Viewport capture completed successfully for ${targetViewportId}`,
           severity: 'LOW',
           userId: securityStore.currentUser?.username || 'unknown',
           metadata: {
-            viewportId,
+            viewportId: targetViewportId,
             action: 'capture_success',
             canvasSize: `${canvas.width}x${canvas.height}`
           }
         });
         
-        debugLogger.success('✅ 주석이 포함된 화면 캡처가 완료되었습니다.');
+        debugLogger.success(`✅ 뷰포트 ${targetViewportId} 주석이 포함된 화면 캡처가 완료되었습니다.`);
       } catch (error) {
         // Log capture error
         securityStore.logSecurityEvent({
           type: 'ERROR',
-          details: `Viewport capture failed for ${viewportId}: ${error}`,
+          details: `Viewport capture failed for ${targetViewportId}: ${error}`,
           severity: 'HIGH',
           userId: securityStore.currentUser?.username || 'unknown',
           metadata: {
-            viewportId,
+            viewportId: targetViewportId,
             action: 'capture_error',
             error: error?.toString()
           }
         });
         
         console.error("❌ 고해상도 캡처 실패, 기본 방법 시도:", error);
-        await get().fallbackCapture(viewportId);
+        await get().fallbackCapture(targetViewportId);
       }
     },
 
     prepareViewportForCapture: async (viewportId: string) => {
-      const renderingEngine = (window as any).cornerstoneRenderingEngine || getRenderingEngine('dicom-rendering-engine');
-      if (!renderingEngine) {
-        throw new Error('렌더링 엔진을 찾을 수 없습니다.');
+      try {
+        const { renderingEngine, viewport } = get()._getViewportInstance(viewportId);
+
+        await viewport.render();
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Try multiple strategies to find the viewport element
+        const viewportElement = viewport.element || 
+                               document.querySelector(`[data-viewport-uid="${viewportId}"]`) ||
+                               document.querySelector(`#${viewportId}`) ||
+                               document.querySelector(`.${viewportId}`) ||
+                               document.querySelector('.viewport-element') ||
+                               document.querySelector('.cornerstone-viewport') ||
+                               // For multi-viewport layout, look for viewport containers
+                               document.querySelector(`[data-viewport-id="${viewportId}"]`) ||
+                               document.querySelector(`[data-testid="${viewportId}"]`);
+
+        if (!viewportElement) {
+          throw new Error(`뷰포트 ${viewportId} DOM 요소를 찾을 수 없습니다.`);
+        }
+
+        console.log(`📸 뷰포트 ${viewportId} 캡처 준비 완료:`, {
+          element: viewportElement.tagName,
+          size: `${viewportElement.clientWidth}x${viewportElement.clientHeight}`
+        });
+
+        return { viewport, viewportElement };
+      } catch (error) {
+        console.error(`❌ 뷰포트 ${viewportId} 캡처 준비 실패:`, error);
+        throw error;
       }
-
-      const viewport = renderingEngine.getViewport(viewportId);
-      if (!viewport) {
-        throw new Error(`뷰포트(${viewportId})를 찾을 수 없습니다.`);
-      }
-
-      await viewport.render();
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const viewportElement = viewport.element || 
-                             document.querySelector(`[data-viewport-uid="${viewportId}"]`) ||
-                             document.querySelector('.viewport-element') ||
-                             document.querySelector('.cornerstone-viewport');
-
-      if (!viewportElement) {
-        throw new Error('뷰포트 DOM 요소를 찾을 수 없습니다.');
-      }
-
-      return { viewport, viewportElement };
     },
 
     captureWithHTML2Canvas: async (viewportElement: Element) => {
@@ -382,9 +539,12 @@ export const useViewportStore = create<ViewportStoreState>()(
           }
         });
 
-        const renderingEngine = (window as any).cornerstoneRenderingEngine || getRenderingEngine('dicom-rendering-engine');
-        const viewport = renderingEngine.getViewport(viewportId);
+        const { renderingEngine, viewport } = get()._getViewportInstance(viewportId);
         const canvas = viewport.getCanvas();
+        
+        if (!canvas) {
+          throw new Error(`뷰포트 ${viewportId}의 캔버스를 찾을 수 없습니다.`);
+        }
         
         await get().downloadCanvasAsFile(canvas);
         
@@ -400,7 +560,7 @@ export const useViewportStore = create<ViewportStoreState>()(
           }
         });
         
-        debugLogger.success('이미지만 캡처 완료 (주석 제외)');
+        debugLogger.success(`✅ 뷰포트 ${viewportId} 이미지만 캡처 완료 (주석 제외)`);
       } catch (fallbackError) {
         securityStore.logSecurityEvent({
           type: 'ERROR',
@@ -414,9 +574,9 @@ export const useViewportStore = create<ViewportStoreState>()(
           }
         });
         
-        console.error("❌ 폴백 방법도 실패:", fallbackError);
-        debugLogger.error('❌ 화면 캡처에 완전히 실패했습니다.');
-        alert('화면을 캡처하는 데 실패했습니다.');
+        console.error(`❌ 뷰포트 ${viewportId} 폴백 방법도 실패:`, fallbackError);
+        debugLogger.error(`❌ 뷰포트 ${viewportId} 화면 캡처에 완전히 실패했습니다.`);
+        alert(`뷰포트 ${viewportId} 화면을 캡처하는 데 실패했습니다.`);
       }
     },
   }))

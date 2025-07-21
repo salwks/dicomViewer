@@ -160,6 +160,8 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
       console.log(`🎯 활성 뷰포트 변경: ${viewportId}`);
       set({ activeViewportId: viewportId });
       
+      // viewportStore와의 동기화는 DicomViewport 컴포넌트에서 처리
+      
       // 활성 뷰포트의 도구 상태를 전역 activeTool에 동기화 (하위 호환성)
       const { viewportToolStates } = get();
       const viewportState = viewportToolStates[viewportId];
@@ -293,10 +295,25 @@ export const useAnnotationStore = create<AnnotationStoreState>()(
         annotationUID: sanitizedAnnotation.annotationUID || uuidv4(),
       };
 
-      set((state) => ({
-        annotations: [...state.annotations, annotationWithUID],
-        selectedAnnotationUID: annotationWithUID.annotationUID,
-      }));
+      set((state) => {
+        // Check if annotation already exists to prevent duplicates
+        const existingIndex = state.annotations.findIndex(
+          ann => ann.annotationUID === annotationWithUID.annotationUID
+        );
+        
+        if (existingIndex !== -1) {
+          console.log(`⚠️ 중복 주석 방지: ${annotationWithUID.annotationUID} 이미 존재`);
+          return {
+            annotations: state.annotations,
+            selectedAnnotationUID: annotationWithUID.annotationUID,
+          };
+        }
+        
+        return {
+          annotations: [...state.annotations, annotationWithUID],
+          selectedAnnotationUID: annotationWithUID.annotationUID,
+        };
+      });
 
       console.log(`📝 새 주석 추가 (XSS 보호 적용): ${annotationWithUID.annotationUID}`);
     },
