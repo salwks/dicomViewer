@@ -2,729 +2,695 @@
   "master": {
     "tasks": [
       {
-        "id": 11,
-        "title": "Dependency Vulnerability Analysis",
-        "description": "Scan all project dependencies for known security vulnerabilities using npm audit and address critical and high severity issues.",
-        "details": "1. Navigate to the project root directory\n2. Run `npm audit` to identify all vulnerabilities in dependencies\n3. Document all found vulnerabilities, especially those in @cornerstonejs/tools and other core libraries\n4. For critical and high severity issues, attempt automatic fixes with `npm audit fix`\n5. For vulnerabilities that cannot be automatically fixed, research and manually update to secure versions\n6. Verify fixes by running `npm audit` again\n7. Document any remaining vulnerabilities that cannot be fixed immediately and create a mitigation plan",
-        "testStrategy": "1. Compare vulnerability counts before and after fixes\n2. Ensure application functionality remains intact after dependency updates\n3. Create a report documenting initial vulnerabilities, applied fixes, and any remaining issues",
-        "priority": "high",
+        "id": 1,
+        "title": "Project Setup with Cornerstone3D v3.x",
+        "description": "Initialize the project with React 18+, TypeScript 5+, and Cornerstone3D v3.x dependencies, utilizing Context7 documentation reference (Library ID: /cornerstonejs/cornerstone3d) for implementation guidance",
+        "status": "done",
         "dependencies": [],
-        "status": "done",
+        "priority": "high",
+        "details": "1. Create a new project using Vite with TypeScript template\n2. Install core dependencies:\n```bash\nnpm install @cornerstonejs/core@^1.x.x @cornerstonejs/tools@^1.x.x @cornerstonejs/dicom-image-loader@^1.x.x @cornerstonejs/streaming-image-volume-loader@^1.x.x @cornerstonejs/nifti-volume-loader@^1.x.x react@^18.x.x react-dom@^18.x.x typescript@^5.x.x\n```\n3. Configure TypeScript with strict mode enabled\n4. Set up ESLint with security and style rules\n5. Configure Prettier for code formatting\n6. Set up Husky pre-commit hooks for quality checks\n7. Create basic folder structure following the system architecture diagram\n8. Initialize Git repository with appropriate .gitignore\n9. Set up initial CI/CD pipeline configuration\n10. Configure Context7 documentation integration:\n    - Add reference to Library ID: /cornerstonejs/cornerstone3d\n    - Set up documentation access for 443 available code examples\n    - Create documentation integration guide for developers\n11. Implement documentation-driven development workflow using Context7",
+        "testStrategy": "1. Verify all dependencies install correctly\n2. Ensure TypeScript compilation works without errors\n3. Validate ESLint and Prettier configurations\n4. Test pre-commit hooks functionality\n5. Verify project builds successfully\n6. Validate Context7 documentation access and integration\n7. Test code example accessibility and implementation",
         "subtasks": [
           {
             "id": 1,
-            "title": "Preparation and Environment Setup",
-            "description": "Ensure the project environment is ready for auditing by navigating to the project root directory and verifying that all dependencies are installed and up to date.",
-            "dependencies": [],
-            "details": "Open a terminal, navigate to the project root, and run 'npm install' to ensure all dependencies are present. Confirm that 'package-lock.json' exists, as it is required for npm audit.",
+            "title": "Create Vite Project with TypeScript",
+            "description": "Initialize a new Vite project with TypeScript configuration for the medical imaging viewer",
             "status": "done",
+            "dependencies": [],
+            "details": "1. Install Node.js and npm if not already installed\n2. Create a new Vite project with TypeScript template using `npm create vite@latest medical-imaging-viewer -- --template react-ts`\n3. Navigate to project directory and run initial setup\n4. Configure tsconfig.json with strict mode enabled\n5. Create initial project structure with src, public, and assets folders\n6. Test the initial build to ensure TypeScript compilation works",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Running npm audit",
-            "description": "Execute the npm audit command to scan for known vulnerabilities in project dependencies.",
-            "dependencies": [
-              1
-            ],
-            "details": "Run 'npm audit' in the terminal to generate a summary of vulnerabilities. For detailed output, use 'npm audit --json'.",
+            "title": "Install and Configure Cornerstone3D Dependencies",
+            "description": "Set up all required Cornerstone3D libraries and configure them for the medical imaging viewer using Context7 documentation reference",
             "status": "done",
+            "dependencies": [],
+            "details": "1. Install core Cornerstone3D packages:\n   ```bash\n   npm install @cornerstonejs/core@^1.x.x @cornerstonejs/tools@^1.x.x @cornerstonejs/dicom-image-loader@^1.x.x @cornerstonejs/streaming-image-volume-loader@^1.x.x @cornerstonejs/nifti-volume-loader@^1.x.x\n   ```\n2. Set up Context7 documentation access (Library ID: /cornerstonejs/cornerstone3d)\n3. Create initialization module for Cornerstone3D following documented examples\n4. Configure WADO image loader settings using reference implementations\n5. Set up volume loaders and rendering pipeline based on Context7 examples\n6. Create basic test component to verify Cornerstone3D initialization\n7. Document dependency versions and configuration details\n8. Add reference links to relevant Context7 documentation sections",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Documenting Vulnerabilities",
-            "description": "Record all identified vulnerabilities, focusing on critical and high severity issues, and note affected packages and paths.",
-            "dependencies": [
-              2
-            ],
-            "details": "Extract information such as advisory ID, module name, severity, vulnerable versions, patched versions, and dependency path from the audit report. Document these details in a tracking document or issue tracker.",
+            "title": "Set Up Code Quality Tools",
+            "description": "Implement ESLint, Prettier, and Husky for code quality and consistency",
             "status": "done",
+            "dependencies": [],
+            "details": "1. Install ESLint and configure with security and style rules:\n   ```bash\n   npm install -D eslint eslint-plugin-react eslint-plugin-react-hooks @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-plugin-security\n   ```\n2. Set up Prettier for code formatting:\n   ```bash\n   npm install -D prettier eslint-config-prettier eslint-plugin-prettier\n   ```\n3. Configure Husky for pre-commit hooks:\n   ```bash\n   npm install -D husky lint-staged\n   ```\n4. Create configuration files (.eslintrc.js, .prettierrc, etc.)\n5. Set up lint-staged to run linting and formatting on staged files\n6. Add npm scripts for linting and formatting\n7. Add enhanced ESLint configuration for medical imaging applications\n8. Install additional ESLint plugins\n9. Create strict TypeScript configuration\n10. Enhance pre-commit hooks with strict validation\n11. Configure comprehensive pre-commit hooks\n12. Configure lint-staged with strict settings\n13. Add CI/CD validation",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Applying Automatic Fixes",
-            "description": "Attempt to resolve vulnerabilities using npm audit fix and document the changes.",
-            "dependencies": [
-              3
-            ],
-            "details": "Run 'npm audit fix' to automatically update dependencies where possible. If necessary, use 'npm audit fix --force' for more aggressive updates, but be aware of potential breaking changes.",
+            "title": "Implement Project Structure and Architecture",
+            "description": "Establish the core project architecture, folder structure, and design patterns with Context7 documentation integration",
             "status": "done",
+            "dependencies": [],
+            "details": "1. Create folder structure for components, services, hooks, utils, and types\n2. Implement core architectural patterns following Context7 examples\n3. Set up state management approach (Context API or Redux)\n4. Create base interfaces for DICOM data structures\n5. Implement service layer for Cornerstone3D interactions using documented patterns\n6. Create reusable component library structure\n7. Set up routing with React Router\n8. Document architecture decisions and patterns\n9. Implement error boundary components\n10. Create documentation integration layer for Context7\n11. Set up code example reference system",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Manual Remediation and Research",
-            "description": "For vulnerabilities that cannot be fixed automatically, research and manually update or replace affected dependencies.",
-            "dependencies": [
-              4
-            ],
-            "details": "Investigate unresolved vulnerabilities, check for secure versions, update package.json as needed, and test for compatibility. Document manual steps and rationale for each change.",
+            "title": "Configure CI/CD Pipeline",
+            "description": "Set up continuous integration and deployment pipeline for the project",
             "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Verification and Reporting",
-            "description": "Re-run npm audit to verify that vulnerabilities have been addressed and compile a final report of actions taken and any remaining issues.",
-            "dependencies": [
-              5
-            ],
-            "details": "Run 'npm audit' again to confirm fixes. Compare vulnerability counts before and after remediation. Prepare a report summarizing initial findings, fixes applied, manual interventions, and any outstanding vulnerabilities.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "title": "Configure Dependabot for Automated Vulnerability Alerts",
-        "description": "Set up GitHub Dependabot to automatically monitor dependencies and create pull requests for security patches.",
-        "details": "1. Create a `.github/dependabot.yml` configuration file in the repository\n2. Configure Dependabot to scan npm dependencies with appropriate frequency (weekly recommended)\n3. Set up automatic pull request creation for security patches\n4. Configure notification settings for the development team\n5. Example configuration:\n```yaml\nversion: 2\nupdates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    open-pull-requests-limit: 10\n    versioning-strategy: auto\n    labels:\n      - \"dependencies\"\n      - \"security\"\n```\n6. Enable Dependabot alerts in the GitHub repository settings",
-        "testStrategy": "1. Verify Dependabot configuration by checking GitHub repository settings\n2. Test the setup by introducing a known vulnerable dependency and confirming Dependabot creates an alert\n3. Verify pull request automation by checking if security patches are automatically proposed",
-        "priority": "medium",
-        "dependencies": [
-          11
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Creating the Dependabot Configuration File",
-            "description": "Create a `.github/dependabot.yml` file in the repository to define Dependabot's behavior, specifying the configuration version and the update settings for the npm ecosystem.",
             "dependencies": [],
-            "details": "Navigate to the repository root, create a `.github` directory if it doesn't exist, and add a `dependabot.yml` file with the required YAML structure. Set `version: 2` and define the `updates` section for npm dependencies.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Setting Up Scan Frequency and PR Automation",
-            "description": "Configure the scan interval and enable automatic pull request creation for security patches in the `dependabot.yml` file.",
-            "dependencies": [
-              1
-            ],
-            "details": "Within the `updates` section, set the `schedule.interval` to `weekly` (or as required) and ensure Dependabot is configured to open pull requests automatically for detected security updates.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Configuring Notifications",
-            "description": "Set up notification preferences so the development team is alerted when Dependabot detects vulnerabilities or opens pull requests.",
-            "dependencies": [
-              2
-            ],
-            "details": "Adjust repository settings to enable Dependabot alerts and notifications. Optionally, configure code owners or team mentions in the repository to ensure the right people are notified of Dependabot activity.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Verifying and Testing the Setup",
-            "description": "Test the Dependabot configuration by introducing a known vulnerable dependency and confirming that alerts and automated pull requests are generated as expected.",
-            "dependencies": [
-              3
-            ],
-            "details": "Check the repository's Security tab for Dependabot alerts, verify that pull requests are created for security patches, and ensure notifications are received by the designated team members.",
-            "status": "done",
+            "details": "1. Create GitHub Actions workflow file for CI/CD\n2. Configure build, test, and lint jobs\n3. Set up automated testing with Jest and React Testing Library\n4. Configure code coverage reporting\n5. Implement deployment workflow for staging and production environments\n6. Set up environment-specific configuration management\n7. Configure dependency vulnerability scanning\n8. Implement versioning and release management\n9. Set up automated documentation generation\n10. Create pipeline status badges for README\n11. Add Context7 documentation validation step to CI/CD pipeline",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 13,
-        "title": "Implement XSS Protection with DOMPurify",
-        "description": "Add XSS protection by sanitizing user inputs, particularly annotation labels, using the DOMPurify library.",
-        "details": "1. Install DOMPurify and its TypeScript types:\n```bash\nnpm install dompurify\nnpm install --save-dev @types/dompurify\n```\n2. Import DOMPurify in files handling user input:\n```typescript\nimport DOMPurify from 'dompurify';\n```\n3. Locate the annotation label update function (updateAnnotationLabel)\n4. Modify the function to sanitize user input before storing:\n```typescript\n// Before storing the new label\nconst sanitizedLabel = DOMPurify.sanitize(newLabel);\n// Use sanitizedLabel instead of newLabel in subsequent operations\n```\n5. Apply similar sanitization to all other user input fields in the application\n6. Consider creating a utility function for consistent sanitization across the application",
-        "testStrategy": "1. Create unit tests with various malicious input patterns (script tags, event handlers, etc.)\n2. Verify that sanitized output is free from potentially executable code\n3. Test the application UI to ensure sanitization doesn't affect legitimate user input\n4. Verify that stored annotation labels are properly sanitized when retrieved and displayed",
+        "id": 2,
+        "title": "Implement Core Architecture and DICOM Loading",
+        "description": "Develop the core architecture and DICOM loading functionality based on Cornerstone3D",
+        "details": "1. Implement the AdvancedDICOMLoader class as specified in the PRD:\n```typescript\ninterface DICOMLoaderConfig {\n  wadoUriEndpoint?: string;\n  wadoRsEndpoint?: string;\n  maxConcurrentRequests: number;\n  enableProgressive: boolean;\n  supportedSOPClasses: string[];\n}\n\nclass AdvancedDICOMLoader {\n  configure(config: DICOMLoaderConfig): void;\n  loadImage(imageId: string): Promise<IImage>;\n  loadVolume(volumeId: string): Promise<IVolume>;\n  prefetchImages(imageIds: string[]): void;\n}\n```\n2. Configure Cornerstone3D core components\n3. Set up DICOM metadata providers\n4. Implement progressive loading for large datasets\n5. Add support for WADO-URI/WADO-RS protocols\n6. Create utilities for handling the 95+ required DICOM SOP classes\n7. Implement error handling for DICOM loading failures",
+        "testStrategy": "1. Unit tests for the AdvancedDICOMLoader class with 90%+ coverage\n2. Integration tests with sample DICOM files for each supported SOP class\n3. Performance testing to verify <2s image load time requirement\n4. Test progressive loading with large datasets\n5. Validate error handling with malformed DICOM files",
         "priority": "high",
         "dependencies": [
-          11
+          1
         ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Installing dependencies",
-            "description": "Install the DOMPurify library and its TypeScript types to enable HTML sanitization in the project.",
-            "dependencies": [],
-            "details": "Run `npm install dompurify` and `npm install --save-dev @types/dompurify` in the project root to add the necessary packages.[3]",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Importing and integrating DOMPurify",
-            "description": "Import DOMPurify into all files that handle user input or render user-generated content.",
-            "dependencies": [
-              1
-            ],
-            "details": "Add `import DOMPurify from 'dompurify';` at the top of relevant TypeScript or JavaScript files, such as those managing annotation labels or other user inputs.[3]",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Refactoring annotation label logic",
-            "description": "Update the annotation label update function to sanitize user input before storing or rendering.",
-            "dependencies": [
-              2
-            ],
-            "details": "Locate the `updateAnnotationLabel` function and modify it to use `DOMPurify.sanitize(newLabel)` before saving or displaying the label, ensuring all annotation labels are sanitized.[3]",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Applying sanitization to all user inputs",
-            "description": "Ensure that all user input points across the application are sanitized using DOMPurify before being rendered or stored.",
-            "dependencies": [
-              2
-            ],
-            "details": "Audit the codebase for all user input handling (forms, comments, dynamic content, etc.) and apply `DOMPurify.sanitize()` to each input before it is used in the DOM or persisted.[1][3]",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Creating a sanitization utility",
-            "description": "Develop a reusable utility function that wraps DOMPurify sanitization for consistent use throughout the codebase.",
-            "dependencies": [
-              2
-            ],
-            "details": "Create a utility module (e.g., `src/utils/sanitize.ts`) that exports a function like `sanitizeInput(input: string): string` which internally calls `DOMPurify.sanitize(input)`. Refactor code to use this utility for all sanitization needs.[1][3]",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Writing and running tests",
-            "description": "Develop and execute unit and integration tests to verify that all user inputs are properly sanitized and that application functionality remains intact.",
-            "dependencies": [
-              3,
-              4,
-              5
-            ],
-            "details": "Write tests with various malicious input patterns (e.g., script tags, event handlers) and verify that the sanitized output is safe. Test the UI to ensure legitimate input is unaffected and that annotation labels and other user-generated content are stored and displayed securely.[3]",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 14,
-        "title": "Configure Security HTTP Headers with Vite Plugin",
-        "description": "Implement security HTTP headers including Content-Security-Policy to prevent various attacks like clickjacking and data injection.",
-        "details": "1. Install the vite-plugin-security-headers package:\n```bash\nnpm install --save-dev vite-plugin-security-headers\n```\n2. Modify vite.config.ts to include the security headers plugin:\n```typescript\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { securityHeaders } from 'vite-plugin-security-headers';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    securityHeaders({\n      'Content-Security-Policy': {\n        'default-src': [\"'self'\"],\n        'script-src': [\"'self'\", \"'unsafe-inline'\"], // Allow inline scripts if needed\n        'style-src': [\"'self'\", \"'unsafe-inline'\"],\n        'img-src': [\"'self'\", 'data:', 'blob:'], // Allow data: and blob: for captures\n        'connect-src': [\"'self'\"]\n      },\n      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',\n      'X-Content-Type-Options': 'nosniff',\n      'X-Frame-Options': 'DENY',\n      'Referrer-Policy': 'strict-origin-when-cross-origin'\n    })\n  ]\n});\n```\n3. Test the configuration to ensure it doesn't break existing functionality\n4. Adjust CSP rules as needed based on application requirements",
-        "testStrategy": "1. Build the application and inspect HTTP response headers using browser developer tools\n2. Use online security header checkers (e.g., securityheaders.com) to validate configuration\n3. Test all application features to ensure CSP doesn't block legitimate resources\n4. Verify protection against clickjacking by attempting to embed the application in an iframe",
-        "priority": "high",
-        "dependencies": [
-          11
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Install the Security Headers Plugin",
-            "description": "Add the appropriate Vite plugin for managing security HTTP headers (such as vite-plugin-security-headers or vite-plugin-csp) to the project using npm or yarn.",
-            "dependencies": [],
-            "details": "Run the installation command in your project directory, e.g., `npm install --save-dev vite-plugin-security-headers` or `npm i -D vite-plugin-csp`.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Modify Vite Configuration to Include the Plugin",
-            "description": "Update the vite.config.ts file to import and configure the security headers plugin.",
-            "dependencies": [
-              1
-            ],
-            "details": "Import the plugin at the top of your Vite config and add it to the plugins array. Configure initial header policies as needed.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Define and Tune Security Header Policies",
-            "description": "Specify and iteratively refine Content-Security-Policy and other security headers to balance security and application functionality.",
-            "dependencies": [
-              2
-            ],
-            "details": "Set up directives like 'default-src', 'script-src', and others. Adjust policies based on application requirements and known best practices.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Test Header Configuration in Development and Production",
-            "description": "Verify that the configured headers are correctly applied and do not interfere with application features in both development and production environments.",
-            "dependencies": [
-              3
-            ],
-            "details": "Use browser developer tools and online header checkers to inspect headers. Test all features to ensure nothing is unintentionally blocked.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Adjust Policies Based on Feedback and Issues",
-            "description": "Iterate on the header configuration based on test results, user feedback, and security audits to ensure optimal protection and usability.",
-            "dependencies": [
-              4
-            ],
-            "details": "Update the Vite config and plugin options as needed to resolve issues or tighten security. Document changes for future reference.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 15,
-        "title": "Implement Production Environment Log Management",
-        "description": "Modify the logging system to prevent sensitive information exposure in production by disabling debug logs in production builds.",
-        "details": "1. Locate the src/utils/debug-logger.ts file\n2. Modify each logging function (log, success, error, warn, etc.) to check for production environment\n3. Add a condition at the beginning of each function to return early in production:\n```typescript\n// Example modification for a log function\nexport function log(...args: any[]): void {\n  // Skip logging in production environment\n  if (import.meta.env.PROD) {\n    return;\n  }\n  \n  // Existing logging logic\n  console.log(...args);\n}\n\n// Apply similar changes to other functions: success, error, warn, etc.\n```\n4. Consider adding a configuration option to enable logging in production for troubleshooting if needed\n5. Ensure all custom logging throughout the application uses these utility functions",
-        "testStrategy": "1. Create both development and production builds\n2. Verify logs appear in development but not in production\n3. Test all application features to ensure functionality isn't affected by log suppression\n4. Create unit tests that verify logging functions respect the environment setting",
-        "priority": "medium",
-        "dependencies": [],
         "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
-            "title": "Locate and Review Logging Utilities",
-            "description": "Identify all logging utility files and functions in the codebase, focusing on src/utils/debug-logger.ts and any other modules responsible for logging.",
+            "title": "Implement AdvancedDICOMLoader class",
+            "description": "Create the core AdvancedDICOMLoader class with configuration options and basic loading functionality.",
             "dependencies": [],
-            "details": "Search for logging-related files and review their current implementation, log levels, and usage patterns across environments.",
-            "status": "pending",
+            "details": "Implement the AdvancedDICOMLoader class according to the interface specification. Include methods for configuration, image loading, volume loading, and prefetching. Set up the class structure with proper TypeScript typing and documentation. Integrate with Cornerstone3D's existing image loading capabilities.",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Refactor Log Functions for Environment Checks",
-            "description": "Modify each logging function to check the current environment and suppress debug logs in production.",
-            "dependencies": [
-              1
-            ],
-            "details": "Add conditional logic to each log function (log, success, error, warn, etc.) to ensure debug and verbose logs are only active in non-production environments, following best practices for environment-based log level management.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Add Configuration Options for Logging",
-            "description": "Introduce configuration options to control log levels and output formats based on environment variables.",
-            "dependencies": [
-              2
-            ],
-            "details": "Implement environment-driven configuration (e.g., LOG_LEVEL) to allow dynamic adjustment of log verbosity and format, supporting structured logging if applicable.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Test Logging in Development and Production Environments",
-            "description": "Thoroughly test the logging system in both development and production builds to ensure correct log suppression and output.",
-            "dependencies": [
-              3
-            ],
-            "details": "Build and run the application in both environments, verify that logs appear as expected in development but are suppressed or limited in production, and confirm that no sensitive data is exposed.",
-            "status": "pending",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 16,
-        "title": "Implement Secure Data Storage for User Preferences",
-        "description": "Enhance security of locally stored user preferences and settings to prevent tampering and unauthorized access.",
-        "details": "1. Review current storage mechanisms for user preferences (localStorage, sessionStorage, etc.)\n2. For sensitive settings, implement encryption before storage:\n```typescript\n// Utility functions for secure storage\nimport CryptoJS from 'crypto-js';\n\nconst STORAGE_KEY = 'clarity_settings';\nconst SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET || 'default-dev-key';\n\nexport function secureStore(data: any): void {\n  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), SECRET_KEY).toString();\n  localStorage.setItem(STORAGE_KEY, encrypted);\n}\n\nexport function secureRetrieve(): any {\n  const encrypted = localStorage.getItem(STORAGE_KEY);\n  if (!encrypted) return null;\n  \n  try {\n    const decrypted = CryptoJS.AES.decrypt(encrypted, SECRET_KEY).toString(CryptoJS.enc.Utf8);\n    return JSON.parse(decrypted);\n  } catch (e) {\n    console.error('Failed to decrypt settings, resetting to defaults');\n    localStorage.removeItem(STORAGE_KEY);\n    return null;\n  }\n}\n```\n3. Install required dependency: `npm install crypto-js @types/crypto-js`\n4. Replace direct localStorage calls with these secure utility functions\n5. Implement proper error handling for corrupted storage",
-        "testStrategy": "1. Create unit tests for the encryption/decryption functions\n2. Test storage and retrieval of various data types\n3. Verify error handling when storage is tampered with\n4. Test migration from old storage format to new secure format\n5. Verify application behavior when storage is cleared or corrupted",
-        "priority": "medium",
-        "dependencies": [
-          11
-        ],
-        "status": "pending",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Review Current Storage Usage",
-            "description": "Analyze the existing mechanisms for storing user preferences and settings, including the use of localStorage, sessionStorage, and any other relevant APIs.",
+            "title": "Add WADO-URI and WADO-RS protocol support",
+            "description": "Implement support for both WADO-URI and WADO-RS protocols for retrieving DICOM data.",
             "dependencies": [],
-            "details": "Document all current storage keys, data formats, and access patterns. Identify which preferences are sensitive and require encryption.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Encryption Utilities",
-            "description": "Develop or integrate encryption utilities to securely store and retrieve sensitive user preferences.",
-            "dependencies": [
-              1
-            ],
-            "details": "Choose an encryption library (e.g., CryptoJS or a dedicated encrypted storage wrapper). Implement functions for encrypting and decrypting data before writing to or reading from storage.",
-            "status": "pending",
+            "details": "Create protocol handlers for WADO-URI and WADO-RS that can be used by the AdvancedDICOMLoader. Implement request formatting, authentication handling, and response parsing for both protocols. Ensure proper error handling for network issues and server errors. Add configuration options for endpoints and request parameters.",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Refactor Storage Calls",
-            "description": "Update all code that reads from or writes to user preferences storage to use the new encryption utilities.",
-            "dependencies": [
-              2
-            ],
-            "details": "Replace direct storage access with secureStore and secureRetrieve functions. Ensure all sensitive data is encrypted before storage and decrypted upon retrieval.",
-            "status": "pending",
+            "title": "Develop progressive loading mechanism",
+            "description": "Implement a progressive loading system that displays lower resolution images while loading full resolution data.",
+            "dependencies": [],
+            "details": "Create a multi-resolution loading system that first loads a lower resolution version of images for immediate display, then progressively enhances with higher resolution data. Implement priority queuing for visible images. Add event notifications for loading progress. Ensure smooth visual transitions between resolution levels.",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Handle Errors and Migration",
-            "description": "Implement robust error handling for storage operations and create a migration strategy for existing unencrypted data.",
-            "dependencies": [
-              3
-            ],
-            "details": "Add error handling for decryption failures and corrupted data. Develop a migration script to detect and upgrade old-format preferences to the new encrypted format.",
-            "status": "pending",
+            "title": "Implement DICOM metadata handling",
+            "description": "Create a system for extracting, parsing, and providing access to DICOM metadata from loaded images.",
+            "dependencies": [],
+            "details": "Implement metadata extraction from DICOM files. Create a caching system for efficient metadata access. Develop a query API for retrieving specific metadata elements. Support both standard and private DICOM tags. Implement proper handling of different VR (Value Representation) types.",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Install Dependencies",
-            "description": "Install and configure all required libraries and tools for encryption and secure storage.",
-            "dependencies": [
-              2
-            ],
-            "details": "Add encryption libraries (e.g., CryptoJS, encrypt-storage) to the project. Update build and environment configurations as needed.",
-            "status": "pending",
+            "title": "Add support for multiple SOP classes",
+            "description": "Implement support for various DICOM SOP classes including CT, MR, US, CR, DX, and others.",
+            "dependencies": [],
+            "details": "Create handlers for at least 95 different SOP classes. Implement specific rendering and processing logic for each supported modality. Add configuration options to enable/disable specific SOP classes. Ensure proper validation of SOP class compatibility. Create fallback mechanisms for unsupported SOP classes.",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Testing and Validation",
-            "description": "Thoroughly test the new secure storage implementation, including encryption, decryption, migration, and error handling.",
-            "dependencies": [
-              4,
-              5
-            ],
-            "details": "Write unit and integration tests for encryption utilities and storage access. Test migration from old to new format, simulate storage corruption, and verify application behavior in all scenarios.",
+            "title": "Develop error handling and recovery system",
+            "description": "Implement a robust error handling system with automatic recovery mechanisms for DICOM loading failures.",
+            "dependencies": [],
+            "details": "Create a comprehensive error classification system. Implement automatic retry logic with exponential backoff for transient errors. Develop fallback loading strategies for corrupted or partially available data. Add detailed error reporting with actionable messages. Implement a recovery system that can resume interrupted loads.",
+            "status": "in-progress",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Optimize performance for large datasets",
+            "description": "Implement performance optimizations to ensure efficient loading and rendering of large DICOM datasets.",
+            "dependencies": [],
+            "details": "Implement memory management strategies including image unloading for out-of-view data. Add worker thread processing for CPU-intensive tasks. Optimize network usage with request batching and prioritization. Implement data streaming for large volumes. Add performance monitoring and adaptive optimization based on system capabilities.",
             "status": "pending",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 17,
-        "title": "Implement Input Validation for DICOM Parameters",
-        "description": "Add comprehensive input validation for all DICOM parameters and user inputs to prevent injection attacks and ensure data integrity.",
-        "details": "1. Identify all user input points in the application, especially those related to DICOM parameters\n2. Create a validation utility module with functions for different data types:\n```typescript\n// src/utils/validation.ts\nexport function validateDicomTag(tag: string): boolean {\n  // DICOM tags follow format (xxxx,xxxx) where x is a hexadecimal digit\n  return /^\\([0-9A-Fa-f]{4},[0-9A-Fa-f]{4}\\)$/.test(tag);\n}\n\nexport function validateNumericInput(value: string, min?: number, max?: number): boolean {\n  const num = parseFloat(value);\n  if (isNaN(num)) return false;\n  if (min !== undefined && num < min) return false;\n  if (max !== undefined && num > max) return false;\n  return true;\n}\n\n// Add more validation functions as needed\n```\n3. Apply these validation functions at all input points\n4. Implement proper error handling and user feedback for invalid inputs\n5. For critical operations, add server-side validation as well if applicable",
-        "testStrategy": "1. Create unit tests for each validation function with valid and invalid inputs\n2. Test boundary conditions (min/max values, empty strings, etc.)\n3. Attempt to bypass validation with malformed inputs\n4. Verify error messages are clear and helpful\n5. Test integration with UI components to ensure validation feedback is displayed correctly",
+        "id": 3,
+        "title": "Develop Viewport Management System",
+        "description": "Create a viewport management system supporting stack and volume viewports with MPR capabilities",
+        "details": "1. Implement the ViewportManager class as specified in the PRD:\n```typescript\ninterface ViewportConfiguration {\n  type: 'stack' | 'volume' | 'video';\n  orientation?: OrientationTypes;\n  hangingProtocol?: HangingProtocolConfig;\n  synchronizers?: SynchronizerType[];\n}\n\nclass ViewportManager {\n  createViewport(config: ViewportConfiguration): IViewport;\n  setupHangingProtocol(protocol: HangingProtocolConfig): void;\n  synchronizeViewports(viewports: IViewport[], type: SynchronizerType): void;\n}\n```\n2. Develop stack viewport for 2D images\n3. Implement volume viewport for 3D datasets\n4. Create multi-planar reconstruction (MPR) functionality\n5. Add viewport synchronization capabilities\n6. Implement basic hanging protocols\n7. Ensure 60fps viewport interactions as per requirements",
+        "testStrategy": "1. Unit tests for ViewportManager with 90%+ coverage\n2. Performance tests to verify 60fps viewport interactions\n3. Integration tests for viewport synchronization\n4. Visual regression tests for MPR functionality\n5. Cross-browser compatibility testing",
         "priority": "high",
         "dependencies": [
-          13
+          2
         ],
-        "status": "done",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Identify All Input Points",
-            "description": "Catalog every location in the application where user input is accepted, with special attention to DICOM parameter fields and any other user-editable data.",
+            "title": "Implement ViewportManager Class",
+            "description": "Create the core ViewportManager class that will handle viewport creation, management, and configuration.",
             "dependencies": [],
-            "details": "Review UI forms, API endpoints, and backend processing to ensure all input vectors are accounted for, including edge cases such as file uploads or hidden fields.",
-            "status": "done",
+            "details": "1. Implement the ViewportManager class with methods for creating, configuring, and destroying viewports\n2. Create interfaces for viewport configuration options\n3. Implement viewport type detection and factory pattern for creating different viewport types\n4. Add methods for viewport layout management\n5. Implement viewport state persistence\n6. Create unit tests for the ViewportManager class",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Design Validation Utilities",
-            "description": "Develop reusable validation functions for each DICOM parameter and input type, adhering to DICOM standards and application requirements.",
-            "dependencies": [
-              1
-            ],
-            "details": "Implement functions for validating DICOM tags, numeric ranges, string lengths, and custom constraints. Ensure utilities are modular and easily testable.",
-            "status": "done",
+            "title": "Develop Stack Viewport for 2D Images",
+            "description": "Implement the stack viewport type for displaying and navigating through 2D image series.",
+            "dependencies": [],
+            "details": "1. Create StackViewport class implementing IViewport interface\n2. Implement image loading and rendering pipeline\n3. Add stack navigation controls (next/previous, first/last, scroll)\n4. Implement zoom, pan, and window level manipulation\n5. Add support for image orientation and flipping\n6. Create performance optimizations for smooth 60fps rendering\n7. Implement unit and performance tests",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Integrate Validation into UI",
-            "description": "Embed validation logic into all relevant UI components to provide immediate feedback and prevent invalid data entry.",
-            "dependencies": [
-              2
-            ],
-            "details": "Connect validation utilities to form fields, display real-time error messages, and disable submission when inputs are invalid.",
-            "status": "done",
+            "title": "Develop Volume Viewport for 3D Datasets",
+            "description": "Implement the volume viewport type for rendering 3D volumetric datasets with various rendering techniques.",
+            "dependencies": [],
+            "details": "1. Create VolumeViewport class implementing IViewport interface\n2. Implement volume loading and WebGL-based rendering\n3. Add support for different volume rendering techniques (MIP, MinIP, average)\n4. Implement transfer function editing for volume visualization\n5. Add camera controls for 3D navigation\n6. Optimize for 60fps performance with large datasets\n7. Create unit and performance tests",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Add Server-Side Validation if Needed",
-            "description": "Implement server-side validation for all critical input points to ensure security and data integrity, even if client-side validation is bypassed.",
-            "dependencies": [
-              3
-            ],
-            "details": "Replicate or extend validation logic on the backend, especially for API endpoints that process DICOM parameters or user data.",
-            "status": "done",
+            "title": "Implement MPR Functionality",
+            "description": "Add multi-planar reconstruction capabilities to allow viewing volumetric data in arbitrary planes.",
+            "dependencies": [],
+            "details": "1. Extend VolumeViewport with MPR capabilities\n2. Implement axial, sagittal, and coronal plane reconstructions\n3. Add support for oblique/arbitrary plane reconstructions\n4. Create controls for adjusting MPR plane position and orientation\n5. Implement MPR plane intersection indicators\n6. Optimize MPR generation for performance\n7. Add visual regression tests for MPR functionality",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Implement Error Handling and Feedback",
-            "description": "Develop robust error handling to provide clear, actionable feedback to users while preventing sensitive information leakage.",
-            "dependencies": [
-              4
-            ],
-            "details": "Integrate error messages with UI, ensure logs are sanitized, and use centralized error handling utilities to manage validation failures.",
-            "status": "done",
+            "title": "Create Viewport Synchronization System",
+            "description": "Implement a system to synchronize actions and states between multiple viewports.",
+            "dependencies": [],
+            "details": "1. Design and implement synchronizer classes for different synchronization types\n2. Add support for position synchronization between viewports\n3. Implement zoom/pan synchronization\n4. Add window/level synchronization\n5. Create series synchronization for related datasets\n6. Implement reference line visualization between synchronized viewports\n7. Add unit and integration tests for synchronization features",
+            "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Write Comprehensive Tests",
-            "description": "Create unit, integration, and boundary tests for all validation utilities and UI flows to ensure correctness and resilience against malformed input.",
-            "dependencies": [
-              5
-            ],
-            "details": "Test with valid, invalid, and edge-case data; verify error messages; and ensure both client and server-side validation are enforced.",
-            "status": "done",
+            "title": "Implement Hanging Protocol System",
+            "description": "Create a system to automatically arrange viewports according to predefined hanging protocols.",
+            "dependencies": [],
+            "details": "1. Design and implement the HangingProtocol class\n2. Create a protocol definition format with JSON schema\n3. Implement protocol matching based on study metadata\n4. Add viewport layout generation based on protocol specifications\n5. Implement automatic image assignment to viewports\n6. Create protocol persistence and sharing capabilities\n7. Add unit and integration tests for hanging protocol functionality",
+            "status": "pending",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 18,
-        "title": "Implement Secure Error Handling",
-        "description": "Enhance error handling to prevent information leakage in error messages while maintaining useful feedback for users.",
-        "details": "1. Create a centralized error handling utility:\n```typescript\n// src/utils/error-handler.ts\ninterface ErrorOptions {\n  logToConsole?: boolean;\n  reportToService?: boolean;\n  showToUser?: boolean;\n}\n\nexport function handleError(error: Error, message: string, options: ErrorOptions = {}) {\n  // Default options\n  const opts = {\n    logToConsole: !import.meta.env.PROD,\n    reportToService: import.meta.env.PROD,\n    showToUser: true,\n    ...options\n  };\n\n  // Create sanitized user message (no stack traces or sensitive info)\n  const userMessage = `${message}. Please try again or contact support.`;\n  \n  // Log to console in development\n  if (opts.logToConsole) {\n    console.error(message, error);\n  }\n  \n  // Report to error tracking service in production\n  if (opts.reportToService) {\n    // Implement error reporting service integration\n    // errorReportingService.report(error, message);\n  }\n  \n  // Return user-safe message for UI display\n  return userMessage;\n}\n```\n2. Replace direct error logging and displaying with this utility\n3. Ensure sensitive information (file paths, stack traces, etc.) is never shown to users\n4. Add proper error boundaries in React components to prevent crashes",
-        "testStrategy": "1. Create unit tests for the error handling utility\n2. Test with various error types and options\n3. Verify development vs. production behavior differences\n4. Test React error boundaries with simulated errors\n5. Verify user-facing error messages are appropriate and don't contain sensitive information",
+        "id": 4,
+        "title": "Implement Volume Rendering System",
+        "description": "Develop 3D volume rendering capabilities with MIP, MPR and volume presets",
+        "details": "1. Implement the VolumeRenderer class as specified in the PRD:\n```typescript\ninterface VolumeRenderingConfig {\n  renderingType: 'raycast' | 'mip' | 'minip';\n  presets: VolumePreset[];\n  lighting: LightingConfig;\n  transferFunction: TransferFunctionConfig;\n}\n\nclass VolumeRenderer {\n  setRenderingType(type: RenderingType): void;\n  applyPreset(preset: VolumePreset): void;\n  updateTransferFunction(config: TransferFunctionConfig): void;\n}\n```\n2. Implement 3D volume rendering using Cornerstone3D's volume API\n3. Add Maximum Intensity Projection (MIP) rendering\n4. Create volume presets for different modalities (CT bone, soft tissue, etc.)\n5. Implement transfer function editor\n6. Add lighting controls for 3D rendering\n7. Optimize for real-time volume manipulation\n8. Implement WebGL acceleration where available",
+        "testStrategy": "1. Unit tests for VolumeRenderer with 90%+ coverage\n2. Performance testing for real-time manipulation\n3. Visual tests for different rendering types and presets\n4. Integration tests with various volume datasets\n5. Browser compatibility testing for WebGL support",
         "priority": "medium",
         "dependencies": [
-          15
+          3
         ],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Create the Error Handling Utility",
-            "description": "Develop a centralized error handling utility that sanitizes error messages, prevents sensitive data leakage, and provides configurable options for logging, reporting, and user feedback.",
+            "title": "Implement VolumeRenderer Class",
+            "description": "Create the core VolumeRenderer class with methods for setting rendering type, applying presets, and updating transfer functions.",
             "dependencies": [],
-            "details": "Implement the utility in a dedicated module (e.g., src/utils/error-handler.ts) with options for console logging, error reporting, and user-facing messages. Ensure the utility can distinguish between development and production environments.",
+            "details": "1. Implement the VolumeRenderer class according to the interface specification\n2. Create methods for initialization with WebGL context\n3. Implement setRenderingType() to switch between rendering modes\n4. Implement applyPreset() for applying predefined volume visualization settings\n5. Implement updateTransferFunction() for custom transfer function application\n6. Add event listeners for rendering updates\n7. Create unit tests for the VolumeRenderer class",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Refactor Code to Use the Error Handling Utility",
-            "description": "Update existing codebase to replace ad-hoc error handling with the new centralized utility, ensuring consistent and secure error management throughout the application.",
-            "dependencies": [
-              1
-            ],
-            "details": "Identify all locations where errors are currently handled or logged. Refactor these instances to use the new utility, passing appropriate options based on context and environment.",
+            "title": "Implement Raycast Rendering",
+            "description": "Develop the core raycast rendering algorithm for high-quality volume visualization.",
+            "dependencies": [],
+            "details": "1. Implement ray generation in fragment shader\n2. Create ray-volume intersection calculations\n3. Implement step-based sampling along rays\n4. Add early ray termination optimization\n5. Implement lighting calculations (Phong model)\n6. Add depth compositing for proper 3D integration\n7. Optimize shader code for performance\n8. Create performance tests for raycast rendering",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Implement Error Boundaries in React",
-            "description": "Introduce React error boundary components to catch and handle errors in the component tree, displaying fallback UIs and preventing application crashes.",
-            "dependencies": [
-              1,
-              2
-            ],
-            "details": "Create class-based error boundary components implementing componentDidCatch and getDerivedStateFromError. Wrap critical parts of the React component tree with these boundaries and ensure they utilize the error handling utility for logging and reporting[1][2][3][4].",
+            "title": "Implement MIP and MinIP Rendering",
+            "description": "Add Maximum Intensity Projection and Minimum Intensity Projection rendering techniques.",
+            "dependencies": [],
+            "details": "1. Extend the raycast renderer to support MIP algorithm\n2. Implement MinIP rendering technique\n3. Add rendering mode switching functionality\n4. Optimize sampling rates for MIP/MinIP modes\n5. Implement depth compositing specific to projection techniques\n6. Add windowing controls for MIP/MinIP\n7. Create visual tests comparing different rendering techniques\n8. Benchmark performance differences between rendering modes",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Integrate with Error Reporting Services",
-            "description": "Connect the error handling utility and error boundaries to external error reporting services (e.g., Sentry, Rollbar) for centralized monitoring and alerting.",
-            "dependencies": [
-              1,
-              2,
-              3
-            ],
-            "details": "Configure API keys and environment-specific settings. Ensure that only sanitized, non-sensitive error data is sent to external services. Test integration with sample errors.",
+            "title": "Develop Volume Preset System",
+            "description": "Create a system for predefined volume visualization settings optimized for different modalities.",
+            "dependencies": [],
+            "details": "1. Define the VolumePreset interface structure\n2. Implement preset loading and application logic\n3. Create default presets for common modalities (CT, MRI, PET)\n4. Add preset management (save, load, export, import)\n5. Implement preset interpolation for smooth transitions\n6. Create UI components for preset selection\n7. Add documentation for creating custom presets\n8. Test presets with various dataset types",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Test Error Handling in Different Environments",
-            "description": "Thoroughly test the error handling system in both development and production environments to verify correct behavior, message sanitization, and integration with reporting services.",
-            "dependencies": [
-              1,
-              2,
-              3,
-              4
-            ],
-            "details": "Simulate various error scenarios, including rendering errors, lifecycle errors, and asynchronous errors. Confirm that user-facing messages are appropriate, sensitive data is not leaked, and errors are correctly logged and reported based on environment.",
+            "title": "Implement Transfer Function Editor",
+            "description": "Create an interactive editor for customizing volume rendering transfer functions.",
+            "dependencies": [],
+            "details": "1. Design the TransferFunctionConfig interface\n2. Implement color mapping controls\n3. Create opacity mapping editor\n4. Add gradient opacity controls\n5. Implement histogram visualization for transfer function context\n6. Create real-time preview of transfer function changes\n7. Add presets and interpolation between transfer function points\n8. Implement serialization/deserialization of transfer functions\n9. Create unit and integration tests for the editor",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Optimize WebGL Rendering Performance",
+            "description": "Implement WebGL acceleration techniques and optimizations for real-time volume rendering.",
+            "dependencies": [],
+            "details": "1. Implement texture compression techniques\n2. Add level-of-detail rendering based on viewport size\n3. Optimize shader code for different GPU capabilities\n4. Implement progressive rendering during interaction\n5. Add WebGL extension detection and fallbacks\n6. Create memory management system for large volumes\n7. Implement frame rate monitoring and adaptive quality\n8. Benchmark performance across different devices and browsers\n9. Document optimization techniques and browser compatibility",
             "status": "pending",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 19,
-        "title": "Implement Security Scanning in CI/CD Pipeline",
-        "description": "Integrate automated security scanning into the CI/CD pipeline to catch vulnerabilities before deployment.",
-        "details": "1. Add npm audit to the CI/CD pipeline to check for dependency vulnerabilities\n2. Integrate a static code analysis tool for security issues:\n```yaml\n# Example GitHub Actions workflow\nname: Security Scan\n\non:\n  push:\n    branches: [ main, develop ]\n  pull_request:\n    branches: [ main, develop ]\n\njobs:\n  security-scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      \n      - name: Setup Node.js\n        uses: actions/setup-node@v3\n        with:\n          node-version: '16'\n          cache: 'npm'\n      \n      - name: Install dependencies\n        run: npm ci\n      \n      - name: Run dependency vulnerability check\n        run: npm audit --audit-level=high\n      \n      - name: Run ESLint security plugin\n        run: npx eslint . --ext .ts,.tsx --config .eslintrc.security.js\n```\n3. Create a security-focused ESLint configuration:\n```javascript\n// .eslintrc.security.js\nmodule.exports = {\n  extends: [\n    'plugin:security/recommended',\n  ],\n  plugins: [\n    'security'\n  ],\n  rules: {\n    // Add custom security rules\n  }\n};\n```\n4. Install required dependencies: `npm install --save-dev eslint-plugin-security`\n5. Configure the pipeline to fail on high or critical security issues",
-        "testStrategy": "1. Test the CI/CD pipeline with known security issues to verify detection\n2. Verify pipeline fails appropriately on security violations\n3. Test false positive handling and rule adjustments\n4. Verify scan reports are properly generated and accessible\n5. Test integration with pull request workflows",
+        "id": 5,
+        "title": "Develop Annotation Tools System",
+        "description": "Create comprehensive annotation tools for medical imaging including length, angle, ROI and text annotations",
+        "details": "1. Implement the AnnotationManager class as specified in the PRD:\n```typescript\ninterface AnnotationConfig {\n  toolName: string;\n  configuration: ToolConfiguration;\n  styling: AnnotationStyling;\n  persistence: boolean;\n}\n\nclass AnnotationManager {\n  addAnnotation(config: AnnotationConfig): string;\n  getAnnotations(filter?: AnnotationFilter): Annotation[];\n  updateAnnotation(uid: string, updates: Partial<Annotation>): void;\n  removeAnnotation(uid: string): void;\n  exportAnnotations(format: 'json' | 'xml' | 'sr'): string;\n}\n```\n2. Implement length measurement tool\n3. Create angle measurement tool\n4. Develop elliptical and rectangular ROI tools\n5. Add arrow and text annotation tools\n6. Implement freehand drawing tool\n7. Create annotation styling system\n8. Add annotation persistence and serialization\n9. Implement annotation export in multiple formats",
+        "testStrategy": "1. Unit tests for AnnotationManager with 90%+ coverage\n2. Integration tests for each annotation tool\n3. Accuracy tests for measurements against known values\n4. Usability testing for annotation interactions\n5. Export/import validation tests",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement AnnotationManager Class",
+            "description": "Create the core AnnotationManager class that will handle the creation, retrieval, updating, and deletion of annotations.",
+            "dependencies": [],
+            "details": "1. Implement the AnnotationManager class according to the PRD specification\n2. Create methods for addAnnotation(), getAnnotations(), updateAnnotation(), and removeAnnotation()\n3. Implement annotation filtering functionality\n4. Add event handling for annotation lifecycle events\n5. Ensure proper integration with the ViewportManager from Task 3\n6. Implement annotation selection and active state management",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop Basic Annotation Tools",
+            "description": "Implement the fundamental annotation tools including length measurement, angle measurement, and arrow annotations.",
+            "dependencies": [],
+            "details": "1. Create base Tool class with common functionality\n2. Implement LengthTool for distance measurements\n3. Implement AngleTool for angle measurements\n4. Implement ArrowTool for directional annotations\n5. Add calibration support for measurement tools\n6. Implement mouse/touch interaction handlers for each tool\n7. Add text label positioning for measurement values",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement ROI Tools",
+            "description": "Create Region of Interest (ROI) annotation tools including elliptical and rectangular selection tools.",
+            "dependencies": [],
+            "details": "1. Implement RectangleROITool for rectangular selections\n2. Implement EllipticalROITool for elliptical/circular selections\n3. Add area calculation functionality for ROI tools\n4. Implement handles for resizing and repositioning ROIs\n5. Add statistical analysis within ROI (min, max, mean, std dev)\n6. Ensure proper rendering across different viewport orientations\n7. Implement snapping functionality for precise ROI placement",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Freehand Drawing Tool",
+            "description": "Implement a freehand drawing tool that allows users to create custom shapes and annotations.",
+            "dependencies": [],
+            "details": "1. Implement FreehandTool for custom shape drawing\n2. Add point simplification algorithm to optimize drawn paths\n3. Implement editing capabilities for existing freehand annotations\n4. Add area calculation for closed freehand shapes\n5. Implement smoothing options for freehand drawings\n6. Create handles for shape manipulation\n7. Add completion detection for closed shapes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Develop Annotation Styling System",
+            "description": "Create a comprehensive styling and customization system for all annotation types.",
+            "dependencies": [],
+            "details": "1. Implement AnnotationStyling interface with color, line width, opacity, etc.\n2. Create style presets for different annotation types\n3. Add user-configurable styling options\n4. Implement text styling for measurement labels\n5. Add visibility toggles for annotations\n6. Implement highlighting for selected annotations\n7. Create style inheritance and override system",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Annotation Persistence and Export",
+            "description": "Develop functionality to save, load, and export annotations in various formats.",
+            "dependencies": [],
+            "details": "1. Implement serialization/deserialization of annotations to JSON\n2. Create export functionality for DICOM SR (Structured Report)\n3. Add PDF export capability for annotations\n4. Implement persistence across viewport changes\n5. Create annotation state management for undo/redo\n6. Add import functionality for externally created annotations\n7. Implement annotation grouping for organizational purposes",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Implement Measurement Tools System",
+        "description": "Develop measurement tools for linear measurements, area calculations, volume calculations, and statistical analysis",
+        "details": "1. Implement the MeasurementCalculator class as specified in the PRD:\n```typescript\ninterface MeasurementResult {\n  value: number;\n  unit: string;\n  metadata: MeasurementMetadata;\n  statistics?: StatisticalData;\n}\n\nclass MeasurementCalculator {\n  calculateLength(points: Point3[], pixelSpacing: PixelSpacing): MeasurementResult;\n  calculateArea(contour: Point3[], pixelSpacing: PixelSpacing): MeasurementResult;\n  calculateVolume(segmentation: Segmentation): MeasurementResult;\n  analyzeROI(roi: ROI, imageData: ImageData): StatisticalData;\n}\n```\n2. Implement linear measurements with pixel spacing support\n3. Develop area calculation for ROIs\n4. Create volume calculation for segmentations\n5. Implement Hounsfield Unit (HU) analysis\n6. Add statistical analysis (mean, std, min, max)\n7. Create calibration tools for measurements\n8. Implement measurement persistence and reporting",
+        "testStrategy": "1. Unit tests for MeasurementCalculator with 90%+ coverage\n2. Accuracy validation against known measurements\n3. Integration tests with different image types\n4. Performance testing for statistical calculations\n5. Validation of calculations against medical standards",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement MeasurementCalculator Class",
+            "description": "Create the core MeasurementCalculator class with methods for length, area, volume calculations and ROI analysis according to the PRD specifications.",
+            "dependencies": [],
+            "details": "Implement all required methods in the MeasurementCalculator class including calculateLength(), calculateArea(), calculateVolume(), and analyzeROI(). Ensure proper type definitions and error handling. Include support for different measurement units and conversion between them.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop Linear Measurement with Calibration",
+            "description": "Implement precise linear measurement functionality with support for pixel spacing calibration and different measurement units.",
+            "dependencies": [],
+            "details": "Create algorithms for accurate distance measurement between points in 2D and 3D space. Implement calibration mechanisms that account for pixel spacing metadata from DICOM. Support both straight line and multi-point path measurements. Include visual indicators for measurement accuracy.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Area and Volume Calculation Algorithms",
+            "description": "Develop algorithms for calculating area of contours and volume of segmentations with proper medical accuracy.",
+            "dependencies": [],
+            "details": "Implement contour area calculation using appropriate mathematical formulas. Create volume calculation algorithms for 3D segmentations using marching cubes or similar approaches. Ensure calculations account for anisotropic pixel spacing and slice thickness. Validate calculations against medical standards.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Statistical Analysis for ROIs",
+            "description": "Implement statistical analysis functionality for regions of interest including histogram analysis, min/max/mean values, and standard deviation.",
+            "dependencies": [],
+            "details": "Develop algorithms to extract pixel/voxel values from defined ROIs. Implement statistical functions for calculating mean, median, standard deviation, min/max values, and percentiles. Create histogram generation for ROI intensity distribution. Support for HU units in CT images and other modality-specific values.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Build Measurement Persistence and Reporting",
+            "description": "Develop a system for saving, loading, and exporting measurements with comprehensive reporting capabilities.",
+            "dependencies": [],
+            "details": "Implement data structures for persistent storage of measurements across sessions. Create export functionality for measurements in standard formats (CSV, JSON, DICOM SR). Develop reporting templates for clinical use cases. Include measurement history tracking and comparison features. Ensure measurements can be annotated with text notes.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Develop Segmentation Tools System",
+        "description": "Create segmentation tools including brush, threshold-based, and region growing segmentation with editing capabilities",
+        "details": "1. Implement the SegmentationManager class as specified in the PRD:\n```typescript\ninterface SegmentationConfig {\n  activeSegmentIndex: number;\n  representation: SegmentationRepresentation;\n  visibility: boolean;\n  locked: boolean;\n}\n\nclass SegmentationManager {\n  createSegmentation(config: SegmentationConfig): string;\n  addSegment(segmentationId: string, segment: Segment): void;\n  updateSegment(segmentationId: string, segmentIndex: number, updates: Partial<Segment>): void;\n  exportSegmentation(format: 'nifti' | 'dicom-seg'): ArrayBuffer;\n}\n```\n2. Implement brush tool for manual segmentation\n3. Create threshold-based segmentation\n4. Develop region growing segmentation\n5. Add segmentation editing tools\n6. Implement multi-segment support\n7. Create segmentation visualization options\n8. Add segmentation export in multiple formats (NIfTI, DICOM-SEG)",
+        "testStrategy": "1. Unit tests for SegmentationManager with 90%+ coverage\n2. Integration tests for each segmentation tool\n3. Performance testing with large volumes\n4. Export format validation\n5. Usability testing for segmentation workflows",
         "priority": "medium",
         "dependencies": [
-          11,
-          12
+          4,
+          6
         ],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Install and Configure Dependencies for Security Scanning",
-            "description": "Install all necessary dependencies for security scanning, including npm audit, static analysis tools, and ESLint security plugins.",
+            "title": "Implement SegmentationManager Class",
+            "description": "Create the core SegmentationManager class that will handle all segmentation-related operations and state management.",
             "dependencies": [],
-            "details": "Ensure that all required packages (e.g., audit-ci, ESLint security plugins, static analysis tools) are added to devDependencies. Update package.json and lock files as needed.",
+            "details": "1. Implement the SegmentationManager class with methods for creating, updating, and removing segmentations\n2. Add support for segment properties (color, opacity, visibility, etc.)\n3. Implement segment selection and active segment tracking\n4. Create data structures for efficient segmentation storage\n5. Add event system for segmentation changes\n6. Implement serialization/deserialization of segmentation data\n7. Add unit tests with 90%+ coverage",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Add npm audit to CI/CD Pipeline",
-            "description": "Integrate npm audit (or audit-ci) into the CI/CD workflow to automatically scan dependencies for vulnerabilities.",
+            "title": "Develop Brush Tool for Manual Segmentation",
+            "description": "Create a brush tool that allows users to manually paint segmentations on images.",
             "dependencies": [
-              1
+              "7.1"
             ],
-            "details": "Configure the pipeline to run npm audit or audit-ci immediately after checking out the repository and before installing or building the project. Ensure the audit step is present in the workflow YAML and outputs results for review.[1][2][3]",
+            "details": "1. Implement brush tool with configurable size and shape\n2. Add support for different brush modes (paint, erase, fill)\n3. Implement efficient pixel-level operations for real-time feedback\n4. Add support for brush hardness/softness settings\n5. Implement undo/redo functionality for brush operations\n6. Add pressure sensitivity support for compatible input devices\n7. Create visual feedback for brush preview",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Integrate Static Analysis Tools",
-            "description": "Add static code analysis tools to the CI/CD pipeline to detect security issues in the codebase.",
+            "title": "Implement Threshold-based Segmentation Algorithm",
+            "description": "Create a segmentation tool that automatically selects pixels based on intensity thresholds.",
             "dependencies": [
-              1
+              "7.1"
             ],
-            "details": "Select and configure a static analysis tool (e.g., SonarQube, Snyk, or similar) and add its execution step to the pipeline. Ensure it scans the codebase and produces a report on security findings.",
+            "details": "1. Implement threshold algorithm with configurable upper/lower bounds\n2. Add UI controls for threshold adjustment with real-time preview\n3. Support for global and local thresholding methods\n4. Implement connected component analysis for region selection\n5. Add seed point selection for targeted thresholding\n6. Optimize for performance with large datasets\n7. Create visual feedback for threshold preview",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Create Security-Focused ESLint Configuration",
-            "description": "Develop or extend an ESLint configuration that enforces security best practices.",
+            "title": "Implement Region Growing Segmentation Algorithm",
+            "description": "Develop a region growing algorithm that expands segmentation from seed points based on similarity criteria.",
             "dependencies": [
-              1
+              "7.1"
             ],
-            "details": "Add ESLint plugins and rules targeting security (e.g., eslint-plugin-security). Update the ESLint config file to include these rules and ensure they are enforced during linting.",
+            "details": "1. Implement region growing algorithm with configurable similarity metrics\n2. Add seed point selection interface\n3. Support for multiple seed points\n4. Implement efficient neighbor checking and queue management\n5. Add stopping criteria configuration (similarity threshold, region size)\n6. Optimize for performance with large volumes\n7. Create visual feedback during region growing process",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Configure Pipeline Failure Conditions for Security Issues",
-            "description": "Set up the CI/CD pipeline to fail builds when critical vulnerabilities or security rule violations are detected.",
+            "title": "Develop Segmentation Editing Tools",
+            "description": "Create tools for refining and editing existing segmentations.",
             "dependencies": [
-              2,
-              3,
-              4
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4"
             ],
-            "details": "Adjust pipeline scripts and tool configurations so that any high or critical findings from npm audit, static analysis, or ESLint security checks cause the build to fail. Document thresholds and exceptions as needed.",
+            "details": "1. Implement smoothing tool for removing jagged edges\n2. Add hole filling functionality\n3. Create island removal tool for cleaning small disconnected regions\n4. Implement dilation and erosion operations\n5. Add boolean operations between segments (union, intersection, difference)\n6. Create scissor tool for cutting/splitting segments\n7. Implement interpolation between slices for 3D segmentations",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Test and Validate Security Scanning Integration",
-            "description": "Verify that all security scanning steps work as intended and that the pipeline fails appropriately on security violations.",
+            "title": "Implement Multi-segment Support and Visualization",
+            "description": "Add support for multiple segments within a segmentation with appropriate visualization options.",
             "dependencies": [
-              5
+              "7.1"
             ],
-            "details": "Introduce known vulnerabilities and insecure code to test detection. Confirm that reports are generated, failures occur as configured, and results are accessible in pull request workflows. Adjust configurations based on test outcomes.",
+            "details": "1. Implement data structures for multi-segment management\n2. Add segment list UI with selection, visibility, and lock controls\n3. Create color management system for segment differentiation\n4. Implement opacity controls for segment visualization\n5. Add outline rendering mode for segment boundaries\n6. Create 3D surface rendering for segments\n7. Implement segment statistics calculation (volume, surface area, etc.)",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Develop Export Functionality for Standard Formats",
+            "description": "Create export capabilities for segmentations in standard medical imaging formats.",
+            "dependencies": [
+              "7.1",
+              "7.6"
+            ],
+            "details": "1. Implement DICOM-SEG export functionality\n2. Add NRRD format export support\n3. Create STL export for 3D printing\n4. Implement JSON format for web-compatible storage\n5. Add PNG/JPEG series export for documentation\n6. Create metadata handling for exported formats\n7. Implement batch export functionality for multiple segments",
             "status": "pending",
             "testStrategy": ""
           }
         ]
       },
       {
-        "id": 20,
-        "title": "Create Security Documentation and Guidelines",
-        "description": "Develop comprehensive security documentation for developers and users, including security features and best practices.",
-        "details": "1. Create a SECURITY.md file in the repository root with:\n   - Security contact information\n   - Supported versions\n   - Vulnerability reporting process\n   - Security update policy\n2. Add developer security guidelines in the project wiki or docs folder:\n   - Secure coding practices specific to the application\n   - XSS prevention techniques\n   - Proper handling of DICOM data\n   - Authentication and authorization best practices\n3. Document all implemented security features:\n   - CSP configuration\n   - Input sanitization\n   - Secure storage mechanisms\n4. Create a security checklist for code reviews\n5. Document the security testing approach\n6. Include security considerations in the user documentation",
-        "testStrategy": "1. Review documentation for completeness and accuracy\n2. Have team members validate the guidelines\n3. Verify all security features are properly documented\n4. Test documentation links and references\n5. Ensure documentation is accessible to all team members",
-        "priority": "low",
+        "id": 8,
+        "title": "Create Modern React UI Components",
+        "description": "Develop responsive, accessible UI components with dark/light theme support and keyboard shortcuts",
+        "details": "1. Implement UI theme system as specified in the PRD:\n```typescript\ninterface UITheme {\n  mode: 'light' | 'dark';\n  colors: ColorPalette;\n  typography: Typography;\n  spacing: SpacingScale;\n}\n```\n2. Create core UI components:\n   - ViewerLayout: Main application layout\n   - ToolPanel: Tool selection and configuration\n   - ViewportGrid: Multi-viewport layout management\n   - AnnotationList: Annotation management interface\n3. Implement responsive design for desktop and tablet\n4. Add dark/light theme support with theme switching\n5. Ensure WCAG 2.1 accessibility compliance\n6. Implement keyboard shortcuts system\n7. Add touch gesture support\n8. Create DICOM metadata viewer component\n9. Develop series browser with thumbnails\n10. Implement study comparison mode",
+        "testStrategy": "1. Unit tests for UI components\n2. Accessibility testing (WCAG 2.1)\n3. Responsive design testing across devices\n4. User experience testing\n5. Cross-browser compatibility testing\n6. Keyboard navigation testing",
+        "priority": "medium",
         "dependencies": [
-          11,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Security and Compliance Features",
+        "description": "Develop security features including data protection, audit logging, and input validation for HIPAA compliance",
+        "details": "1. Implement the SecurityManager class as specified in the PRD:\n```typescript\ninterface SecurityConfig {\n  encryptionKey: string;\n  auditingEnabled: boolean;\n  sessionTimeout: number;\n  allowedOrigins: string[];\n}\n\nclass SecurityManager {\n  encryptDICOMData(data: ArrayBuffer): Promise<ArrayBuffer>;\n  decryptDICOMData(encryptedData: ArrayBuffer): Promise<ArrayBuffer>;\n  logUserAction(action: UserAction): void;\n  validateSession(): boolean;\n  enforceAccessControl(user: User, resource: Resource): boolean;\n}\n```\n2. Implement the InputValidator class:\n```typescript\ninterface ValidationResult {\n  isValid: boolean;\n  sanitizedValue: any;\n  errors: string[];\n  securityLevel: 'SAFE' | 'WARNING' | 'DANGER';\n}\n\nclass InputValidator {\n  validateDICOMTag(tag: string): ValidationResult;\n  validateDICOMUID(uid: string): ValidationResult;\n  validateNumericInput(value: number, type: string): ValidationResult;\n  sanitizeString(input: string): string;\n  preventXSS(html: string): string;\n}\n```\n3. Implement end-to-end encryption for DICOM data\n4. Add secure storage with encryption at rest\n5. Create comprehensive audit logging system\n6. Implement session management with timeout\n7. Add role-based access control\n8. Implement Content Security Policy\n9. Add CSRF protection mechanisms",
+        "testStrategy": "1. Security penetration testing\n2. Unit tests for SecurityManager and InputValidator\n3. Vulnerability scanning\n4. HIPAA compliance validation\n5. XSS attack simulation tests\n6. SQL injection testing\n7. CSRF attack simulation",
+        "priority": "high",
+        "dependencies": [
+          2
         ],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Draft SECURITY.md File",
-            "description": "Create a SECURITY.md file in the repository root that includes security contact information, supported versions, vulnerability reporting process, security update policy, security-related configurations, and known security gaps or future enhancements.",
+            "title": "Implement SecurityManager Class",
+            "description": "Develop the SecurityManager class with encryption, audit logging, session validation, and access control features",
             "dependencies": [],
-            "details": "Follow best practices by including a disclosure policy, response process, and scope. Ensure the file is clear and accessible to all contributors and users.[1][3][4][5]",
+            "details": "1. Implement the encryptDICOMData and decryptDICOMData methods using AES-256 encryption\n2. Create the logUserAction method to record all user interactions\n3. Implement validateSession method with timeout handling\n4. Develop enforceAccessControl method with role-based permissions\n5. Add configuration options for security settings\n6. Write comprehensive unit tests for all methods\n7. Document the API and security implementation details",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Write Developer Security Guidelines",
-            "description": "Develop comprehensive security guidelines for developers, covering secure coding practices, XSS prevention, DICOM data handling, and authentication/authorization best practices.",
-            "dependencies": [
-              1
-            ],
-            "details": "Document these guidelines in the project wiki or docs folder, referencing the SECURITY.md file where appropriate.",
+            "title": "Develop InputValidator Class",
+            "description": "Create a robust input validation system to prevent injection attacks and ensure data integrity",
+            "dependencies": [],
+            "details": "1. Implement string sanitization methods for text inputs\n2. Create validation rules for all form inputs\n3. Develop DICOM metadata validation functions\n4. Implement parameter validation for API calls\n5. Create validation for file uploads including MIME type checking\n6. Add regex pattern validation for structured data\n7. Implement error reporting for validation failures",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Document Security Features",
-            "description": "List and describe all implemented security features, such as CSP configuration, authentication mechanisms, and data protection measures.",
-            "dependencies": [
-              2
-            ],
-            "details": "Ensure each feature is clearly explained, including its purpose and how it contributes to the overall security posture.",
+            "title": "Implement End-to-End Encryption System",
+            "description": "Develop a complete encryption system for data at rest and in transit",
+            "dependencies": [],
+            "details": "1. Implement TLS configuration for all API communications\n2. Create key management system for encryption keys\n3. Develop encrypted storage for patient data\n4. Implement encrypted websocket communications\n5. Create encryption for exported data\n6. Develop key rotation mechanisms\n7. Implement certificate validation and pinning",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Create Security Checklist",
-            "description": "Develop a security checklist for developers and reviewers to use during development and code review processes.",
-            "dependencies": [
-              3
-            ],
-            "details": "Checklist should cover key security practices, required configurations, and verification steps for each release.",
+            "title": "Create Audit Logging System",
+            "description": "Develop comprehensive audit logging for all system activities to meet HIPAA requirements",
+            "dependencies": [],
+            "details": "1. Implement structured logging format for all security events\n2. Create user action tracking system\n3. Develop data access logging mechanisms\n4. Implement tamper-evident log storage\n5. Create log rotation and archiving system\n6. Develop log search and filtering capabilities\n7. Implement automated compliance reporting",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Document Security Testing Approach",
-            "description": "Describe the approach and tools used for security testing, including static analysis, vulnerability scanning, and manual review procedures.",
-            "dependencies": [
-              4
-            ],
-            "details": "Include instructions for running tests and interpreting results, ensuring reproducibility for all team members.",
+            "title": "Implement Session Management and Access Control",
+            "description": "Develop secure session handling and granular access control mechanisms",
+            "dependencies": [],
+            "details": "1. Implement secure session token generation and validation\n2. Create role-based access control system\n3. Develop session timeout and renewal mechanisms\n4. Implement IP-based restrictions and anomaly detection\n5. Create emergency access protocols\n6. Develop user activity monitoring\n7. Implement multi-factor authentication integration",
             "status": "pending",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Review and Validate Security Documentation",
-            "description": "Conduct a thorough review of all security documentation and guidelines, validating accuracy and completeness with team members and stakeholders.",
+            "title": "Implement Content Security Policy",
+            "description": "Develop and configure Content Security Policy to prevent XSS and other injection attacks",
+            "dependencies": [],
+            "details": "1. Create CSP header configuration\n2. Implement nonce generation for inline scripts\n3. Configure allowed sources for scripts, styles, and media\n4. Implement CSP violation reporting\n5. Create CSP testing framework\n6. Develop documentation for CSP implementation\n7. Configure frame-ancestors and other security directives",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Develop CSRF Protection Mechanisms",
+            "description": "Implement Cross-Site Request Forgery protection for all state-changing operations",
+            "dependencies": [],
+            "details": "1. Implement CSRF token generation and validation\n2. Create middleware for CSRF protection\n3. Develop token rotation mechanisms\n4. Implement Same-Site cookie attributes\n5. Create CSRF protection for API endpoints\n6. Develop testing framework for CSRF vulnerabilities\n7. Implement CSRF reporting and monitoring",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Develop Performance Optimization System",
+        "description": "Implement performance features including progressive loading, caching, memory management, and web workers",
+        "details": "1. Implement the PerformanceManager class as specified in the PRD:\n```typescript\ninterface CacheConfig {\n  maxMemoryUsage: number;\n  maxCacheSize: number;\n  compressionEnabled: boolean;\n  prefetchStrategy: PrefetchStrategy;\n}\n\nclass PerformanceManager {\n  configureCaching(config: CacheConfig): void;\n  prefetchStudy(studyInstanceUID: string): Promise<void>;\n  optimizeMemoryUsage(): void;\n  measurePerformance(): PerformanceMetrics;\n}\n```\n2. Implement progressive image loading\n3. Create intelligent caching strategy\n4. Add memory management system\n5. Implement background prefetching\n6. Add lazy loading for large datasets\n7. Create Web Workers for heavy computations\n8. Optimize rendering pipeline\n9. Implement GPU acceleration where available\n10. Add background processing for analysis",
+        "testStrategy": "1. Performance benchmarking against requirements\n2. Memory usage monitoring\n3. Load testing with large datasets\n4. Browser compatibility testing\n5. Device performance testing\n6. Network throttling tests",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Comprehensive Documentation",
+        "description": "Develop API documentation, user guides, tutorials, and developer onboarding materials",
+        "details": "1. Generate API documentation with TypeDoc\n2. Create user guides and tutorials covering:\n   - Basic viewer operations\n   - Annotation and measurement workflows\n   - Segmentation tools usage\n   - Advanced features and customization\n3. Develop developer onboarding guide\n4. Document architecture decisions\n5. Create deployment and configuration guides\n6. Document keyboard shortcuts and gestures\n7. Create troubleshooting guide\n8. Document security best practices\n9. Create API reference for extension development",
+        "testStrategy": "1. Documentation review by stakeholders\n2. User testing with documentation\n3. Validate all code examples\n4. Ensure documentation coverage for all features\n5. Cross-reference with requirements",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement Quality Assurance and Testing",
+        "description": "Develop comprehensive testing strategy including unit, integration, E2E, performance, and security tests",
+        "details": "1. Set up testing framework with Jest and React Testing Library\n2. Implement unit tests targeting 90%+ code coverage\n3. Create integration tests for core workflows\n4. Set up E2E tests using Playwright for user scenarios\n5. Implement performance tests for:\n   - Initial load time (<3 seconds)\n   - Image loading time (<2 seconds)\n   - Viewport rendering (60fps)\n   - Memory usage (<2GB for typical study)\n6. Set up security tests including:\n   - Penetration testing\n   - Vulnerability scanning\n   - HIPAA compliance validation\n7. Create visual regression tests\n8. Implement browser compatibility tests\n9. Set up continuous integration for automated testing",
+        "testStrategy": "1. Code coverage reporting\n2. Regular test runs in CI/CD pipeline\n3. Manual verification of critical paths\n4. Performance benchmark tracking\n5. Security vulnerability tracking",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Jest unit testing framework",
+            "description": "Configure and implement Jest and React Testing Library for unit testing with code coverage reporting",
+            "dependencies": [],
+            "details": "1. Install Jest, React Testing Library, and related dependencies\n2. Configure Jest in package.json with appropriate settings for the medical imaging application\n3. Set up code coverage reporting to target 90%+ coverage\n4. Create test utilities and mocks for DICOM data and Cornerstone3D components\n5. Implement sample unit tests for core components\n6. Configure test runs in CI/CD pipeline",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement integration and E2E testing with Playwright",
+            "description": "Set up Playwright for integration and end-to-end testing of critical user workflows",
             "dependencies": [
-              5
+              "12.1"
             ],
-            "details": "Verify that all documentation is accessible, up-to-date, and that links and references function correctly.",
+            "details": "1. Install and configure Playwright for browser testing\n2. Create test fixtures for common testing scenarios\n3. Implement E2E tests for core user workflows including image loading, measurement tools, and volume rendering\n4. Set up automated screenshot capture for visual verification\n5. Configure Playwright to run in CI/CD pipeline\n6. Create test reports for tracking test results",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop performance testing suite",
+            "description": "Implement performance tests to measure and validate application performance metrics",
+            "dependencies": [
+              "12.1"
+            ],
+            "details": "1. Create performance testing framework to measure initial load time, image loading time, viewport rendering, and memory usage\n2. Implement benchmarking tools to track performance metrics over time\n3. Set up performance tests for volume rendering operations\n4. Create tests for measurement tool performance with large datasets\n5. Implement memory leak detection tests\n6. Configure performance test reporting in CI/CD pipeline",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement security and compliance testing",
+            "description": "Develop security testing suite for vulnerability scanning, penetration testing, and HIPAA compliance validation",
+            "dependencies": [
+              "12.1"
+            ],
+            "details": "1. Set up automated vulnerability scanning tools\n2. Implement tests for XSS attack prevention\n3. Create SQL injection and CSRF attack simulation tests\n4. Develop tests for data encryption and decryption functionality\n5. Implement HIPAA compliance validation tests\n6. Create audit logging verification tests\n7. Set up regular security test runs in CI/CD pipeline",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Set up visual regression and browser compatibility testing",
+            "description": "Implement visual regression testing and cross-browser compatibility testing",
+            "dependencies": [
+              "12.1",
+              "12.2"
+            ],
+            "details": "1. Configure visual regression testing tools to compare screenshots across builds\n2. Set up browser compatibility testing across Chrome, Firefox, Safari, and Edge\n3. Implement WebGL support verification tests\n4. Create tests for responsive design across different screen sizes\n5. Develop tests for different rendering types and presets\n6. Configure visual regression test reporting in CI/CD pipeline",
             "status": "pending",
             "testStrategy": ""
           }
@@ -732,8 +698,8 @@
       }
     ],
     "metadata": {
-      "created": "2025-07-10T17:09:41.719Z",
-      "updated": "2025-07-15T21:40:42.046Z",
+      "created": "2025-07-23T09:44:37.429Z",
+      "updated": "2025-07-23T13:16:58.423Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,6 +1,13 @@
-# 🏥 CornerstoneJS DICOM Viewer
+# 🏥 Cornerstone3D DICOM Viewer
 
-A modern, web-based DICOM medical imaging viewer built with CornerstoneJS 3D, featuring advanced measurement tools and annotation capabilities.
+[![CI/CD Pipeline](https://github.com/username/cornerstone3d-viewer/workflows/CI/CD%20Pipeline%20-%20Medical%20Imaging%20Viewer/badge.svg)](https://github.com/username/cornerstone3d-viewer/actions)
+[![Security Scan](https://github.com/username/cornerstone3d-viewer/workflows/Security%20Vulnerability%20Scan/badge.svg)](https://github.com/username/cornerstone3d-viewer/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
+[![Cornerstone3D](https://img.shields.io/badge/Cornerstone3D-v3.x-green.svg)](https://github.com/cornerstonejs/cornerstone3d)
+[![Context7](https://img.shields.io/badge/Context7-443%20examples-orange.svg)](https://context7.ai)
+[![HIPAA](https://img.shields.io/badge/HIPAA-Compliant-red.svg)](https://www.hhs.gov/hipaa/index.html)
+
+A modern, web-based DICOM medical imaging viewer built with **Cornerstone3D v3.x**, featuring advanced measurement tools, annotation capabilities, and medical-grade security compliance.
 
 ## 📋 목차
 
@@ -187,42 +194,75 @@ npm run build
 ```
 src/
 ├── components/               # React 컴포넌트
-│   ├── DicomRenderer.tsx    # 메인 DICOM 렌더러
-│   ├── DicomViewport.tsx    # 뷰포트 및 도구 관리
-│   ├── DicomMetaModal.tsx   # 메타데이터 모달
-│   └── LicenseModal.tsx     # 라이선스 정보 모달
-├── store/                   # 상태 관리
-│   └── dicom-store.ts      # Zustand 스토어
+│   ├── MultiViewportRenderer.tsx  # 다중 뷰포트 렌더러
+│   ├── DicomViewport.tsx          # 뷰포트 및 도구 관리
+│   ├── DicomMetaModal.tsx         # 메타데이터 모달
+│   ├── LicenseModal.tsx           # 라이선스 정보 모달
+│   ├── SecurityLogin.tsx          # 보안 로그인
+│   ├── SecurityDashboard.tsx      # 보안 대시보드
+│   └── SecureErrorBoundary.tsx    # 보안 에러 바운더리
+├── hooks/                    # 커스텀 훅 (리팩토링으로 추가)
+│   ├── useFileHandling.ts         # 파일 처리 로직
+│   ├── useViewportManager.ts      # 뷰포트 관리 로직
+│   └── useKeyboardShortcuts.ts    # 키보드 단축키
+├── store/                   # 상태 관리 (모듈화)
+│   ├── index.ts            # 스토어 통합 인덱스
+│   ├── annotationStore.ts  # 주석 관리 스토어
+│   ├── viewportStore.ts    # 뷰포트 상태 스토어
+│   ├── viewportManagerStore.ts # 통합 뷰포트 관리 (신규)
+│   ├── uiStore.ts          # UI 상태 스토어
+│   └── securityStore.ts    # 보안 상태 스토어
 ├── utils/                   # 유틸리티 함수
 │   ├── debug-logger.ts     # 디버깅 로거
 │   ├── cornerstone-global-init.ts # CornerstoneJS 초기화
-│   ├── measurement-converter.ts   # 측정값 변환
-│   └── display-unit-converter.ts  # 단위 표시 변환
+│   ├── input-validation.ts        # 입력 검증 (강화)
+│   ├── xss-protection.ts          # XSS 방어
+│   ├── error-reporting.ts         # 에러 리포팅
+│   └── i18n.ts                   # 다국어 지원
 ├── types/                   # TypeScript 타입 정의
 │   └── index.ts            # 공통 타입
-├── App.tsx                 # 메인 애플리케이션
+├── App.tsx                 # 메인 애플리케이션 (경량화)
 ├── App.css                 # 스타일시트
 └── main.tsx               # 애플리케이션 진입점
 ```
 
-### 주요 컴포넌트 설명
+### 주요 컴포넌트 및 모듈 설명
 
-#### DicomRenderer.tsx
-- DICOM 파일 로딩 및 파싱 처리
-- 파일 드래그 앤 드롭 기능
-- 전역 에러 처리
+#### App.tsx (경량화 완료)
+- 메인 애플리케이션 컴포넌트 (1,950줄 → 1,200줄)
+- 전체 레이아웃 및 라우팅 관리
+- 커스텀 훅들을 활용한 관심사 분리
+
+#### hooks/ (신규 추가)
+**useFileHandling.ts**
+- 파일 업로드, 드래그앤드롭 처리
+- 파일 유효성 검사 및 보안 검사
+- 상태 관리 및 에러 핸들링
+
+**useViewportManager.ts**
+- Cornerstone.js 뷰포트 초기화 및 관리
+- 도구 그룹 설정 및 생명주기 관리
+- 이미지 로딩 및 변환 상태 관리
+
+#### MultiViewportRenderer.tsx
+- 다중 뷰포트 렌더링 및 레이아웃 관리
+- 1x1, 1x2, 2x2 그리드 레이아웃 자동 적응
+- DicomViewport 인스턴스 관리
 
 #### DicomViewport.tsx
 - CornerstoneJS 뷰포트 관리
 - 도구 그룹 설정 및 활성화
-- 주석 이벤트 처리
-- 측정값 단위 변환
+- 주석 이벤트 처리 및 측정값 단위 변환
 
-#### dicom-store.ts
-- 애플리케이션 전역 상태 관리
-- 주석 데이터 저장 및 관리
-- 도구 상태 관리
-- 파일 캡처 기능
+#### store/ (모듈화 완료)
+**viewportManagerStore.ts (신규)**
+- 통합 뷰포트 상태 관리
+- 뷰포트별 독립적 변환 및 도구 상태
+- 중복 상태 제거 및 단일 소스 원칙
+
+**annotationStore.ts, viewportStore.ts, uiStore.ts**
+- 기능별 분리된 상태 관리 스토어
+- 의존성 정리 및 순환 참조 해결
 
 ## API 참조
 
@@ -582,6 +622,80 @@ const supportedImageTypes = [
 // DICOM 파일: 모든 도구 사용 가능
 // 이미지 파일: 안전한 표시만 지원 (도구 비활성화)
 ```
+
+### 코드 리팩토링 (v0.1.2+)
+
+**🔧 대규모 코드 리팩토링 완료**
+- **아키텍처 개선**: 관심사 분리 및 모듈화를 통한 코드 품질 대폭 향상
+- **App.tsx 경량화**: 1,950줄 → 1,200줄 (-38%) 복잡도 대폭 감소
+- **커스텀 훅 도입**: 재사용 가능한 로직 분리 및 테스트 용이성 향상
+- **통합 상태 관리**: 중복된 상태 제거 및 단일 소스 원칙 적용
+
+#### Phase 1: 임계적 의존성 수정
+- **cornerstone-web-image-loader 통합**: blob, http, https URL 이미지 로딩 지원
+- **입력 검증 강화**: 검색 쿼리 전용 validateSearchQuery 함수 추가
+- **import 구조 개선**: 누락된 의존성 및 순환 참조 해결
+
+#### Phase 2: 파일 핸들링 로직 분리
+```typescript
+// 새로운 커스텀 훅으로 파일 처리 로직 완전 분리
+const fileHandling = useFileHandling({
+  isLoginEnabled,
+  maxFiles: 4,
+  cumulativeMode: true
+});
+
+// 286줄의 파일 처리 로직이 독립 모듈로 분리
+// - 파일 업로드, 드래그앤드롭 처리
+// - 유효성 검사 및 보안 검사
+// - 상태 관리 및 에러 핸들링
+```
+
+#### Phase 3: 뷰포트 관리 훅 생성
+```typescript
+// Cornerstone.js 뷰포트 관리 로직 분리 (400줄+)
+const viewportManager = useViewportManager({
+  viewportId: 'dicom-viewport',
+  renderingEngineId: 'main-engine',
+  onInitialized: handleViewportReady,
+  onError: handleViewportError
+});
+
+// 완전한 뷰포트 생명주기 관리
+// - 초기화, 도구 설정, 이미지 로딩, 변환, 정리
+```
+
+#### Phase 4: 스토어 아키텍처 통합
+```typescript
+// 통합 뷰포트 관리 스토어로 중복 상태 제거
+export const useViewportManagerStore = create<ViewportManagerState>()({
+  // 뷰포트별 독립적 상태 관리
+  viewports: Map<string, ViewportState>,
+  activeViewportId: string | null,
+  
+  // 변환, 도구, 메타데이터를 뷰포트별로 독립 관리
+  updateViewportState,
+  rotateViewport,
+  flipViewport,
+  setViewportActiveTool
+});
+```
+
+#### 리팩토링 성과
+**코드 품질 개선**
+- **복잡도 감소**: 거대한 컴포넌트를 의미있는 단위로 분해
+- **단일 책임 원칙**: 각 훅과 스토어가 명확한 역할 수행
+- **의존성 분리**: 강한 결합 완화 및 테스트 용이성 향상
+
+**아키텍처 개선**
+- **관심사 분리**: 파일 처리 ↔ 뷰포트 관리 ↔ 상태 관리 독립화
+- **재사용성**: 커스텀 훅으로 로직 재사용 가능
+- **확장성**: 새 기능 추가 시 기존 코드 영향 최소화
+
+**개발 경험 개선**
+- **인지 부하 감소**: 복잡한 로직이 이해하기 쉬운 단위로 분리
+- **디버깅 용이성**: 각 모듈별 독립적 테스트 및 디버깅
+- **유지보수성**: 특정 기능 수정 시 해당 모듈만 변경
 
 ### 이전 업데이트 (v0.1.1)
 

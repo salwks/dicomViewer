@@ -1,14 +1,26 @@
 /**
- * Dummy polyseg implementation to prevent build errors
- * This module is temporarily disabled to avoid WASM loading issues
+ * Dummy implementation for polyseg-wasm to prevent build issues
+ * This is a placeholder that provides the expected interface
  */
 
-class ICRPolySeg {
-  static async createModule() {
-    console.warn('PolySeg WASM module is disabled');
-    return null;
+export default class ICRPolySeg {
+  constructor() {
+    console.warn('ICRPolySeg dummy implementation - actual segmentation disabled');
+  }
+
+  static getInstance() {
+    return new ICRPolySeg();
+  }
+
+  // Dummy methods to match expected interface
+  init() {
+    return Promise.resolve();
+  }
+
+  process() {
+    return Promise.resolve(null);
   }
 }
 
-// Default export for compatibility
-export default ICRPolySeg;
+// Export for CommonJS compatibility
+module.exports = ICRPolySeg;

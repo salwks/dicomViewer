@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-07-23T21:19:21.668Z",
+  "summary": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "success": true,
+    "errors": []
+  },
+  "testSuites": [
+    "Core Services Initialization",
+    "DICOM Metadata Processing",
+    "Error Handling Systems",
+    "WADO Protocol Handling",
+    "Progressive Loading",
+    "Service Integration",
+    "Security Measures"
+  ],
+  "securityFeatures": [
+    "Map-based headers for WADO protocol",
+    "Input validation and sanitization",
+    "Error information sanitization",
+    "Memory management and cleanup",
+    "Secure object access patterns"
+  ],
+  "environment": {
+    "nodeVersion": "v24.4.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  }
+}

@@ -4,11 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Clarity</title>
-    <meta
-      name="description"
-      content="Modern React-based DICOM viewer using Cornerstone3D"
-    />
+    <title>Cornerstone3D DICOM Viewer</title>
+    <meta name="description" content="Advanced Medical Imaging Viewer built with Cornerstone3D" />
+    <meta name="keywords" content="DICOM, medical imaging, radiology, cornerstone3d" />
+    
+    <!-- Security Headers (Note: X-Frame-Options only works via HTTP headers, not meta tags) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <!-- Medical Grade Security -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
   </head>
   <body>
     <div id="root"></div>

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
+// import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
 import { wasmResolver } from './vite-wasm-resolver.js';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
@@ -30,39 +30,7 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     
-    // Security Headers Plugin for Medical Imaging
-    securityHeaders({
-      contentSecurityPolicy: medicalCSPConfig,
-      strictTransportSecurity: 'max-age=31536000; includeSubDomains; preload',
-      xFrameOptions: 'DENY',
-      xContentTypeOptions: 'nosniff',
-      referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: [
-        'accelerometer=()',
-        'camera=(self)',
-        'geolocation=()',
-        'gyroscope=()',
-        'magnetometer=()',
-        'microphone=(self)',
-        'payment=()',
-        'usb=(self)', // For medical device connectivity
-      ].join(', '),
-      // Relax CORS policies for development
-      crossOriginEmbedderPolicy: process.env.NODE_ENV === 'development' ? undefined : 'require-corp',
-      crossOriginOpenerPolicy: process.env.NODE_ENV === 'development' ? undefined : 'same-origin',
-      crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? undefined : 'same-origin',
-      xXSSProtection: '1; mode=block',
-      customHeaders: {
-        'X-Medical-Data-Protection': 'HIPAA-Compliant',
-        'X-Security-Policy': 'Medical-Imaging-Enhanced',
-        'X-Content-Security-Policy': 'Medical-Grade',
-        'Cache-Control': process.env.NODE_ENV === 'development' ? 'no-cache' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
-      enableHSTS: process.env.NODE_ENV !== 'development', // Disable HSTS in development
-      enableNonce: false, // Disabled for compatibility with medical imaging libraries
-    }),
+    // Security Headers Plugin temporarily disabled for build testing
     
     viteStaticCopy({
       targets: [

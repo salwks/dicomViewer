@@ -1,223 +1,109 @@
-import { Types } from '@cornerstonejs/core';
+/**
+ * Type Definitions Index
+ *
+ * Centralized exports for all application types
+ */
 
-// Fix for TS7053: Proper annotation typing with index signature
-export interface AnnotationData {
-  annotationUID: string;
-  toolName: string;
-  data: {
-    handles?: {
-      points?: Types.Point3[];
-      activeHandleIndex?: number;
-      textBox?: {
-        hasMoved: boolean;
-        worldPosition: Types.Point3;
-        worldBoundingBox?: {
-          topLeft: Types.Point3;
-          topRight: Types.Point3;
-          bottomLeft: Types.Point3;
-          bottomRight: Types.Point3;
-        };
-      };
-      [key: string]: any;
-    };
-    label?: string;
-    text?: string;
-    cachedStats?: {
-      [key: string]: any;
-    };
-    [key: string]: any;
-  };
-  metadata: {
-    toolName: string;
-    viewportId?: string;
-    FrameOfReferenceUID: string;
-    referencedImageId?: string;
-    [key: string]: any;
-  };
-  isLocked?: boolean;
-  isVisible?: boolean;
-  highlighted?: boolean;
-  invalidated?: boolean;
-  [key: string]: any; // Index signature to fix TS7053
-}
+// DICOM and Medical Imaging Types
+export * from './dicom';
 
-// Viewport configuration types
-export interface ViewportConfig {
-  viewportId: string;
-  type: 'stack' | 'volume' | 'video';
-  element: HTMLDivElement;
-  defaultOptions?: {
-    orientation?: any; // Using any to avoid OrientationAxis import issue
-    background?: Types.RGB;
-  };
-}
+// Re-export Cornerstone3D types for convenience
+export type {
+  Types as CornerstoneTypes,
+  Enums as CornerstoneEnums,
+} from '@cornerstonejs/core';
 
-// Tool configuration types
-export interface ToolConfig {
-  toolName: string;
-  configuration?: {
-    [key: string]: any;
-  };
-}
+export type {
+  Types as CornerstoneToolsTypes,
+  Enums as CornerstoneToolsEnums,
+} from '@cornerstonejs/tools';
 
-export interface ToolGroupConfig {
-  toolGroupId: string;
-  tools: ToolConfig[];
-  viewportIds: string[];
-}
-
-// Series and image types
-export interface SeriesInfo {
-  seriesInstanceUID: string;
-  seriesNumber: string;
-  seriesDescription: string;
-  modality: string;
-  imageIds: string[];
-  numberOfImages: number;
-  studyInstanceUID: string;
-  patientInfo?: {
-    patientName?: string;
-    patientId?: string;
-    patientBirthDate?: string;
-    patientSex?: string;
-  };
-}
-
-export interface ImageInfo {
-  imageId: string;
-  instanceNumber: number;
-  sopInstanceUID: string;
-  rows: number;
-  columns: number;
-  pixelSpacing?: [number, number];
-  sliceThickness?: number;
-  sliceLocation?: number;
-}
-
-// Layout types
-export type LayoutType = '1x1' | '1x2' | '2x1' | '2x2' | '3x3' | '4x4';
-
-// Measurement unit types
-export type MeasurementUnit = 'mm' | 'inch';
-
-export interface LayoutConfig {
-  rows: number;
-  columns: number;
-  viewports: ViewportConfig[];
-}
-
-// Window level types
-export interface WindowLevelConfig {
-  windowCenter: number;
-  windowWidth: number;
-  presetName?: string;
-}
-
-export interface WindowLevelPreset {
+// Application-specific types
+export interface AppConfig {
   name: string;
-  windowCenter: number;
-  windowWidth: number;
-  description?: string;
-}
-
-// Annotation store state interface to fix type errors
-export interface AnnotationState {
-  annotations: {
-    [frameOfReferenceUID: string]: {
-      [toolName: string]: AnnotationData[];
-    };
-  };
-  managers: {
-    [managerId: string]: any;
+  version: string;
+  environment: 'development' | 'production' | 'test';
+  features: {
+    segmentation: boolean;
+    measurement: boolean;
+    annotation: boolean;
+    multiplanarReconstruction: boolean;
+    volumeRendering: boolean;
   };
 }
 
-// Event types
-export interface AnnotationEvent {
-  type: string;
-  detail: {
-    annotation?: AnnotationData;
-    annotationUID?: string;
-    added?: AnnotationData[];
-    removed?: AnnotationData[];
-    [key: string]: any;
+export interface User {
+  id: string;
+  name: string;
+  role: 'radiologist' | 'technician' | 'physician' | 'researcher';
+  permissions: string[];
+}
+
+export interface Session {
+  id: string;
+  user: User;
+  startTime: Date;
+  lastActivity: Date;
+  studies: string[];
+}
+
+// Error types
+export enum ErrorCategory {
+  DICOM_PARSING = 'DICOM_PARSING',
+  RENDERING = 'RENDERING',
+  NETWORK = 'NETWORK',
+  SECURITY = 'SECURITY',
+  USER_INPUT = 'USER_INPUT',
+  AUTHENTICATION = 'AUTHENTICATION',
+  MEMORY = 'MEMORY',
+  VALIDATION = 'VALIDATION',
+  CONFIGURATION = 'CONFIGURATION',
+  CORRUPTION = 'CORRUPTION',
+  PERFORMANCE = 'PERFORMANCE',
+  LOADING = 'LOADING'
+}
+
+export interface MedicalImagingError extends Error {
+  code: string;
+  category: ErrorCategory;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  context?: {
+    studyInstanceUID?: string;
+    seriesInstanceUID?: string;
+    sopInstanceUID?: string;
+    sopClassUID?: string;
+    viewportId?: string;
+    toolName?: string;
+    imageId?: string;
+    volumeId?: string;
+    imageCount?: number;
+    timestamp?: Date;
+    stackTrace?: string;
+    additionalData?: Record<string, any>;
+    sizeInBytes?: number;
+    stage?: string;
   };
 }
 
-// Utility types for strict typing
-export type RequiredAnnotationData = Required<Pick<AnnotationData, 'annotationUID' | 'toolName' | 'data' | 'metadata'>>;
+// API response types
+export interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+  metadata?: {
+    timestamp: string;
+    requestId: string;
+    version: string;
+  };
+}
 
-// Helper type for creating annotations with required fields
-export type CreateAnnotationData = Omit<AnnotationData, 'annotationUID'> & {
-  annotationUID?: string;
-};
-
-// State management types for Zustand store (LEGACY - now using sliced stores)
-// @deprecated Use individual stores: AnnotationStoreState, ViewportStoreState, UIStoreState
-export interface DicomViewerState {
-  // Viewport state
-  viewports: Map<string, ViewportConfig>;
-  activeViewportId: string | null;
-  layoutType: LayoutType;
-  viewportConfigs: Map<string, any>;
-  
-  // Series state
-  loadedSeries: SeriesInfo[];
-  currentSeries: SeriesInfo | null;
-  currentImageIndex: number;
-  
-  // Tool state
-  activeTool: string | null;
-  toolGroups: Map<string, ToolGroupConfig>;
-  
-  // Annotation state
-  annotations: AnnotationData[];
-  selectedAnnotationUID: string | null;
-  
-  
-  // Window level state
-  windowLevelPresets: WindowLevelPreset[];
-  currentWindowLevel: WindowLevelConfig | null;
-  
-  // UI state
-  isLoading: boolean;
-  error: string | null;
-  sidebarOpen: boolean;
-  
-  // Image manipulation state
-  currentRotation: number;
-  isFlippedHorizontal: boolean;
-  isFlippedVertical: boolean;
-  currentDicomDataSet: any;
-  isLicenseModalOpen: boolean;
-  // displayUnit 제거 - mm로 고정
-  
-  // Actions
-  setActiveViewport: (viewportId: string) => void;
-  setLayout: (layout: LayoutType) => void;
-  loadSeries: (series: SeriesInfo) => void;
-  setActiveTool: (toolName: string) => void;
-  activateToolInViewport: (toolName: string, toolGroupRef?: any) => boolean;
-  addAnnotation: (annotation: RequiredAnnotationData) => void;
-  updateAnnotation: (annotationUID: string, updates: Partial<AnnotationData>) => void;
-  updateAnnotationLabel: (annotationUID: string, newLabel: string) => void;
-  removeAnnotation: (annotationUID: string) => void;
-  setWindowLevel: (config: WindowLevelConfig) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  toggleSidebar: () => void;
-  clearAllAnnotations: () => void;
-  
-  // Image manipulation actions
-  rotateImage: (direction: 'left' | 'right') => void;
-  flipImage: (direction: 'horizontal' | 'vertical') => void;
-  resetImageTransform: () => void;
-  setDicomDataSet: (dataSet: any) => void;
-  toggleLicenseModal: () => void;
-  // setDisplayUnit 제거 - mm로 고정
-  captureViewportAsPng: () => Promise<void>;
-  prepareViewportForCapture: (viewportId: string) => Promise<{ viewport: any; viewportElement: Element; }>;
-  captureWithHTML2Canvas: (viewportElement: Element) => Promise<HTMLCanvasElement>;
-  downloadCanvasAsFile: (canvas: HTMLCanvasElement) => Promise<void>;
-  fallbackCapture: (viewportId: string) => Promise<void>;
+// Component prop types
+export interface BaseComponentProps {
+  className?: string;
+  style?: React.CSSProperties;
+  'data-testid'?: string;
 }
