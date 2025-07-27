@@ -128,7 +128,7 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
    */
   const buildTextString = useCallback((content: TextContent): string => {
     let text = content.text;
-    
+
     if (content.value !== undefined) {
       const precision = content.precision ?? styling.measurementPrecision ?? 2;
       const formattedValue = formatMeasurementValue(content.value, precision, content.unit);
@@ -152,7 +152,7 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
   const applyFontStyle = useCallback((ctx: CanvasRenderingContext2D, font: AnnotationFont, scaleFactor: number = 1) => {
     const size = Math.round(font.size * scaleFactor * pixelRatio);
     const weight = typeof font.weight === 'number' ? font.weight.toString() : font.weight;
-    
+
     ctx.font = `${font.style} ${weight} ${size}px ${font.family}`;
     ctx.textAlign = position.align;
     ctx.textBaseline = position.baseline;
@@ -201,14 +201,14 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
     ctx: CanvasRenderingContext2D,
     textMetrics: TextMetrics,
     x: number,
-    y: number
+    y: number,
   ) => {
     if (!background) return;
 
     const { padding } = background;
     const width = textMetrics.width + padding.left + padding.right;
     const height = styling.font.size * styling.font.lineHeight + padding.top + padding.bottom;
-    
+
     // Calculate background position based on text alignment
     let bgX = x - padding.left;
     if (position.align === 'center') {
@@ -250,6 +250,44 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
       height,
     };
   }, [background, styling, position, applyColor]);
+
+  /**
+   * Render superscript/subscript text
+   */
+  const renderScriptText = useCallback((
+    ctx: CanvasRenderingContext2D,
+    mainTextMetrics: TextMetrics,
+    mainX: number,
+    mainY: number,
+  ) => {
+    const scriptFont = {
+      ...styling.font,
+      size: styling.font.size * 0.7, // Smaller size for scripts
+    };
+
+    applyFontStyle(ctx, scriptFont, styling.scaleFactor);
+    applyColor(ctx, styling.line.color, styling.opacity);
+
+    // Calculate script positions
+    let scriptX = mainX;
+    if (position.align === 'left') {
+      scriptX = mainX + mainTextMetrics.width;
+    } else if (position.align === 'center') {
+      scriptX = mainX + mainTextMetrics.width / 2;
+    }
+
+    // Render superscript
+    if (content.superscript) {
+      const superY = mainY - styling.font.size * 0.3;
+      ctx.fillText(content.superscript, scriptX, superY);
+    }
+
+    // Render subscript
+    if (content.subscript) {
+      const subY = mainY + styling.font.size * 0.3;
+      ctx.fillText(content.subscript, scriptX, subY);
+    }
+  }, [styling, position, content, applyFontStyle, applyColor]);
 
   /**
    * Render main text
@@ -311,45 +349,10 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
         height: styling.font.size * styling.font.lineHeight,
       };
     }
-  }, [content, position, styling, pixelRatio, buildTextString, applyFontStyle, renderBackground, applyShadow, clearShadow, applyColor, background]);
-
-  /**
-   * Render superscript/subscript text
-   */
-  const renderScriptText = useCallback((
-    ctx: CanvasRenderingContext2D,
-    mainTextMetrics: TextMetrics,
-    mainX: number,
-    mainY: number
-  ) => {
-    const scriptFont = {
-      ...styling.font,
-      size: styling.font.size * 0.7, // Smaller size for scripts
-    };
-
-    applyFontStyle(ctx, scriptFont, styling.scaleFactor);
-    applyColor(ctx, styling.line.color, styling.opacity);
-
-    // Calculate script positions
-    let scriptX = mainX;
-    if (position.align === 'left') {
-      scriptX = mainX + mainTextMetrics.width;
-    } else if (position.align === 'center') {
-      scriptX = mainX + mainTextMetrics.width / 2;
-    }
-
-    // Render superscript
-    if (content.superscript) {
-      const superY = mainY - styling.font.size * 0.3;
-      ctx.fillText(content.superscript, scriptX, superY);
-    }
-
-    // Render subscript
-    if (content.subscript) {
-      const subY = mainY + styling.font.size * 0.3;
-      ctx.fillText(content.subscript, scriptX, subY);
-    }
-  }, [styling, position, content, applyFontStyle, applyColor]);
+  }, [
+    content, position, styling, pixelRatio, buildTextString, applyFontStyle,
+    renderBackground, applyShadow, clearShadow, applyColor, background, renderScriptText,
+  ]);
 
   /**
    * Handle canvas interaction
@@ -428,14 +431,14 @@ export class TextMeasurementUtils {
     text: string,
     font: AnnotationFont,
     canvas: HTMLCanvasElement,
-    pixelRatio: number = 1
+    pixelRatio: number = 1,
   ): { width: number; height: number } {
     const ctx = canvas.getContext('2d');
     if (!ctx) return { width: 0, height: 0 };
 
     const size = font.size * pixelRatio;
     const weight = typeof font.weight === 'number' ? font.weight.toString() : font.weight;
-    
+
     ctx.font = `${font.style} ${weight} ${size}px ${font.family}`;
     const metrics = ctx.measureText(text);
 
@@ -452,7 +455,7 @@ export class TextMeasurementUtils {
     preferredPosition: TextPosition,
     textDimensions: { width: number; height: number },
     canvasBounds: { width: number; height: number },
-    existingPositions: Array<{ x: number; y: number; width: number; height: number }> = []
+    existingPositions: Array<{ x: number; y: number; width: number; height: number }> = [],
   ): TextPosition {
     const { x, y, align, baseline } = preferredPosition;
     const { width, height } = textDimensions;
@@ -482,16 +485,16 @@ export class TextMeasurementUtils {
     // Check for overlaps with existing text
     const textBounds = { x: textX, y: textY, width, height };
     const hasOverlap = existingPositions.some(pos =>
-      this.boundsIntersect(textBounds, pos)
+      this.boundsIntersect(textBounds, pos),
     );
 
     if (hasOverlap) {
       // Try alternative positions
       const alternatives = [
-        { x: x, y: y - height - 10 }, // Above
-        { x: x, y: y + height + 10 }, // Below
-        { x: x - width - 10, y: y }, // Left
-        { x: x + width + 10, y: y }, // Right
+        { x, y: y - height - 10 }, // Above
+        { x, y: y + height + 10 }, // Below
+        { x: x - width - 10, y }, // Left
+        { x: x + width + 10, y }, // Right
       ];
 
       for (const alt of alternatives) {
@@ -537,7 +540,7 @@ export class TextMeasurementUtils {
    */
   private static boundsIntersect(
     a: { x: number; y: number; width: number; height: number },
-    b: { x: number; y: number; width: number; height: number }
+    b: { x: number; y: number; width: number; height: number },
   ): boolean {
     return !(a.x + a.width < b.x ||
              b.x + b.width < a.x ||

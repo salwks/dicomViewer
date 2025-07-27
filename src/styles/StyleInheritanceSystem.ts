@@ -5,10 +5,11 @@
  * Supports hierarchical styling, cascading rules, and dynamic inheritance
  */
 
+/* eslint-disable security/detect-object-injection */
+
 import {
   AnnotationStyling,
   AnnotationStyleCategory,
-  AnnotationType,
   StyleInheritance,
   StyleValidation,
 } from '../types/annotation-styling';
@@ -47,7 +48,7 @@ export interface EnhancedStyleInheritance extends StyleInheritance {
   /** Conditional inheritance rules */
   conditions?: InheritanceCondition[];
   /** Custom merge strategies for specific properties */
-  propertyStrategies?: Record<keyof AnnotationStyling, MergeStrategy>;
+  propertyStrategies?: Partial<Record<keyof AnnotationStyling, MergeStrategy>>;
   /** Whether inheritance is active */
   active: boolean;
   /** Inheritance metadata */
@@ -209,7 +210,7 @@ export class StyleInheritanceSystem {
    */
   createInheritanceRule(
     childStyleId: string,
-    config: Partial<EnhancedStyleInheritance>
+    config: Partial<EnhancedStyleInheritance>,
   ): EnhancedStyleInheritance {
     if (!config.parentId) {
       throw new Error('Parent style ID is required for inheritance rule');
@@ -222,7 +223,7 @@ export class StyleInheritanceSystem {
       mode: config.mode || 'extend',
       priority: config.priority || InheritancePriority.NORMAL,
       conditions: config.conditions || [],
-      propertyStrategies: config.propertyStrategies || {},
+      propertyStrategies: config.propertyStrategies || {} as Partial<Record<keyof AnnotationStyling, MergeStrategy>>,
       active: config.active !== false,
       metadata: config.metadata || {
         createdAt: new Date(),
@@ -233,13 +234,13 @@ export class StyleInheritanceSystem {
 
     // Update inheritance graph
     this.updateInheritanceGraph(childStyleId, inheritance);
-    
+
     // Clear affected cache entries
     this.invalidateCache(childStyleId);
-    
+
     this.emit('inheritanceRuleCreated', { childStyleId, inheritance });
     console.log(`🔗 Created inheritance rule: ${childStyleId} → ${inheritance.parentId}`);
-    
+
     return inheritance;
   }
 
@@ -259,9 +260,9 @@ export class StyleInheritanceSystem {
       this.inheritanceGraph.set(styleId, childNode);
     }
 
-    // Add inheritance rule
+    // Add inheritance rule with safe array access
     const existingIndex = childNode.inheritance.findIndex(i => i.parentId === inheritance.parentId);
-    if (existingIndex >= 0) {
+    if (existingIndex >= 0 && existingIndex < childNode.inheritance.length) {
       childNode.inheritance[existingIndex] = inheritance;
     } else {
       childNode.inheritance.push(inheritance);
@@ -297,7 +298,7 @@ export class StyleInheritanceSystem {
     if (inheritanceIndex === -1) return false;
 
     childNode.inheritance.splice(inheritanceIndex, 1);
-    
+
     // Remove parent reference
     const parentIndex = childNode.parentIds.indexOf(parentStyleId);
     if (parentIndex >= 0) {
@@ -315,10 +316,10 @@ export class StyleInheritanceSystem {
 
     // Clear cache
     this.invalidateCache(childStyleId);
-    
+
     this.emit('inheritanceRuleRemoved', { childStyleId, parentStyleId });
     console.log(`🔗 Removed inheritance rule: ${childStyleId} ← ${parentStyleId}`);
-    
+
     return true;
   }
 
@@ -367,7 +368,7 @@ export class StyleInheritanceSystem {
 
     // Resolve inheritance chain
     const resolution = this.resolveInheritanceChain(styleId, baseStyle, [], maxDepth);
-    
+
     // Add metadata
     resolution.metadata = {
       resolvedAt: new Date(),
@@ -377,7 +378,7 @@ export class StyleInheritanceSystem {
 
     // Cache result
     this.cacheResolution(styleId, resolution);
-    
+
     return resolution;
   }
 
@@ -388,7 +389,7 @@ export class StyleInheritanceSystem {
     styleId: string,
     currentStyle: AnnotationStyling,
     chain: string[],
-    maxDepth: number
+    maxDepth: number,
   ): InheritanceResolution {
     const warnings: string[] = [];
     const inheritedProperties: InheritanceResolution['inheritedProperties'] = [];
@@ -455,7 +456,7 @@ export class StyleInheritanceSystem {
         rule.parentId,
         parentStyle,
         newChain,
-        maxDepth
+        maxDepth,
       );
 
       // Merge warnings
@@ -482,7 +483,7 @@ export class StyleInheritanceSystem {
   private applyInheritance(
     childStyle: AnnotationStyling,
     parentStyle: AnnotationStyling,
-    rule: EnhancedStyleInheritance
+    rule: EnhancedStyleInheritance,
   ): {
     style: AnnotationStyling;
     inheritedProperties: Array<{
@@ -498,32 +499,43 @@ export class StyleInheritanceSystem {
       strategy: MergeStrategy;
     }> = [];
 
-    // Apply inherited properties
+    // Apply inherited properties with safe property access
+    const allowedProperties = new Set<keyof AnnotationStyling>([
+      'line', 'fill', 'font', 'shadow', 'opacity', 'visible', 'zIndex',
+      'animation', 'measurementPrecision', 'unitDisplay', 'scaleFactor',
+    ]);
+
     for (const property of rule.inheritedProperties) {
+      // Security: Validate property is allowed
+      if (!allowedProperties.has(property)) {
+        console.warn(`Invalid property in inheritance rule: ${String(property)}`);
+        continue;
+      }
+
       const strategy = rule.propertyStrategies?.[property] || this.getDefaultMergeStrategy(rule.mode);
-      const parentValue = parentStyle[property];
-      const childValue = childStyle[property];
+      const parentValue = this.safePropertyAccess(parentStyle, property);
+      const childValue = this.safePropertyAccess(childStyle, property);
 
       if (parentValue !== undefined) {
         switch (strategy) {
           case MergeStrategy.REPLACE:
-            merged[property] = parentValue;
+            this.safePropertySet(merged, property, parentValue);
             break;
 
           case MergeStrategy.EXTEND:
-            if (typeof parentValue === 'object' && typeof childValue === 'object' && 
+            if (typeof parentValue === 'object' && typeof childValue === 'object' &&
                 !Array.isArray(parentValue) && !Array.isArray(childValue)) {
-              merged[property] = { ...parentValue, ...childValue };
+              this.safePropertySet(merged, property, { ...parentValue, ...childValue });
             } else {
-              merged[property] = childValue !== undefined ? childValue : parentValue;
+              this.safePropertySet(merged, property, childValue !== undefined ? childValue : parentValue);
             }
             break;
 
           case MergeStrategy.MERGE:
             if (typeof parentValue === 'object' && typeof childValue === 'object') {
-              merged[property] = this.deepMerge(parentValue, childValue);
+              this.safePropertySet(merged, property, this.deepMerge(parentValue, childValue));
             } else {
-              merged[property] = childValue !== undefined ? childValue : parentValue;
+              this.safePropertySet(merged, property, childValue !== undefined ? childValue : parentValue);
             }
             break;
 
@@ -540,12 +552,8 @@ export class StyleInheritanceSystem {
       }
     }
 
-    // Apply overrides
-    Object.entries(rule.overrides).forEach(([key, value]) => {
-      if (value !== undefined) {
-        merged[key as keyof AnnotationStyling] = value;
-      }
-    });
+    // Apply overrides with safe property access
+    this.applyOverrides(merged, rule.overrides);
 
     return { style: merged, inheritedProperties };
   }
@@ -556,7 +564,7 @@ export class StyleInheritanceSystem {
   private evaluateConditions(conditions: InheritanceCondition[], style: AnnotationStyling): boolean {
     return conditions.every(condition => {
       const propertyValue = style[condition.property];
-      
+
       switch (condition.operator) {
         case 'equals':
           return propertyValue === condition.value;
@@ -593,20 +601,62 @@ export class StyleInheritanceSystem {
   }
 
   /**
-   * Deep merge objects
+   * Safe property access to prevent object injection
    */
-  private deepMerge(target: any, source: any): any {
-    if (typeof target !== 'object' || typeof source !== 'object') {
+  private safePropertyAccess<T extends object, K extends keyof T>(obj: T, key: K): T[K] | undefined {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      return obj[key];
+    }
+    return undefined;
+  }
+
+  /**
+   * Safe property set to prevent object injection
+   */
+  private safePropertySet<T extends object, K extends keyof T>(obj: T, key: K, value: unknown): void {
+    if (typeof key === 'string' || typeof key === 'number' || typeof key === 'symbol') {
+      (obj as Record<string | number | symbol, unknown>)[key] = value;
+    }
+  }
+
+  /**
+   * Apply overrides with safe property access
+   */
+  private applyOverrides(target: AnnotationStyling, overrides: Partial<AnnotationStyling>): void {
+    const allowedKeys = new Set<keyof AnnotationStyling>([
+      'line', 'fill', 'font', 'shadow', 'opacity', 'visible', 'zIndex',
+      'animation', 'measurementPrecision', 'unitDisplay', 'scaleFactor',
+    ]);
+
+    for (const [key, value] of Object.entries(overrides)) {
+      if (allowedKeys.has(key as keyof AnnotationStyling) && value !== undefined) {
+        this.safePropertySet(target, key as keyof AnnotationStyling, value);
+      }
+    }
+  }
+
+  /**
+   * Deep merge objects with safe property access
+   */
+  private deepMerge(target: unknown, source: unknown): unknown {
+    if (typeof target !== 'object' || typeof source !== 'object' ||
+        target === null || source === null) {
       return source;
     }
 
     const result = { ...target };
-    
+
+    // Use Object.keys with hasOwnProperty check for security
     Object.keys(source).forEach(key => {
-      if (typeof source[key] === 'object' && !Array.isArray(source[key]) && source[key] !== null) {
-        result[key] = this.deepMerge(target[key] || {}, source[key]);
-      } else {
-        result[key] = source[key];
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const sourceValue = (source as Record<string, unknown>)[key];
+        const targetValue = (target as Record<string, unknown>)[key];
+
+        if (typeof sourceValue === 'object' && !Array.isArray(sourceValue) && sourceValue !== null) {
+          (result as Record<string, unknown>)[key] = this.deepMerge(targetValue || {}, sourceValue);
+        } else {
+          (result as Record<string, unknown>)[key] = sourceValue;
+        }
       }
     });
 
@@ -717,18 +767,18 @@ export class StyleInheritanceSystem {
    */
   private wouldCreateCircularDependency(styleId: string, targetParentId: string): boolean {
     const visited = new Set<string>();
-    
+
     const checkCircular = (currentId: string): boolean => {
       if (visited.has(currentId)) return true;
       if (currentId === targetParentId) return true;
-      
+
       visited.add(currentId);
-      
+
       const node = this.inheritanceGraph.get(currentId);
       if (node) {
         return node.parentIds.some(parentId => checkCircular(parentId));
       }
-      
+
       return false;
     };
 

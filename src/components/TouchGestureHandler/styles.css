@@ -1,0 +1,232 @@
+/**
+ * TouchGestureHandler Component Styles
+ */
+
+.touch-gesture-handler {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.touch-gesture-handler--active {
+  cursor: grabbing;
+}
+
+.touch-gesture-handler--pinch {
+  cursor: zoom-in;
+}
+
+.touch-gesture-handler--pan {
+  cursor: grab;
+}
+
+/* Touch-enabled optimizations */
+.touch-gesture-enabled {
+  /* Improve touch performance */
+  will-change: transform;
+  transform: translateZ(0);
+  
+  /* Disable text selection during gestures */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Disable callouts on iOS */
+  -webkit-touch-callout: none;
+  
+  /* Disable tap highlight */
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Disable content zooming */
+  -ms-content-zooming: none;
+  
+  /* Smooth scrolling for better touch experience */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Visual Feedback */
+.touch-gesture-handler__feedback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: var(--z-overlay);
+}
+
+.touch-gesture-handler__gesture-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  color: white;
+  backdrop-filter: blur(4px);
+  animation: gestureIndicatorFadeIn var(--duration-fast) var(--easing-base);
+}
+
+@keyframes gestureIndicatorFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.touch-gesture-handler__pinch-indicator svg,
+.touch-gesture-handler__pan-indicator svg {
+  width: 24px;
+  height: 24px;
+}
+
+.touch-gesture-handler__pinch-indicator {
+  animation: pulseScale 1s ease-in-out infinite alternate;
+}
+
+.touch-gesture-handler__pan-indicator {
+  animation: panIndicator 2s ease-in-out infinite;
+}
+
+@keyframes pulseScale {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes panIndicator {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+/* Touch-specific interactions */
+@media (hover: none) and (pointer: coarse) {
+  .touch-gesture-handler {
+    /* Better touch target sizes */
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .touch-gesture-handler__gesture-indicator {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .touch-gesture-handler__pinch-indicator svg,
+  .touch-gesture-handler__pan-indicator svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* iOS Safari optimizations */
+@supports (-webkit-touch-callout: none) {
+  .touch-gesture-enabled {
+    /* Prevent rubber band scrolling */
+    overscroll-behavior: none;
+    
+    /* Improve momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Android Chrome optimizations */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+  .touch-gesture-enabled {
+    /* Improve performance on Android */
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .touch-gesture-handler__gesture-indicator {
+    /* Crisp edges on high DPI displays */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Tablet landscape orientation */
+@media (orientation: landscape) and (min-width: 768px) and (max-width: 1024px) {
+  .touch-gesture-handler__gesture-indicator {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .touch-gesture-handler__pinch-indicator svg,
+  .touch-gesture-handler__pan-indicator svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .touch-gesture-handler__gesture-indicator {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .touch-gesture-handler__pinch-indicator svg,
+  .touch-gesture-handler__pan-indicator svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .touch-gesture-handler__gesture-indicator {
+    animation: none;
+  }
+  
+  .touch-gesture-handler__pinch-indicator,
+  .touch-gesture-handler__pan-indicator {
+    animation: none;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .touch-gesture-handler__gesture-indicator {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .touch-gesture-handler__gesture-indicator {
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 2px solid white;
+  }
+}
+
+/* Print styles */
+@media print {
+  .touch-gesture-handler__feedback {
+    display: none !important;
+  }
+}

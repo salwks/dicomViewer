@@ -311,7 +311,7 @@ export function getSOPClassName(sopClassUID: string): string {
  * Based on Context7 validation patterns
  */
 export function isSupportedSOPClass(sopClassUID: string): boolean {
-  return Object.values(SUPPORTED_SOP_CLASSES).includes(sopClassUID as any);
+  return Object.values(SUPPORTED_SOP_CLASSES).includes(sopClassUID as (typeof SUPPORTED_SOP_CLASSES)[keyof typeof SUPPORTED_SOP_CLASSES]);
 }
 
 /**
@@ -386,7 +386,7 @@ export function isMultiframeSupportedSOPClass(sopClassUID: string): boolean {
     SUPPORTED_SOP_CLASSES.BREAST_TOMOSYNTHESIS,
   ];
 
-  return multiframeSopClasses.includes(sopClassUID as any);
+  return multiframeSopClasses.includes(sopClassUID as (typeof multiframeSopClasses)[number]);
 }
 
 /**

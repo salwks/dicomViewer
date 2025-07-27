@@ -45,12 +45,12 @@ describe('StyleManager', () => {
     it('should have all preset styles available', () => {
       const presets = styleManager.getAllPresets();
       expect(presets.length).toBeGreaterThan(0);
-      
+
       // Check for key presets
       const lengthPreset = presets.find(p => p.id.includes('length'));
       const anglePreset = presets.find(p => p.id.includes('angle'));
       const textPreset = presets.find(p => p.id.includes('text'));
-      
+
       expect(lengthPreset).toBeTruthy();
       expect(anglePreset).toBeTruthy();
       expect(textPreset).toBeTruthy();
@@ -205,7 +205,7 @@ describe('StyleManager', () => {
   describe('Style Deletion', () => {
     it('should delete custom style', () => {
       const style = styleManager.createStyle({ name: 'Deletable Style' });
-      
+
       const deleted = styleManager.deleteStyle(style.id);
       expect(deleted).toBe(true);
 
@@ -235,9 +235,9 @@ describe('StyleManager', () => {
   describe('Preset Management', () => {
     it('should get presets by category', () => {
       const measurementPresets = styleManager.getPresetsByCategory(
-        AnnotationStyleCategory.MEASUREMENT
+        AnnotationStyleCategory.MEASUREMENT,
       );
-      
+
       expect(measurementPresets.length).toBeGreaterThan(0);
       measurementPresets.forEach(preset => {
         expect(preset.styling.category).toBe(AnnotationStyleCategory.MEASUREMENT);
@@ -246,7 +246,7 @@ describe('StyleManager', () => {
 
     it('should get presets by type', () => {
       const lengthPresets = styleManager.getPresetsByType(AnnotationType.LENGTH);
-      
+
       expect(lengthPresets.length).toBeGreaterThan(0);
       lengthPresets.forEach(preset => {
         expect(preset.styling.compatibleTypes).toContain(AnnotationType.LENGTH);
@@ -255,14 +255,18 @@ describe('StyleManager', () => {
 
     it('should get popular presets', () => {
       const popularPresets = styleManager.getPopularPresets(5);
-      
+
       expect(popularPresets).toHaveLength(5);
-      
-      // Should be sorted by popularity (descending)
+
+      // Should be sorted by popularity (descending) with safe array access
       for (let i = 1; i < popularPresets.length; i++) {
-        expect(popularPresets[i - 1].popularity).toBeGreaterThanOrEqual(
-          popularPresets[i].popularity
-        );
+        const prevPreset = i - 1 >= 0 && i - 1 < popularPresets.length ? popularPresets[i - 1] : null;
+        // eslint-disable-next-line security/detect-object-injection
+        const currentPreset = i >= 0 && i < popularPresets.length ? popularPresets[i] : null;
+
+        if (prevPreset && currentPreset) {
+          expect(prevPreset.popularity).toBeGreaterThanOrEqual(currentPreset.popularity);
+        }
       }
     });
 
@@ -366,7 +370,7 @@ describe('StyleManager', () => {
       const validation = styleManager.validateStyle(invalidStyle);
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
-      
+
       expect(validation.errors).toContain('Style ID is required');
       expect(validation.errors).toContain('Style name is required');
       expect(validation.errors).toContain('Line width must be positive');
@@ -556,7 +560,7 @@ describe('StyleManager', () => {
       });
 
       const clonedStyle = styleManager.cloneStyle(originalStyle.id, 'Cloned Style');
-      
+
       expect(clonedStyle).toBeTruthy();
       expect(clonedStyle!.name).toBe('Cloned Style');
       expect(clonedStyle!.id).not.toBe(originalStyle.id);
@@ -573,7 +577,7 @@ describe('StyleManager', () => {
 
       const searchResults = styleManager.searchStyles('measurement');
       expect(searchResults.length).toBeGreaterThan(0);
-      
+
       const measurementStyle = searchResults.find(s => s.name === 'Measurement Style');
       expect(measurementStyle).toBeTruthy();
     });
@@ -586,7 +590,7 @@ describe('StyleManager', () => {
 
       const searchResults = styleManager.searchStyles('clinical');
       expect(searchResults.length).toBeGreaterThan(0);
-      
+
       const taggedStyle = searchResults.find(s => s.name === 'Tagged Style');
       expect(taggedStyle).toBeTruthy();
     });
@@ -604,7 +608,7 @@ describe('StyleManager', () => {
   });
 
   describe('Event System', () => {
-    it('should emit events on style creation', (done) => {
+    it('should emit events on style creation', (done: () => void) => {
       styleManager.on('styleCreated', (style: AnnotationStyling) => {
         expect(style.name).toBe('Event Test Style');
         done();
@@ -613,7 +617,7 @@ describe('StyleManager', () => {
       styleManager.createStyle({ name: 'Event Test Style' });
     });
 
-    it('should emit events on style update', (done) => {
+    it('should emit events on style update', (done: () => void) => {
       const style = styleManager.createStyle({ name: 'Update Event Style' });
 
       styleManager.on('styleUpdated', (updatedStyle: AnnotationStyling) => {
@@ -624,7 +628,7 @@ describe('StyleManager', () => {
       styleManager.updateStyle(style.id, { name: 'Updated Name' });
     });
 
-    it('should emit events on style deletion', (done) => {
+    it('should emit events on style deletion', (done: () => void) => {
       const style = styleManager.createStyle({ name: 'Delete Event Style' });
 
       styleManager.on('styleDeleted', (data: { id: string; style: AnnotationStyling }) => {
@@ -638,12 +642,12 @@ describe('StyleManager', () => {
 
     it('should remove event listeners', () => {
       const callback = vi.fn();
-      
+
       styleManager.on('styleCreated', callback);
       styleManager.off('styleCreated', callback);
-      
+
       styleManager.createStyle({ name: 'No Event Style' });
-      
+
       expect(callback).not.toHaveBeenCalled();
     });
   });

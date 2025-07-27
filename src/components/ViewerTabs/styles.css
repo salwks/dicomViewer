@@ -1,0 +1,115 @@
+/**
+ * ViewerTabs Styles
+ * Medical-grade tab navigation
+ */
+
+.viewer-tabs {
+  position: relative;
+  background-color: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.viewer-tabs__container {
+  display: flex;
+  position: relative;
+}
+
+.viewer-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-base);
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.viewer-tab:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-muted);
+}
+
+.viewer-tab--active {
+  color: var(--color-primary-main);
+  background-color: var(--color-primary-bg);
+}
+
+.viewer-tab__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-fast) var(--easing-base);
+}
+
+.viewer-tab:hover .viewer-tab__icon {
+  transform: scale(1.1);
+}
+
+.viewer-tab--active .viewer-tab__icon {
+  transform: scale(1.15);
+}
+
+.viewer-tab__label {
+  font-weight: 600;
+}
+
+.viewer-tabs__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+}
+
+.indicator {
+  width: calc(100% / 3); /* Adjust based on number of tabs */
+  height: 100%;
+  background-color: var(--color-primary-main);
+  transition: transform var(--duration-base) var(--easing-base);
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .viewer-tab {
+    padding: var(--spacing-2) var(--spacing-3);
+    min-width: 80px;
+  }
+
+  .viewer-tab__label {
+    display: none;
+  }
+
+  .viewer-tab__icon {
+    margin: 0;
+  }
+}
+
+/* Accessibility */
+.viewer-tab:focus-visible {
+  outline: 2px solid var(--color-primary-main);
+  outline-offset: -2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .viewer-tab,
+  .viewer-tab__icon,
+  .indicator {
+    transition: none;
+  }
+
+  .viewer-tab:hover .viewer-tab__icon,
+  .viewer-tab--active .viewer-tab__icon {
+    transform: none;
+  }
+}

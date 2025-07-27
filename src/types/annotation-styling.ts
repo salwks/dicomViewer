@@ -113,7 +113,7 @@ export interface AnnotationStyling {
   name: string;
   /** Style description */
   description?: string;
-  
+
   /* Visual Properties */
   /** Line styling for borders, measurement lines, etc. */
   line: AnnotationLineStyle;
@@ -123,7 +123,7 @@ export interface AnnotationStyling {
   font: AnnotationFont;
   /** Shadow/outline styling */
   shadow?: AnnotationShadowStyle;
-  
+
   /* Interaction Properties */
   /** Style when annotation is selected */
   selected?: Partial<AnnotationStyling>;
@@ -133,7 +133,7 @@ export interface AnnotationStyling {
   active?: Partial<AnnotationStyling>;
   /** Style when annotation is disabled */
   disabled?: Partial<AnnotationStyling>;
-  
+
   /* Visibility Properties */
   /** Base opacity (0-1) */
   opacity: number;
@@ -141,11 +141,11 @@ export interface AnnotationStyling {
   visible: boolean;
   /** Z-index for layering */
   zIndex: number;
-  
+
   /* Animation Properties */
   /** Animation configuration */
   animation?: AnnotationAnimation;
-  
+
   /* Advanced Properties */
   /** Measurement precision for numeric displays */
   measurementPrecision?: number;
@@ -157,7 +157,7 @@ export interface AnnotationStyling {
   };
   /** Scale factor for size adjustments */
   scaleFactor: number;
-  
+
   /* Metadata */
   /** Style category */
   category: AnnotationStyleCategory;
@@ -197,12 +197,14 @@ export enum AnnotationType {
   ANGLE = 'angle',
   AREA = 'area',
   ELLIPSE = 'ellipse',
+  CIRCLE = 'circle',
   RECTANGLE = 'rectangle',
   ARROW = 'arrow',
   TEXT = 'text',
   FREEHAND = 'freehand',
   PROBE = 'probe',
   RULER = 'ruler',
+  VOLUME = 'volume',
 }
 
 /**
@@ -239,6 +241,20 @@ export interface StyleInheritance {
   overrides: Partial<AnnotationStyling>;
   /** Inheritance mode */
   mode: 'extend' | 'override' | 'merge';
+  /** Property-specific merge strategies */
+  propertyStrategies?: Partial<Record<keyof AnnotationStyling, 'replace' | 'merge' | 'extend' | 'preserve'>>;
+  /** Inheritance priority */
+  priority?: number;
+  /** Conditional inheritance rules */
+  conditions?: Array<{ property: string; value: unknown; action: string }>;
+  /** Whether rule is active */
+  active?: boolean;
+  /** Rule metadata */
+  metadata?: {
+    createdAt: Date;
+    updatedAt: Date;
+    createdBy: string;
+  };
 }
 
 /**

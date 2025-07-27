@@ -414,4 +414,106 @@ These commands make AI calls and may take up to a minute:
 
 ---
 
-_This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._
+## 🔒 MANDATORY CODING STANDARDS (보안 강제 준수사항)
+
+### ⚠️ CRITICAL SECURITY RULES - ALWAYS FOLLOW
+
+#### 1. Object Injection Prevention (필수)
+```typescript
+// ❌ NEVER - Object Injection 취약점
+const value = obj[userInput];
+config[dynamicKey] = value;
+
+// ✅ ALWAYS - Safe property access
+const safeMap = new Map();
+safeMap.set(key, value);
+
+// ✅ OR - Safe property check
+if (Object.prototype.hasOwnProperty.call(obj, key)) {
+  const value = obj[key];
+}
+```
+
+#### 2. TypeScript Strict Rules (필수)
+```typescript
+// ❌ NEVER - any type forbidden
+function process(data: any) { }
+
+// ✅ ALWAYS - Use unknown with type guards
+function process(data: unknown) {
+  if (typeof data === 'string') {
+    // Safe to use as string
+  }
+}
+
+// ✅ ALWAYS - Explicit return types
+function calculate(a: number, b: number): number {
+  return a + b;
+}
+```
+
+#### 3. Safe Property Access Pattern (필수)
+```typescript
+// ✅ ALWAYS use these helper methods for dynamic access
+private safePropertyAccess<T extends object, K extends keyof T>(obj: T, key: K): T[K] | undefined {
+  if (Object.prototype.hasOwnProperty.call(obj, key)) {
+    return obj[key];
+  }
+  return undefined;
+}
+
+private safePropertySet<T extends object, K extends keyof T>(obj: T, key: K, value: unknown): void {
+  if (typeof key === 'string' || typeof key === 'number' || typeof key === 'symbol') {
+    (obj as Record<string | number | symbol, unknown>)[key] = value;
+  }
+}
+```
+
+#### 4. Allowed Properties Whitelist (필수)
+```typescript
+// ✅ ALWAYS validate against allowed properties
+const allowedProperties = new Set<keyof AnnotationStyling>([
+  'line', 'fill', 'font', 'shadow', 'opacity', 'visible', 'zIndex',
+  'animation', 'measurementPrecision', 'unitDisplay', 'scaleFactor'
+]);
+
+if (!allowedProperties.has(property)) {
+  console.warn(`Invalid property: ${String(property)}`);
+  return;
+}
+```
+
+#### 5. Console Logging Rules (필수)
+```typescript
+// ❌ NEVER - console.log forbidden
+console.log('debug info');
+
+// ✅ ALLOWED - Only these methods
+console.warn('warning message');
+console.error('error message');
+console.info('info message');
+```
+
+### 🛡️ PRE-COMMIT VALIDATION
+
+These checks run automatically before every commit:
+- `npm run typecheck` - Must pass with 0 errors
+- `npx eslint src --max-warnings 0` - Must pass with 0 warnings
+- `npm audit --audit-level=moderate` - No new moderate+ vulnerabilities
+- No `console.log` usage
+- No `any` types (except in tests)
+- All Object[key] patterns must use safe access methods
+
+### 📋 CODE REVIEW CHECKLIST
+
+Before completing any task:
+- [ ] All functions have explicit return types
+- [ ] No `any` types used
+- [ ] No `console.log` statements
+- [ ] Object access uses safe methods or hasOwnProperty
+- [ ] ESLint passes with 0 warnings
+- [ ] TypeScript compiles with 0 errors
+
+---
+
+_This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows AND enforces critical security standards._

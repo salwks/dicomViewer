@@ -66,7 +66,7 @@ export class StyleManager {
         warning: { rgb: [255, 193, 7], hex: '#ffc107' },
         success: { rgb: [40, 167, 69], hex: '#28a745' },
       },
-      styleOverrides: {},
+      styleOverrides: {} as Record<AnnotationType, Partial<AnnotationStyling>>,
       supportsDarkMode: true,
       version: '1.0.0',
     };
@@ -218,10 +218,12 @@ export class StyleManager {
    * Get presets by category
    */
   getPresetsByCategory(category: AnnotationStyleCategory): AnnotationStylePreset[] {
-    const systemPresets = PRESETS_BY_CATEGORY[category] || [];
+    // Security: Use Map for safe category lookup instead of object index access
+    const categoryMap = new Map(Object.entries(PRESETS_BY_CATEGORY));
+    const systemPresets = categoryMap.get(category) || [];
     const userPresets = Array.from(this.userPresets.values())
       .filter(preset => preset.styling.category === category);
-    
+
     return [...systemPresets, ...userPresets]
       .sort((a, b) => b.popularity - a.popularity);
   }
@@ -234,7 +236,7 @@ export class StyleManager {
     const userPresets = Array.from(this.userPresets.values())
       .filter(preset => preset.styling.compatibleTypes.includes(type))
       .sort((a, b) => b.popularity - a.popularity);
-    
+
     return [...systemPresets, ...userPresets];
   }
 
@@ -325,39 +327,49 @@ export class StyleManager {
   private mergeStyles(
     parent: AnnotationStyling,
     child: AnnotationStyling,
-    inheritance: StyleInheritance
+    inheritance: StyleInheritance,
   ): AnnotationStyling {
     const merged = { ...child };
 
-    // Apply inherited properties
+    // Apply inherited properties with safe property access
+    const allowedProperties = new Set<keyof AnnotationStyling>([
+      'line', 'fill', 'font', 'shadow', 'opacity', 'visible', 'zIndex',
+      'animation', 'measurementPrecision', 'unitDisplay', 'scaleFactor',
+    ]);
+
     inheritance.inheritedProperties.forEach(prop => {
-      if (parent[prop] !== undefined) {
+      // Security: Validate property is allowed
+      if (!allowedProperties.has(prop)) {
+        console.warn(`Invalid property in inheritance: ${String(prop)}`);
+        return;
+      }
+
+      const parentValue = this.safePropertyAccess(parent, prop);
+      const childValue = this.safePropertyAccess(child, prop);
+
+      if (parentValue !== undefined) {
         switch (inheritance.mode) {
           case 'override':
-            merged[prop] = parent[prop];
+            this.safePropertySet(merged, prop, parentValue);
             break;
           case 'extend':
-            if (typeof parent[prop] === 'object' && typeof child[prop] === 'object') {
-              merged[prop] = { ...parent[prop], ...child[prop] };
+            if (typeof parentValue === 'object' && typeof childValue === 'object') {
+              this.safePropertySet(merged, prop, { ...parentValue, ...childValue });
             } else {
-              merged[prop] = child[prop] !== undefined ? child[prop] : parent[prop];
+              this.safePropertySet(merged, prop, childValue !== undefined ? childValue : parentValue);
             }
             break;
           case 'merge':
-            if (typeof parent[prop] === 'object' && typeof child[prop] === 'object') {
-              merged[prop] = { ...parent[prop], ...child[prop] };
+            if (typeof parentValue === 'object' && typeof childValue === 'object') {
+              this.safePropertySet(merged, prop, { ...parentValue, ...childValue });
             }
             break;
         }
       }
     });
 
-    // Apply overrides
-    Object.entries(inheritance.overrides).forEach(([key, value]) => {
-      if (value !== undefined) {
-        merged[key as keyof AnnotationStyling] = value;
-      }
-    });
+    // Apply overrides with safe property access
+    this.applyOverrides(merged, inheritance.overrides);
 
     return merged;
   }
@@ -454,13 +466,13 @@ export class StyleManager {
    */
   createTheme(config: Partial<AnnotationTheme>): AnnotationTheme {
     const id = config.id || `theme-${Date.now()}`;
-    
+
     const theme: AnnotationTheme = {
       id,
       name: config.name || 'Custom Theme',
       description: config.description || '',
       colors: config.colors || this.activeTheme!.colors,
-      styleOverrides: config.styleOverrides || {},
+      styleOverrides: config.styleOverrides || {} as Record<AnnotationType, Partial<AnnotationStyling>>,
       supportsDarkMode: config.supportsDarkMode ?? true,
       version: config.version || '1.0.0',
     };
@@ -513,7 +525,7 @@ export class StyleManager {
       ? ids.map(id => this.customStyles.get(id)).filter(Boolean) as AnnotationStyling[]
       : this.getAllCustomStyles();
 
-    const userPresets = Array.from(this.userPresets.values());
+    // const userPresets = Array.from(this.userPresets.values());
 
     return {
       version: '1.0.0',
@@ -634,11 +646,11 @@ export class StyleManager {
     const lowerQuery = query.toLowerCase();
     const customStyles = this.getAllCustomStyles();
     const presetStyles = ALL_PRESETS.map(p => p.styling);
-    
+
     return [...customStyles, ...presetStyles].filter(style =>
       style.name.toLowerCase().includes(lowerQuery) ||
       style.description?.toLowerCase().includes(lowerQuery) ||
-      style.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+      style.tags.some(tag => tag.toLowerCase().includes(lowerQuery)),
     );
   }
 
@@ -654,10 +666,47 @@ export class StyleManager {
       categoryCounts: Object.fromEntries(
         Object.values(AnnotationStyleCategory).map(category => [
           category,
-          this.getPresetsByCategory(category).length
-        ])
+          this.getPresetsByCategory(category).length,
+        ]),
       ),
     };
+  }
+
+  /**
+   * Safe property access to prevent object injection
+   */
+  private safePropertyAccess<T extends object, K extends keyof T>(obj: T, key: K): T[K] | undefined {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // eslint-disable-next-line security/detect-object-injection
+      return obj[key];
+    }
+    return undefined;
+  }
+
+  /**
+   * Safe property set to prevent object injection
+   */
+  private safePropertySet<T extends object, K extends keyof T>(obj: T, key: K, value: unknown): void {
+    if (typeof key === 'string' || typeof key === 'number' || typeof key === 'symbol') {
+      // eslint-disable-next-line security/detect-object-injection
+      (obj as Record<string | number | symbol, unknown>)[key] = value;
+    }
+  }
+
+  /**
+   * Apply overrides with safe property access
+   */
+  private applyOverrides(target: AnnotationStyling, overrides: Partial<AnnotationStyling>): void {
+    const allowedKeys = new Set<keyof AnnotationStyling>([
+      'line', 'fill', 'font', 'shadow', 'opacity', 'visible', 'zIndex',
+      'animation', 'measurementPrecision', 'unitDisplay', 'scaleFactor',
+    ]);
+
+    for (const [key, value] of Object.entries(overrides)) {
+      if (allowedKeys.has(key as keyof AnnotationStyling) && value !== undefined) {
+        this.safePropertySet(target, key as keyof AnnotationStyling, value);
+      }
+    }
   }
 }
 

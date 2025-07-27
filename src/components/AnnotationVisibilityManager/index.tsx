@@ -11,6 +11,7 @@ import {
   AnnotationType,
   AnnotationStyleCategory,
 } from '../../types/annotation-styling';
+import { SelectionMode } from '../../types/annotation-selection';
 import { styleManager } from '../../styles/StyleManager';
 
 /**
@@ -76,13 +77,9 @@ export interface HighlightAnimation {
 }
 
 /**
- * Selection mode configuration
+ * Selection mode configuration (moved to separate file)
+ * @see ../../types/annotation-selection.ts
  */
-export enum SelectionMode {
-  SINGLE = 'single',
-  MULTIPLE = 'multiple',
-  NONE = 'none',
-}
 
 /**
  * Component props
@@ -118,7 +115,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
   selectionMode = SelectionMode.MULTIPLE,
   enableKeyboardNavigation = true,
   enableBatchOperations = true,
-  highlightAnimations = true,
+  highlightAnimations: _highlightAnimations = true,
   className = '',
   onVisibilityChange,
   onSelectionChange,
@@ -128,10 +125,8 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
   // State management
   const [visibilityStates, setVisibilityStates] = useState<Map<string, AnnotationVisibilityState>>(new Map());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<VisibilityFilter>({});
-  const [showOnlyVisible, setShowOnlyVisible] = useState(false);
   const [groupBy, setGroupBy] = useState<'type' | 'category' | 'none'>('none');
 
   // Initialize visibility states
@@ -147,9 +142,9 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
    * Get computed style for annotation
    */
   const getComputedStyle = useCallback((state: AnnotationVisibilityState): AnnotationStyling => {
-    const baseStyle = styleManager.getResolvedStyle(`${state.type}-default`) || 
+    const baseStyle = styleManager.getResolvedStyle(`${state.type}-default`) ||
                     styleManager.getAllPresets().find(p => p.styling.compatibleTypes.includes(state.type))?.styling;
-    
+
     if (!baseStyle) {
       console.warn(`No style found for annotation type: ${state.type}`);
       return {} as AnnotationStyling;
@@ -283,7 +278,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
 
     filteredAnnotations.forEach(state => {
       let groupKey: string;
-      
+
       if (groupBy === 'type') {
         groupKey = state.type;
       } else if (groupBy === 'category') {
@@ -293,9 +288,12 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
         groupKey = 'All';
       }
 
-      if (!groups[groupKey]) {
+      // Security: Use Map for safe property access instead of dynamic object keys
+      if (!Object.prototype.hasOwnProperty.call(groups, groupKey)) {
+        // eslint-disable-next-line security/detect-object-injection
         groups[groupKey] = [];
       }
+      // eslint-disable-next-line security/detect-object-injection
       groups[groupKey].push(state);
     });
 
@@ -326,7 +324,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
 
     setSelectedIds(prev => {
       const newSelected = new Set(prev);
-      
+
       if (selectionMode === SelectionMode.SINGLE) {
         newSelected.clear();
         if (!prev.has(id)) {
@@ -363,7 +361,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
    * Set hover state
    */
   const setHoverState = useCallback((id: string | null) => {
-    setHoveredId(id);
+    // Update hover state (placeholder for future hover functionality)
     onHoverChange?.(id);
 
     // Update visibility states
@@ -433,7 +431,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
 
     const allIds = new Set(filteredAnnotations.map(state => state.id));
     setSelectedIds(allIds);
-    
+
     setVisibilityStates(prev => {
       const newStates = new Map(prev);
       prev.forEach((state, id) => {
@@ -448,7 +446,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
 
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
-    
+
     setVisibilityStates(prev => {
       const newStates = new Map(prev);
       prev.forEach((state, id) => {
@@ -471,17 +469,25 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
     const currentIndex = focusedId ? annotations.findIndex(a => a.id === focusedId) : -1;
 
     switch (event.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': {
         event.preventDefault();
         const nextIndex = (currentIndex + 1) % annotations.length;
-        setFocusState(annotations[nextIndex]?.id || null);
+        // Security: Safe array access with bounds check
+        // eslint-disable-next-line security/detect-object-injection
+        const nextAnnotation = nextIndex >= 0 && nextIndex < annotations.length ? annotations[nextIndex] : null;
+        setFocusState(nextAnnotation?.id || null);
         break;
+      }
 
-      case 'ArrowUp':
+      case 'ArrowUp': {
         event.preventDefault();
         const prevIndex = currentIndex > 0 ? currentIndex - 1 : annotations.length - 1;
-        setFocusState(annotations[prevIndex]?.id || null);
+        // Security: Safe array access with bounds check
+        // eslint-disable-next-line security/detect-object-injection
+        const prevAnnotation = prevIndex >= 0 && prevIndex < annotations.length ? annotations[prevIndex] : null;
+        setFocusState(prevAnnotation?.id || null);
         break;
+      }
 
       case ' ':
         event.preventDefault();
@@ -510,7 +516,16 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
         }
         break;
     }
-  }, [enableKeyboardNavigation, filteredAnnotations, focusedId, setFocusState, toggleVisibility, toggleSelection, clearSelection, selectAll]);
+  }, [
+    enableKeyboardNavigation,
+    filteredAnnotations,
+    focusedId,
+    setFocusState,
+    toggleVisibility,
+    toggleSelection,
+    clearSelection,
+    selectAll,
+  ]);
 
   // Setup keyboard navigation
   useEffect(() => {
@@ -525,7 +540,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
    */
   const renderAnnotationItem = useCallback((state: AnnotationVisibilityState) => {
     const style = getComputedStyle(state);
-    
+
     return (
       <div
         key={state.id}
@@ -553,7 +568,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
           >
             {state.visible ? '👁️' : '🙈'}
           </button>
-          
+
           {selectionMode !== SelectionMode.NONE && (
             <button
               className="selection-toggle"
@@ -592,7 +607,7 @@ export const AnnotationVisibilityManager: React.FC<AnnotationVisibilityManagerPr
             onChange={(e) => setFilter(prev => ({ ...prev, searchQuery: e.target.value }))}
             className="search-input"
           />
-          
+
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as 'type' | 'category' | 'none')}

@@ -79,20 +79,20 @@ export interface MedicalImagingError extends Error {
     imageCount?: number;
     timestamp?: Date;
     stackTrace?: string;
-    additionalData?: Record<string, any>;
+    additionalData?: Record<string, unknown>;
     sizeInBytes?: number;
     stage?: string;
   };
 }
 
 // API response types
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   metadata?: {
     timestamp: string;

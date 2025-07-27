@@ -5,9 +5,8 @@
  * Tests text rendering, positioning, styling, and interaction
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TextStyleRenderer, TextMeasurementUtils } from '../TextStyleRenderer';
 import {
   AnnotationStyling,
@@ -18,7 +17,36 @@ import {
 } from '../../types/annotation-styling';
 
 // Mock canvas context
-const mockCanvasContext = {
+interface MockCanvasContext {
+  clearRect: ReturnType<typeof vi.fn>;
+  fillRect: ReturnType<typeof vi.fn>;
+  strokeRect: ReturnType<typeof vi.fn>;
+  beginPath: ReturnType<typeof vi.fn>;
+  moveTo: ReturnType<typeof vi.fn>;
+  lineTo: ReturnType<typeof vi.fn>;
+  arc: ReturnType<typeof vi.fn>;
+  stroke: ReturnType<typeof vi.fn>;
+  fill: ReturnType<typeof vi.fn>;
+  closePath: ReturnType<typeof vi.fn>;
+  fillText: ReturnType<typeof vi.fn>;
+  measureText: ReturnType<typeof vi.fn>;
+  roundRect: ReturnType<typeof vi.fn>;
+  save: ReturnType<typeof vi.fn>;
+  restore: ReturnType<typeof vi.fn>;
+  translate: ReturnType<typeof vi.fn>;
+  rotate: ReturnType<typeof vi.fn>;
+  font: string;
+  textAlign: CanvasTextAlign;
+  textBaseline: CanvasTextBaseline;
+  fillStyle: string | CanvasGradient | CanvasPattern;
+  globalAlpha: number;
+  shadowColor: string;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+  shadowBlur: number;
+}
+
+const mockCanvasContext: MockCanvasContext = {
   clearRect: vi.fn(),
   fillRect: vi.fn(),
   strokeRect: vi.fn(),
@@ -36,24 +64,15 @@ const mockCanvasContext = {
   restore: vi.fn(),
   translate: vi.fn(),
   rotate: vi.fn(),
-  get font() { return this._font || '14px Arial'; },
-  set font(value) { this._font = value; },
-  get textAlign() { return this._textAlign || 'left'; },
-  set textAlign(value) { this._textAlign = value; },
-  get textBaseline() { return this._textBaseline || 'alphabetic'; },
-  set textBaseline(value) { this._textBaseline = value; },
-  get fillStyle() { return this._fillStyle || '#000000'; },
-  set fillStyle(value) { this._fillStyle = value; },
-  get globalAlpha() { return this._globalAlpha || 1; },
-  set globalAlpha(value) { this._globalAlpha = value; },
-  get shadowColor() { return this._shadowColor || 'transparent'; },
-  set shadowColor(value) { this._shadowColor = value; },
-  get shadowBlur() { return this._shadowBlur || 0; },
-  set shadowBlur(value) { this._shadowBlur = value; },
-  get shadowOffsetX() { return this._shadowOffsetX || 0; },
-  set shadowOffsetX(value) { this._shadowOffsetX = value; },
-  get shadowOffsetY() { return this._shadowOffsetY || 0; },
-  set shadowOffsetY(value) { this._shadowOffsetY = value; },
+  font: '14px Arial',
+  textAlign: 'left',
+  textBaseline: 'alphabetic',
+  fillStyle: '#000000',
+  globalAlpha: 1,
+  shadowColor: 'transparent',
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
+  shadowBlur: 0,
 };
 
 // Mock canvas element
@@ -81,7 +100,7 @@ describe('TextStyleRenderer', () => {
 
   beforeEach(() => {
     mockCanvas = createMockCanvas();
-    
+
     defaultStyling = {
       id: 'test-style',
       name: 'Test Style',
@@ -126,7 +145,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillText).toHaveBeenCalledWith('Test Text', 100, 100);
@@ -151,7 +170,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.font).toContain('italic');
@@ -178,7 +197,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillStyle).toBe('rgba(220, 53, 69, 1)');
@@ -198,7 +217,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.globalAlpha).toBe(0.7);
@@ -221,7 +240,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillText).toHaveBeenCalledWith('12.35 mm', 100, 100);
@@ -241,7 +260,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillText).toHaveBeenCalledWith('Length: Base Text (approx)', 100, 100);
@@ -265,7 +284,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillText).toHaveBeenCalledWith('15.679 px', 100, 100);
@@ -289,7 +308,7 @@ describe('TextStyleRenderer', () => {
             content={content}
             position={position}
             styling={defaultStyling}
-          />
+          />,
         );
 
         expect(mockCanvasContext.textAlign).toBe(position.align);
@@ -313,7 +332,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.save).toHaveBeenCalled();
@@ -334,7 +353,7 @@ describe('TextStyleRenderer', () => {
           position={position}
           styling={defaultStyling}
           pixelRatio={pixelRatio}
-        />
+        />,
       );
 
       // Position should be scaled
@@ -362,7 +381,7 @@ describe('TextStyleRenderer', () => {
           position={position}
           styling={defaultStyling}
           background={background}
-        />
+        />,
       );
 
       expect(mockCanvasContext.roundRect).toHaveBeenCalled();
@@ -386,7 +405,7 @@ describe('TextStyleRenderer', () => {
           position={position}
           styling={defaultStyling}
           background={background}
-        />
+        />,
       );
 
       expect(mockCanvasContext.fillRect).toHaveBeenCalled();
@@ -414,7 +433,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.shadowColor).toBe(DEFAULT_COLORS.BLACK.hex);
@@ -443,7 +462,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={customStyling}
-        />
+        />,
       );
 
       expect(mockCanvasContext.shadowColor).toBe('transparent');
@@ -467,7 +486,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       // Should render main text and superscript
@@ -488,7 +507,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       // Should render main text and subscript
@@ -510,7 +529,7 @@ describe('TextStyleRenderer', () => {
           content={content}
           position={position}
           styling={defaultStyling}
-        />
+        />,
       );
 
       // Should render main text, superscript, and subscript
@@ -537,7 +556,7 @@ describe('TextStyleRenderer', () => {
           interactive={true}
           onClick={onClick}
           onHover={onHover}
-        />
+        />,
       );
 
       expect(mockCanvas.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
@@ -555,7 +574,7 @@ describe('TextStyleRenderer', () => {
           position={position}
           styling={defaultStyling}
           interactive={false}
-        />
+        />,
       );
 
       expect(mockCanvas.addEventListener).not.toHaveBeenCalled();
@@ -577,7 +596,7 @@ describe('TextStyleRenderer', () => {
             content={content}
             position={position}
             styling={defaultStyling}
-          />
+          />,
         );
       }).not.toThrow();
     });
@@ -589,7 +608,7 @@ describe('TextStyleRenderer', () => {
         ...defaultStyling,
         line: {
           ...defaultStyling.line,
-          color: { rgb: [300, -50, 999], hex: 'invalid' }, // Invalid values
+          color: { rgb: [300, -50, 999] as [number, number, number], hex: 'invalid' }, // Invalid values
         },
       };
 
@@ -600,7 +619,7 @@ describe('TextStyleRenderer', () => {
             content={content}
             position={position}
             styling={customStyling}
-          />
+          />,
         );
       }).not.toThrow();
     });
@@ -652,7 +671,7 @@ describe('TextMeasurementUtils', () => {
       const optimalPosition = TextMeasurementUtils.calculateOptimalPosition(
         preferredPosition,
         textDimensions,
-        canvasBounds
+        canvasBounds,
       );
 
       expect(optimalPosition).toEqual(preferredPosition);
@@ -671,7 +690,7 @@ describe('TextMeasurementUtils', () => {
       const optimalPosition = TextMeasurementUtils.calculateOptimalPosition(
         preferredPosition,
         textDimensions,
-        canvasBounds
+        canvasBounds,
       );
 
       expect(optimalPosition.x).toBeLessThan(preferredPosition.x);
@@ -695,7 +714,7 @@ describe('TextMeasurementUtils', () => {
         preferredPosition,
         textDimensions,
         canvasBounds,
-        existingPositions
+        existingPositions,
       );
 
       // Should be moved to avoid overlap
@@ -719,7 +738,7 @@ describe('TextMeasurementUtils', () => {
         preferredPosition,
         textDimensions,
         canvasBounds,
-        existingPositions
+        existingPositions,
       );
 
       expect(optimalPosition.align).toBe('center');
@@ -736,7 +755,7 @@ describe('TextMeasurementUtils', () => {
       };
       const textDimensions = { width: 200, height: 50 };
       const canvasBounds = { width: 800, height: 600 };
-      
+
       // Create overlapping positions that block all alternatives
       const existingPositions = [
         { x: 300, y: 200, width: 200, height: 50 }, // Center overlap
@@ -750,7 +769,7 @@ describe('TextMeasurementUtils', () => {
         preferredPosition,
         textDimensions,
         canvasBounds,
-        existingPositions
+        existingPositions,
       );
 
       // Should keep original position as best available option

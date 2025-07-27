@@ -52,7 +52,7 @@ describe('StyleInheritanceSystem', () => {
     // Reset singleton instances
     (StyleInheritanceSystem as any).instance = undefined;
     (StyleManager as any).instance = undefined;
-    
+
     inheritanceSystem = StyleInheritanceSystem.getInstance();
     styleManager = StyleManager.getInstance();
 
@@ -227,7 +227,7 @@ describe('StyleInheritanceSystem', () => {
       inheritanceSystem.createInheritanceRule('child-style', {
         parentId: 'parent-style',
         inheritedProperties: ['line'],
-        mode: 'replace',
+        mode: 'extend',
       });
 
       const resolution = inheritanceSystem.resolveStyle('child-style');
@@ -368,9 +368,9 @@ describe('StyleInheritanceSystem', () => {
       for (let i = 0; i < 15; i++) {
         const childId = `style-${i}`;
         const parentId = `style-${i + 1}`;
-        
+
         vi.spyOn(styleManager, 'getStyle').mockReturnValueOnce(createTestStyle(childId));
-        
+
         inheritanceSystem.createInheritanceRule(childId, {
           parentId,
           inheritedProperties: ['line'],
@@ -527,10 +527,10 @@ describe('StyleInheritanceSystem', () => {
   });
 
   describe('Event System', () => {
-    it('should emit events on inheritance rule creation', (done) => {
-      inheritanceSystem.on('inheritanceRuleCreated', (data: any) => {
+    it('should emit events on inheritance rule creation', (done: () => void) => {
+      inheritanceSystem.on('inheritanceRuleCreated', (data: { childStyleId: string; inheritance: unknown }) => {
         expect(data.childStyleId).toBe('event-test-child');
-        expect(data.inheritance.parentId).toBe('parent-style');
+        expect((data.inheritance as { parentId: string }).parentId).toBe('parent-style');
         done();
       });
 
@@ -540,7 +540,7 @@ describe('StyleInheritanceSystem', () => {
       });
     });
 
-    it('should emit events on inheritance rule removal', (done) => {
+    it('should emit events on inheritance rule removal', (done: () => void) => {
       inheritanceSystem.createInheritanceRule('event-test-child', {
         parentId: 'parent-style',
         inheritedProperties: ['line'],
@@ -557,15 +557,15 @@ describe('StyleInheritanceSystem', () => {
 
     it('should remove event listeners', () => {
       const callback = vi.fn();
-      
+
       inheritanceSystem.on('inheritanceRuleCreated', callback);
       inheritanceSystem.off('inheritanceRuleCreated', callback);
-      
+
       inheritanceSystem.createInheritanceRule('no-event-child', {
         parentId: 'parent-style',
         inheritedProperties: ['line'],
       });
-      
+
       expect(callback).not.toHaveBeenCalled();
     });
   });

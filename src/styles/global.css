@@ -1,0 +1,251 @@
+/**
+ * Global CSS Styles
+ * Base styles and CSS variables for the medical imaging viewer
+ */
+
+/* CSS Reset and Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg-default);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  transition: background-color var(--duration-base) var(--easing-base),
+              color var(--duration-base) var(--easing-base);
+}
+
+/* Accessibility: Focus Styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-main);
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1.125rem; }
+
+p {
+  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+}
+
+/* Links */
+a {
+  color: var(--color-primary-main);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--easing-base);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all var(--duration-fast) var(--easing-base);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Forms */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Medical Imaging Specific */
+.cornerstone-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+}
+
+/* Viewport Container */
+.viewport-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+/* Annotation Styles */
+.annotation-text {
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Measurement Text */
+.measurement-text {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-medical-measurement);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Loading States */
+.loading-spinner {
+  border: 3px solid var(--color-divider);
+  border-top: 3px solid var(--color-primary-main);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-default);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: var(--radius-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-disabled);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-primary-main);
+  color: var(--color-primary-contrast);
+}
+
+/* Tooltips */
+.tooltip {
+  position: absolute;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  padding: 4px 8px;
+  border-radius: var(--radius-base);
+  font-size: 0.75rem;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Transitions */
+.transition-colors {
+  transition: color var(--duration-base) var(--easing-base),
+              background-color var(--duration-base) var(--easing-base),
+              border-color var(--duration-base) var(--easing-base);
+}
+
+.transition-transform {
+  transition: transform var(--duration-base) var(--easing-base);
+}
+
+.transition-opacity {
+  transition: opacity var(--duration-base) var(--easing-base);
+}
+
+/* Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  *:focus-visible {
+    outline-width: 3px;
+  }
+  
+  .annotation-text {
+    background-color: #000000;
+    border: 1px solid #ffffff;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}

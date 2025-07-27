@@ -20,8 +20,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      // Replace problematic WASM module with dummy implementation
-      '@icr/polyseg-wasm': resolve(__dirname, './src/utils/polyseg-dummy.ts'),
+      // Replace problematic WASM module with canvas-based polygon segmentation
+      '@icr/polyseg-wasm': resolve(__dirname, './src/utils/polygonSegmentation.ts'),
+      // Fix cornerstone tools module resolution
+      '@cornerstonejs/tools': resolve(__dirname, './node_modules/@cornerstonejs/tools/dist/esm/index.js'),
     },
   },
   plugins: [
@@ -32,19 +34,20 @@ export default defineConfig({
     
     // Security Headers Plugin temporarily disabled for build testing
     
-    viteStaticCopy({
-      targets: [
-        {
-          src: './node_modules/@cornerstonejs/dicom-image-loader/dist/index.worker.bundle.min.worker.js',
-          dest: 'cornerstone-dicom-image-loader',
-          rename: 'cornerstoneDICOMImageLoaderWebWorker.min.js'
-        },
-        {
-          src: './node_modules/@cornerstonejs/dicom-image-loader/dist/dynamic-import/*.worker.js',
-          dest: 'cornerstone-dicom-image-loader',
-        }
-      ]
-    })
+    // viteStaticCopy 비활성화 - worker 파일이 존재하지 않음
+    // viteStaticCopy({
+    //   targets: [
+    //     {
+    //       src: './node_modules/@cornerstonejs/dicom-image-loader/dist/index.worker.bundle.min.worker.js',
+    //       dest: 'cornerstone-dicom-image-loader',
+    //       rename: 'cornerstoneDICOMImageLoaderWebWorker.min.js'
+    //     },
+    //     {
+    //       src: './node_modules/@cornerstonejs/dicom-image-loader/dist/dynamic-import/*.worker.js',
+    //       dest: 'cornerstone-dicom-image-loader',
+    //     }
+    //   ]
+    // })
   ],
   server: {
     port: 3000,

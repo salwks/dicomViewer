@@ -26,24 +26,36 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.app-header h1 {
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-title h1 {
   color: #58a6ff;
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
 
-.app-header p {
+.header-title p {
   color: #8b949e;
   font-size: 0.875rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .app-main {
   flex: 1;
-  padding: 2rem;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow: hidden;
 }
 
 .viewer-container {

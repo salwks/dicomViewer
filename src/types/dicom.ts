@@ -82,7 +82,7 @@ export interface AnnotationData {
       };
     };
     cachedStats?: {
-      [key: string]: any;
+      [key: string]: number | string | boolean | undefined;
     };
   };
   metadata: {
@@ -141,7 +141,7 @@ export interface VolumeConfig {
   volumeId: string;
   imageIds: string[];
   blendMode?: 'MIP' | 'MINIP' | 'AVERAGE';
-  callback?: (params: { volumeActor: any; volumeId: string }) => void;
+  callback?: (params: { volumeActor: unknown; volumeId: string }) => void;
 }
 
 export interface ToolConfig {
@@ -152,6 +152,6 @@ export interface ToolConfig {
   }>;
   mode: 'ACTIVE' | 'PASSIVE' | 'ENABLED' | 'DISABLED';
   configuration?: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }

@@ -1,0 +1,419 @@
+/**
+ * ViewportGrid Component Styles
+ */
+
+.viewport-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-bg-default);
+}
+
+/* Header */
+.viewport-grid__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-bg-paper);
+  border-bottom: 1px solid var(--color-divider);
+  flex-shrink: 0;
+}
+
+.viewport-grid__layout-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.viewport-grid__layout-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.viewport-grid__layout-options {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.viewport-grid__layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2);
+  background: none;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-base);
+  min-width: 48px;
+}
+
+.viewport-grid__layout-option:hover {
+  background-color: var(--color-action-hover);
+  border-color: var(--color-primary-main);
+}
+
+.viewport-grid__layout-option:focus-visible {
+  outline: 2px solid var(--color-primary-main);
+  outline-offset: -2px;
+}
+
+.viewport-grid__layout-option--active {
+  background-color: var(--color-primary-main);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-contrast);
+}
+
+.viewport-grid__layout-option--active:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.viewport-grid__layout-preview {
+  width: 24px;
+  height: 18px;
+  position: relative;
+}
+
+.viewport-grid__layout-preview-grid {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+}
+
+.viewport-grid__layout-preview-cell {
+  background-color: currentColor;
+  opacity: 0.6;
+  border-radius: 1px;
+}
+
+.viewport-grid__layout-option--active .viewport-grid__layout-preview-cell {
+  opacity: 1;
+}
+
+.viewport-grid__layout-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Sync Controls */
+.viewport-grid__sync-controls {
+  display: flex;
+  align-items: center;
+}
+
+.viewport-grid__sync-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.viewport-grid__sync-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary-main);
+}
+
+/* Grid Container */
+.viewport-grid__container {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  padding: 2px;
+  background-color: var(--color-divider);
+  overflow: hidden;
+}
+
+/* Individual Viewport */
+.viewport-grid__viewport {
+  position: relative;
+  background-color: var(--color-bg-default);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-base);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.viewport-grid__viewport:hover {
+  outline-color: var(--color-primary-light);
+}
+
+.viewport-grid__viewport:focus-visible {
+  outline-color: var(--color-primary-main);
+}
+
+.viewport-grid__viewport--active {
+  outline-color: var(--color-primary-main);
+  outline-width: 3px;
+  box-shadow: var(--shadow-md);
+}
+
+.viewport-grid__viewport--linked {
+  box-shadow: inset 0 0 0 2px var(--color-medical-annotation);
+}
+
+.viewport-grid__viewport--drag-over {
+  outline-color: var(--color-warning-main);
+  outline-width: 3px;
+  background-color: var(--color-warning-light);
+  opacity: 0.8;
+}
+
+/* Viewport Content */
+.viewport-grid__viewport-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--color-bg-default);
+}
+
+/* Viewport Info Overlay */
+.viewport-grid__viewport-info {
+  position: absolute;
+  top: var(--spacing-2);
+  left: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.viewport-grid__viewport-orientation {
+  padding: 2px var(--spacing-2);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(4px);
+}
+
+.viewport-grid__viewport-link-indicator {
+  width: 16px;
+  height: 16px;
+  color: var(--color-medical-annotation);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.viewport-grid__viewport-link-indicator svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Viewport Controls */
+.viewport-grid__viewport-controls {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  display: flex;
+  gap: var(--spacing-1);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing-base);
+  z-index: 1;
+}
+
+.viewport-grid__viewport:hover .viewport-grid__viewport-controls,
+.viewport-grid__viewport--active .viewport-grid__viewport-controls {
+  opacity: 1;
+}
+
+.viewport-grid__viewport-control {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-base);
+  backdrop-filter: blur(4px);
+}
+
+.viewport-grid__viewport-control:hover {
+  background-color: var(--color-primary-main);
+  transform: scale(1.1);
+}
+
+.viewport-grid__viewport-control:focus-visible {
+  outline: 2px solid var(--color-primary-main);
+  outline-offset: 2px;
+}
+
+.viewport-grid__viewport-control svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Empty Viewport */
+.viewport-grid__empty-viewport {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  color: var(--color-text-disabled);
+  background-color: var(--color-bg-elevated);
+  border: 2px dashed var(--color-divider);
+  border-radius: var(--radius-base);
+}
+
+.viewport-grid__empty-viewport svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0.5;
+}
+
+.viewport-grid__empty-viewport span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .viewport-grid__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+  
+  .viewport-grid__layout-selector {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .viewport-grid__layout-options {
+    flex-wrap: wrap;
+  }
+  
+  .viewport-grid__layout-option {
+    min-width: 40px;
+    padding: var(--spacing-1-5);
+  }
+  
+  .viewport-grid__layout-preview {
+    width: 20px;
+    height: 15px;
+  }
+  
+  .viewport-grid__layout-name {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .viewport-grid__container {
+    gap: 1px;
+    padding: 1px;
+  }
+  
+  .viewport-grid__viewport-info {
+    top: var(--spacing-1);
+    left: var(--spacing-1);
+  }
+  
+  .viewport-grid__viewport-controls {
+    top: var(--spacing-1);
+    right: var(--spacing-1);
+  }
+  
+  .viewport-grid__viewport-control {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .viewport-grid__viewport-control svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .viewport-grid__viewport-orientation {
+    font-size: 0.6875rem;
+    padding: 1px var(--spacing-1);
+  }
+  
+  .viewport-grid__viewport-link-indicator {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Touch Devices */
+@media (hover: none) {
+  .viewport-grid__viewport-controls {
+    opacity: 1;
+  }
+  
+  .viewport-grid__layout-option:hover {
+    background-color: transparent;
+    border-color: var(--color-divider);
+  }
+  
+  .viewport-grid__layout-option:active {
+    background-color: var(--color-action-hover);
+    border-color: var(--color-primary-main);
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .viewport-grid__viewport {
+    outline-width: 3px;
+  }
+  
+  .viewport-grid__viewport--active {
+    outline-width: 4px;
+  }
+  
+  .viewport-grid__layout-option {
+    border-width: 2px;
+  }
+  
+  .viewport-grid__empty-viewport {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .viewport-grid__viewport,
+  .viewport-grid__layout-option,
+  .viewport-grid__viewport-controls,
+  .viewport-grid__viewport-control {
+    transition: none;
+  }
+  
+  .viewport-grid__viewport-control:hover {
+    transform: none;
+  }
+}
+
+/* Dark Mode Adjustments */
+@media (prefers-color-scheme: dark) {
+  .viewport-grid__viewport-orientation {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+  
+  .viewport-grid__viewport-control {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+}

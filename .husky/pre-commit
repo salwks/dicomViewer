@@ -1,0 +1,58 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔒 보안 및 품질 검증 시작..."
+
+# 1. TypeScript 타입 체크
+echo "📝 TypeScript 타입 검증 중..."
+npm run typecheck
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript 타입 에러가 있습니다. 커밋이 중단됩니다."
+  exit 1
+fi
+
+# 2. ESLint 보안 규칙 검사
+echo "🛡️ 보안 규칙 검사 중..."
+npx eslint src --max-warnings 0
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint 보안 규칙 위반이 있습니다. 커밋이 중단됩니다."
+  exit 1
+fi
+
+# 3. 보안 취약점 검사
+echo "🔍 보안 취약점 검사 중..."
+npm audit --audit-level=moderate
+if [ $? -ne 0 ]; then
+  echo "⚠️  보안 취약점이 발견되었습니다. 검토 후 진행하세요."
+  # 경고만 표시, 커밋은 허용
+fi
+
+# 4. 금지된 패턴 검사
+echo "🚫 금지된 패턴 검사 중..."
+
+# console.log 검사
+if grep -r "console\.log" src/ --include="*.ts" --include="*.tsx" | grep -v "debug-logger"; then
+  echo "❌ console.log 사용이 발견되었습니다. console.warn 또는 debugLogger를 사용하세요."
+  exit 1
+fi
+
+# any 타입 검사
+if grep -r ": any" src/ --include="*.ts" --include="*.tsx" | grep -v "test\|spec"; then
+  echo "❌ any 타입 사용이 발견되었습니다. unknown 또는 구체적인 타입을 사용하세요."
+  exit 1
+fi
+
+# Object[key] 패턴 검사 (Object Injection 방지)
+if grep -r '\[[a-zA-Z_$][a-zA-Z0-9_$]*\]' src/ --include="*.ts" --include="*.tsx" | grep -v "Map\|hasOwnProperty\|test\|spec"; then
+  echo "⚠️  Object[key] 패턴이 발견되었습니다. Map 또는 hasOwnProperty를 사용하세요."
+fi
+
+# 5. Prettier 포맷 검사
+echo "✨ 코드 포맷 검사 중..."
+npx prettier --check src/
+if [ $? -ne 0 ]; then
+  echo "❌ 코드 포맷이 맞지 않습니다. 'npm run format'을 실행하세요."
+  exit 1
+fi
+
+echo "✅ 모든 검증을 통과했습니다!"

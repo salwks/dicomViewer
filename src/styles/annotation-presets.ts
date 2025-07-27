@@ -634,8 +634,8 @@ export const PRESETS_BY_CATEGORY = {
  * Get presets by annotation type
  */
 export const getPresetsByType = (type: AnnotationType): AnnotationStylePreset[] => {
-  return ALL_PRESETS.filter(preset => 
-    preset.styling.compatibleTypes.includes(type)
+  return ALL_PRESETS.filter(preset =>
+    preset.styling.compatibleTypes.includes(type),
   ).sort((a, b) => b.popularity - a.popularity);
 };
 
