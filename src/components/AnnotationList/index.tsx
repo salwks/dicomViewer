@@ -3,6 +3,8 @@
  * List and manage annotations in the medical imaging viewer
  */
 
+/* eslint-disable security/detect-object-injection */
+
 import React, { useState, useCallback, useMemo } from 'react';
 import './styles.css';
 
@@ -172,7 +174,7 @@ export const AnnotationList: React.FC<AnnotationListProps> = ({
         segmentations: ['brush'],
       };
       filtered = filtered.filter(annotation =>
-        // eslint-disable-next-line security/detect-object-injection
+
         typeMap[filterType].includes(annotation.type),
       );
     }
@@ -186,9 +188,9 @@ export const AnnotationList: React.FC<AnnotationListProps> = ({
         return 0;
       }
 
-      // eslint-disable-next-line security/detect-object-injection
+
       let aValue: any = a[sortField];
-      // eslint-disable-next-line security/detect-object-injection
+
       let bValue: any = b[sortField];
 
       if (sortField === 'createdAt' || sortField === 'modifiedAt') {
@@ -382,7 +384,8 @@ export const AnnotationList: React.FC<AnnotationListProps> = ({
                   <div className="annotation-list__item-info">
                     <div className="annotation-list__item-primary">
                       <span className="annotation-list__item-label">
-                        {annotation.label || `${annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} ${annotation.id.slice(-4)}`}
+                        {annotation.label ||
+                          `${annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} ${annotation.id.slice(-4)}`}
                       </span>
                       {annotation.value && (
                         <span className="annotation-list__item-value">

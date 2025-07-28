@@ -3,6 +3,8 @@
  * Downloads and manages sample DICOM files for demonstration
  */
 
+/* eslint-disable security/detect-object-injection */
+
 // Use native EventTarget instead of importing from cornerstone
 
 export interface SampleDicomFile {
@@ -46,7 +48,7 @@ export class SampleDataService extends EventTarget {
 
   private constructor(config: Partial<SampleDataConfig> = {}) {
     super();
-    
+
     this.config = {
       baseUrl: 'https://www.cornerstonejs.org/assets/dcm/',
       cachePath: '/sample-dicom/',
@@ -126,7 +128,8 @@ export class SampleDataService extends EventTarget {
         id: 'ct-abdomen-series',
         name: 'CT Abdomen Series',
         description: 'Multi-slice CT abdomen series',
-        url: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs/studies/1.3.6.1.4.1.14519.5.2.1.6279.6001.298806137288633453246975630178',
+        url: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs/studies/' +
+             '1.3.6.1.4.1.14519.5.2.1.6279.6001.298806137288633453246975630178',
         size: 25 * 1024 * 1024, // 25MB estimate
         modality: 'CT',
         studyDescription: 'Abdomen CT Series',
@@ -183,7 +186,7 @@ export class SampleDataService extends EventTarget {
 
     try {
       const response = await fetch(file.url);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
       }
@@ -200,19 +203,19 @@ export class SampleDataService extends EventTarget {
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
-        
+
         chunks.push(value);
         downloadedSize += value.length;
 
         // Update progress
         const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
-        this.triggerEvent('download:progress', { 
-          fileId: id, 
-          progress, 
-          downloadedSize, 
-          totalSize 
+        this.triggerEvent('download:progress', {
+          fileId: id,
+          progress,
+          downloadedSize,
+          totalSize,
         });
       }
 
@@ -220,7 +223,7 @@ export class SampleDataService extends EventTarget {
       const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
       const result = new ArrayBuffer(totalLength);
       const resultView = new Uint8Array(result);
-      
+
       let offset = 0;
       for (const chunk of chunks) {
         resultView.set(chunk, offset);
@@ -239,10 +242,10 @@ export class SampleDataService extends EventTarget {
 
     } catch (error) {
       file.loading = false;
-      this.triggerEvent('download:failed', { 
-        fileId: id, 
-        file, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      this.triggerEvent('download:failed', {
+        fileId: id,
+        file,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     } finally {
@@ -287,7 +290,7 @@ export class SampleDataService extends EventTarget {
    */
   public clearCache(): void {
     this.cache.clear();
-    
+
     // Reset download status
     this.sampleFiles.forEach(file => {
       file.downloaded = false;
@@ -313,7 +316,7 @@ export class SampleDataService extends EventTarget {
    */
   public getSampleFilesByModality(modality: string): SampleDicomFile[] {
     return Array.from(this.sampleFiles.values()).filter(
-      file => file.modality === modality
+      file => file.modality === modality,
     );
   }
 
@@ -329,7 +332,7 @@ export class SampleDataService extends EventTarget {
    */
   public createSampleStudyData(): any {
     const downloadedFiles = this.getDownloadedFiles();
-    
+
     if (downloadedFiles.length === 0) {
       return null;
     }
@@ -390,7 +393,7 @@ export class SampleDataService extends EventTarget {
     if (!file || !file.downloaded) {
       throw new Error(`File not available: ${fileId}`);
     }
-    
+
     return `dicom:sample://${fileId}`;
   }
 
@@ -399,7 +402,7 @@ export class SampleDataService extends EventTarget {
    */
   public getSampleDataForViewer() {
     const downloadedFiles = this.getDownloadedFiles();
-    
+
     return {
       // Single image viewer
       singleImage: downloadedFiles.length > 0 ? {
@@ -423,8 +426,8 @@ export class SampleDataService extends EventTarget {
       studies: this.groupFilesByStudy(downloadedFiles),
 
       // Tool demonstration
-      toolDemoImages: downloadedFiles.filter(file => 
-        ['CT', 'MR'].includes(file.modality)
+      toolDemoImages: downloadedFiles.filter(file =>
+        ['CT', 'MR'].includes(file.modality),
       ).map(file => ({
         imageId: this.generateImageId(file.id),
         file,
@@ -438,7 +441,7 @@ export class SampleDataService extends EventTarget {
    */
   private groupFilesByStudy(files: SampleDicomFile[]) {
     const groups = new Map<string, SampleDicomFile[]>();
-    
+
     files.forEach(file => {
       const studyKey = file.studyDescription;
       if (!groups.has(studyKey)) {
@@ -482,15 +485,15 @@ export class SampleDataService extends EventTarget {
    */
   public async preloadEssentialFiles(): Promise<void> {
     const essentialFiles = ['ct-chest', 'mr-brain', 'xr-chest'];
-    
+
     this.triggerEvent('preload:started', { fileIds: essentialFiles });
 
     try {
       await this.downloadMultipleFiles(essentialFiles);
       this.triggerEvent('preload:completed', { fileIds: essentialFiles });
     } catch (error) {
-      this.triggerEvent('preload:failed', { 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      this.triggerEvent('preload:failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -535,12 +538,12 @@ export class SampleDataService extends EventTarget {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   /**

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-// import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
+import { securityHeaders, medicalCSPConfig } from './vite-security-headers-plugin';
 import { wasmResolver } from './vite-wasm-resolver.js';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
@@ -17,6 +17,10 @@ const packageJson = JSON.parse(
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Disable all sourcemaps to prevent blob URL issues
+  css: {
+    devSourcemap: false,
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
@@ -32,7 +36,8 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     
-    // Security Headers Plugin temporarily disabled for build testing
+    // Security Headers Plugin with CSP blob: URL support
+    securityHeaders(),
     
     // viteStaticCopy 비활성화 - worker 파일이 존재하지 않음
     // viteStaticCopy({
@@ -54,11 +59,13 @@ export default defineConfig({
     host: true,
     fs: {
       allow: ['..']
-    }
+    },
+    // CORS headers now handled by security plugin
   },
   build: {
     outDir: 'dist',
-    sourcemap: process.env.NODE_ENV === 'development',
+    sourcemap: false, // Disable sourcemaps to prevent worker issues
+    minify: false, // Disable minification to prevent sourcemap generation
     target: 'esnext',
     rollupOptions: {
       // Simplify plugin configuration to fix esbuild error
@@ -76,6 +83,7 @@ export default defineConfig({
             id === 'a') {
           return true;
         }
+        
         return false;
       },
       onwarn(warning, warn) {
@@ -127,7 +135,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         inlineDynamicImports: false,
-        sourcemap: false // Disable source maps for workers to prevent blob URL issues
+        sourcemap: false, // Critical: No sourcemaps for workers
+        // Simple naming without hashes to prevent blob URL issues
+        entryFileNames: '[name].worker.js',
+        chunkFileNames: '[name].worker.js',
+        assetFileNames: '[name][extname]'
+      },
+      onwarn(warning, warn) {
+        // Suppress sourcemap warnings for workers
+        if (warning.code === 'SOURCEMAP_ERROR' || warning.message?.includes('sourcemap')) {
+          return;
+        }
+        warn(warning);
       }
     }
   }

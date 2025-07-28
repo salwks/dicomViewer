@@ -153,7 +153,7 @@ export class MemoryManager extends EventTarget {
         });
 
         observer.observe({ entryTypes: ['memory'] });
-      } catch (error) {
+      } catch {
         // Memory performance entries not supported
       }
     }
@@ -525,7 +525,7 @@ export class MemoryManager extends EventTarget {
     if ('gc' in window && typeof (window as any).gc === 'function') {
       try {
         (window as any).gc();
-      } catch (error) {
+      } catch {
         // GC not available
       }
     }
@@ -629,7 +629,7 @@ export class MemoryManager extends EventTarget {
     } else if (obj && typeof obj === 'object') {
       try {
         return JSON.stringify(obj).length * 2;
-      } catch (error) {
+      } catch {
         return 1024; // Default estimate for circular objects
       }
     }

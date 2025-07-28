@@ -55,7 +55,8 @@ body {
 .app-main {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  overflow: auto;
+  background-color: var(--color-bg-default, #0d1117);
 }
 
 .viewer-container {
@@ -99,6 +100,14 @@ body {
 .app-footer p {
   color: #8b949e;
   font-size: 0.75rem;
+}
+
+/* Upload container styles */
+.upload-container {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 2rem;
 }
 
 /* Responsive design */

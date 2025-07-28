@@ -8,7 +8,6 @@ export enum ToolType {
   ZOOM = 'zoom',
   PAN = 'pan',
   ROTATE = 'rotate',
-  STACK_SCROLL = 'stackScroll',
 
   // Windowing
   WINDOW_LEVEL = 'windowLevel',
@@ -18,16 +17,25 @@ export enum ToolType {
   ANGLE = 'angle',
   RECTANGLE_ROI = 'rectangleROI',
   ELLIPSE_ROI = 'ellipseROI',
+  PROBE = 'probe',
+  BIDIRECTIONAL = 'bidirectional',
+  HEIGHT = 'height',
+  COBB_ANGLE = 'cobbAngle',
   ARROW = 'arrow',
 
   // Annotation
   TEXT = 'text',
   FREEHAND = 'freehand',
+  SPLINE_ROI = 'splineROI',
+  LIVEWIRE = 'livewire',
+  KEY_IMAGE = 'keyImage',
+  DRAG_PROBE = 'dragProbe',
+  ERASER = 'eraser',
 
-  // Segmentation
-  BRUSH = 'brush',
-  THRESHOLD = 'threshold',
-  REGION_GROWING = 'regionGrowing',
+  // Segmentation (not implemented)
+  // BRUSH = 'brush',
+  // RECTANGLE_SCISSORS = 'rectangleScissors',
+  // CIRCLE_SCISSORS = 'circleScissors',
 
   // 3D
   VOLUME_ROTATE = 'volumeRotate',

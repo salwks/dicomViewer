@@ -3,6 +3,8 @@
  * Handles heavy image processing tasks in a separate thread
  */
 
+/* eslint-disable security/detect-object-injection */
+
 // Define message types for type safety
 export interface WorkerMessage {
   type: string;

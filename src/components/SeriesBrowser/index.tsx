@@ -110,12 +110,25 @@ export const SeriesBrowser: React.FC<SeriesBrowserProps> = ({
       <svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">
         <rect width="120" height="120" fill="${color}20"/>
         <rect x="10" y="10" width="100" height="100" fill="none" stroke="${color}" stroke-width="2"/>
-        <text x="60" y="50" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="${color}">${series.modality}</text>
+        <text x="60" y="50" text-anchor="middle" font-family="Arial" 
+              font-size="16" font-weight="bold" fill="${color}">${series.modality}</text>
         <text x="60" y="70" text-anchor="middle" font-family="Arial" font-size="12" fill="${color}">${series.numberOfImages} images</text>
         <text x="60" y="85" text-anchor="middle" font-family="Arial" font-size="10" fill="${color}80">Series ${series.seriesNumber}</text>
       </svg>
     `)}`;
   }, []);
+
+  // Debug logging
+  React.useEffect(() => {
+    log.info('SeriesBrowser received data', {
+      component: 'SeriesBrowser',
+      metadata: {
+        seriesCount: series.length,
+        filteredCount: filteredSeries.length,
+        seriesData: series,
+      },
+    });
+  }, [series, filteredSeries]);
 
   return (
     <div className={`series-browser ${className}`}>
@@ -219,6 +232,23 @@ export const SeriesBrowser: React.FC<SeriesBrowserProps> = ({
                   src={seriesItem.thumbnail || generateThumbnail(seriesItem)}
                   alt={`${seriesItem.modality} Series ${seriesItem.seriesNumber}`}
                   loading="lazy"
+                  onError={(e) => {
+                    log.error('Thumbnail failed to load', {
+                      component: 'SeriesBrowser',
+                      metadata: {
+                        seriesUID: seriesItem.seriesInstanceUID,
+                        thumbnailSrc: seriesItem.thumbnail,
+                      },
+                    });
+                    // Use fallback
+                    (e.target as HTMLImageElement).src = generateThumbnail(seriesItem);
+                  }}
+                  onLoad={() => {
+                    log.info('Thumbnail loaded successfully', {
+                      component: 'SeriesBrowser',
+                      metadata: { seriesUID: seriesItem.seriesInstanceUID },
+                    });
+                  }}
                 />
                 <div className="series-item__overlay">
                   <span className="series-item__modality">{seriesItem.modality}</span>

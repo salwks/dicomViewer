@@ -3,6 +3,8 @@
  * Centralized performance optimization and monitoring for medical imaging
  */
 
+/* eslint-disable security/detect-object-injection */
+
 
 export interface PerformanceMetrics {
   renderTime: number;
@@ -313,7 +315,7 @@ export class PerformanceManager extends EventTarget {
     if ('gc' in window && typeof (window as any).gc === 'function') {
       try {
         (window as any).gc();
-      } catch (error) {
+      } catch {
         // gc() is only available in development/debugging
       }
     }

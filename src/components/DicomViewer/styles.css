@@ -1,0 +1,167 @@
+/**
+ * DICOM Viewer Styles
+ */
+
+.dicom-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--color-bg-default);
+}
+
+/* Viewer Controls */
+.viewer-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-bg-paper);
+  border-bottom: 1px solid var(--color-divider);
+  flex-shrink: 0;
+}
+
+.image-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.image-navigation button {
+  padding: 0.5rem 1rem;
+  background: var(--color-primary-main);
+  color: var(--color-primary-contrast);
+  border: none;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background var(--duration-fast) var(--easing-base);
+}
+
+.image-navigation button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.image-navigation button:disabled {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.image-counter {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.viewer-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Viewport Container */
+.viewport-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.cornerstone-viewport {
+  width: 100%;
+  height: 100%;
+}
+
+/* Loading State */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid var(--color-divider);
+  border-top: 3px solid var(--color-primary-main);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+/* Error State */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.error-overlay p {
+  color: var(--color-error-main);
+  font-size: 1rem;
+  padding: 2rem;
+  background: var(--color-bg-paper);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-error-main);
+}
+
+/* Tool Instructions */
+.tool-instructions {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.75rem;
+  background: var(--color-bg-paper);
+  border-top: 1px solid var(--color-divider);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.tool-instructions span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .viewer-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .tool-instructions {
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.75rem;
+  }
+}

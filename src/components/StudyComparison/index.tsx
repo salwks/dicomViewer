@@ -145,7 +145,8 @@ export const StudyComparison: React.FC<StudyComparisonProps> = ({
       <svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
         <rect width="80" height="80" fill="${color}20"/>
         <rect x="5" y="5" width="70" height="70" fill="none" stroke="${color}" stroke-width="2"/>
-        <text x="40" y="35" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="${color}">${study.modality}</text>
+        <text x="40" y="35" text-anchor="middle" font-family="Arial" 
+              font-size="12" font-weight="bold" fill="${color}">${study.modality}</text>
         <text x="40" y="50" text-anchor="middle" font-family="Arial" font-size="9" fill="${color}">${study.seriesCount} series</text>
       </svg>
     `)}`;

@@ -1,0 +1,229 @@
+/**
+ * Mode Selector Styles
+ */
+
+.mode-selector {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.mode-selector__header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.mode-selector__header h3 {
+  font-size: 2rem;
+  color: var(--color-text-primary);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.mode-selector__header p {
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.mode-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.mode-card {
+  background: var(--color-bg-paper);
+  border: 2px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  cursor: pointer;
+  transition: all var(--duration-base) var(--easing-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-card:hover:not(.mode-card--disabled) {
+  border-color: var(--color-primary-main);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.mode-card--active {
+  border-color: var(--color-primary-main);
+  background: var(--color-primary-light);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.mode-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.mode-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mode-card__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.mode-card__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.mode-card__description {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.mode-card__features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mode-card__features li {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-divider);
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.mode-card__features li:last-child {
+  border-bottom: none;
+}
+
+.mode-card__features li::before {
+  content: '•';
+  color: var(--color-primary-main);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.mode-card__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+
+.mode-card__overlay span {
+  background: var(--color-bg-paper);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.mode-card__active-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--color-primary-main);
+  color: var(--color-primary-contrast);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-base);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Notice Section */
+.mode-selector__notice {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+}
+
+.notice-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.notice-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.notice-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-primary);
+  font-size: 1.125rem;
+}
+
+.notice-content p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mode-selector {
+    padding: 1rem;
+  }
+
+  .mode-selector__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .mode-card {
+    padding: 1.5rem;
+  }
+
+  .mode-card__header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .mode-card__icon {
+    font-size: 2rem;
+  }
+
+  .mode-card__title {
+    font-size: 1.25rem;
+  }
+
+  .notice-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .mode-selector__header h3 {
+    font-size: 1.5rem;
+  }
+
+  .mode-selector__header p {
+    font-size: 1rem;
+  }
+}

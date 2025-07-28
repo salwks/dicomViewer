@@ -26,7 +26,7 @@ interface ToolPanelProps {
 }
 
 const tools: Tool[] = [
-  // Navigation Tools
+  // Navigation Tools (Confirmed Available)
   {
     id: ToolType.ZOOM,
     name: 'Zoom',
@@ -54,22 +54,8 @@ const tools: Tool[] = [
       </svg>
     ),
   },
-  {
-    id: ToolType.STACK_SCROLL,
-    name: 'Stack Scroll',
-    category: ToolCategory.NAVIGATION,
-    description: 'Scroll through image stack',
-    hotkey: 'S',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <line x1="3" y1="9" x2="21" y2="9" />
-        <line x1="3" y1="15" x2="21" y2="15" />
-      </svg>
-    ),
-  },
 
-  // Windowing
+  // Windowing (Confirmed Available)
   {
     id: ToolType.WINDOW_LEVEL,
     name: 'Window/Level',
@@ -84,7 +70,7 @@ const tools: Tool[] = [
     ),
   },
 
-  // Measurement Tools
+  // Measurement Tools (Confirmed Available)
   {
     id: ToolType.LENGTH,
     name: 'Length',
@@ -96,6 +82,18 @@ const tools: Tool[] = [
         <line x1="4" y1="20" x2="20" y2="4" />
         <circle cx="4" cy="20" r="2" fill="currentColor" />
         <circle cx="20" cy="4" r="2" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    id: ToolType.BIDIRECTIONAL,
+    name: 'Bidirectional',
+    category: ToolCategory.MEASUREMENT,
+    description: 'Measure length and width',
+    hotkey: 'B',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M8 12h8M12 8v8M8 8l-2 4 2 4M16 8l2 4-2 4M8 8v8M16 8v8" />
       </svg>
     ),
   },
@@ -136,8 +134,58 @@ const tools: Tool[] = [
       </svg>
     ),
   },
+  {
+    id: ToolType.PROBE,
+    name: 'Probe',
+    category: ToolCategory.MEASUREMENT,
+    description: 'Show pixel value at point',
+    hotkey: 'O',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="3" fill="currentColor" />
+        <path d="M12 9V3M12 15v6M9 12H3M15 12h6" />
+      </svg>
+    ),
+  },
 
-  // Annotation Tools
+  // Now available tools (Previously in fallback)
+  {
+    id: ToolType.HEIGHT,
+    name: 'Height',
+    category: ToolCategory.MEASUREMENT,
+    description: 'Measure vertical height',
+    hotkey: 'H',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 3v18M9 6l3-3 3 3M9 18l3 3 3-3" />
+      </svg>
+    ),
+  },
+  {
+    id: ToolType.COBB_ANGLE,
+    name: 'Cobb Angle',
+    category: ToolCategory.MEASUREMENT,
+    description: 'Measure spinal curvature angle',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 20L8 4M16 4l4 16M8 8l8 0M8 16l8 0" />
+      </svg>
+    ),
+  },
+  {
+    id: ToolType.DRAG_PROBE,
+    name: 'Drag Probe',
+    category: ToolCategory.MEASUREMENT,
+    description: 'Show pixel values while dragging',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+        <path d="M12 10V6M12 14v4M10 12H6M14 12h4" strokeDasharray="2 2" />
+      </svg>
+    ),
+  },
+
+  // Annotation Tools (Confirmed Available)
   {
     id: ToolType.ARROW,
     name: 'Arrow',
@@ -151,46 +199,18 @@ const tools: Tool[] = [
     ),
   },
   {
-    id: ToolType.TEXT,
-    name: 'Text',
+    id: ToolType.FREEHAND,
+    name: 'Freehand',
     category: ToolCategory.ANNOTATION,
-    description: 'Add text annotation',
-    hotkey: 'T',
+    description: 'Draw freehand annotation',
+    hotkey: 'F',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="4 7 4 4 20 4 20 7" />
-        <line x1="12" y1="4" x2="12" y2="20" />
-        <line x1="8" y1="20" x2="16" y2="20" />
+        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
     ),
   },
 
-  // Segmentation Tools
-  {
-    id: ToolType.BRUSH,
-    name: 'Brush',
-    category: ToolCategory.SEGMENTATION,
-    description: 'Manual segmentation brush',
-    hotkey: 'B',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M9 11l-6 6v3h3l6-6M22 2l-8 8" />
-        <path d="m15 9 3-3" />
-      </svg>
-    ),
-  },
-  {
-    id: ToolType.THRESHOLD,
-    name: 'Threshold',
-    category: ToolCategory.SEGMENTATION,
-    description: 'Threshold-based segmentation',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" />
-        <rect x="3" y="12" width="18" height="9" fill="currentColor" opacity="0.3" />
-      </svg>
-    ),
-  },
 ];
 
 const categoryNames: Record<ToolCategory, string> = {

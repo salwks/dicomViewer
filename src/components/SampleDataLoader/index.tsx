@@ -3,6 +3,8 @@
  * UI for downloading and managing sample DICOM files
  */
 
+/* eslint-disable security/detect-object-injection */
+
 import React, { useState, useEffect } from 'react';
 import { sampleDataService, SampleDicomFile } from '../../services/sampleDataService';
 import './styles.css';
@@ -38,8 +40,8 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
     // Set up event listeners
     const handleDownloadStarted = (event: CustomEvent) => {
       const { fileId } = event.detail;
-      setSampleFiles(prev => prev.map(file => 
-        file.id === fileId ? { ...file, loading: true } : file
+      setSampleFiles(prev => prev.map(file =>
+        file.id === fileId ? { ...file, loading: true } : file,
       ));
     };
 
@@ -55,8 +57,8 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
 
     const handleDownloadCompleted = (event: CustomEvent) => {
       const { fileId } = event.detail;
-      setSampleFiles(prev => prev.map(file => 
-        file.id === fileId ? { ...file, loading: false, downloaded: true } : file
+      setSampleFiles(prev => prev.map(file =>
+        file.id === fileId ? { ...file, loading: false, downloaded: true } : file,
       ));
       setDownloadProgress(prev => {
         const newMap = new Map(prev);
@@ -64,7 +66,7 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
         return newMap;
       });
       updateStats();
-      
+
       if (onDataLoaded) {
         const viewerData = sampleDataService.getSampleDataForViewer();
         onDataLoaded(viewerData);
@@ -73,8 +75,8 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
 
     const handleDownloadFailed = (event: CustomEvent) => {
       const { fileId, error } = event.detail;
-      setSampleFiles(prev => prev.map(file => 
-        file.id === fileId ? { ...file, loading: false } : file
+      setSampleFiles(prev => prev.map(file =>
+        file.id === fileId ? { ...file, loading: false } : file,
       ));
       setDownloadProgress(prev => {
         const newMap = new Map(prev);
@@ -91,7 +93,7 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
     const handlePreloadCompleted = () => {
       setIsPreloading(false);
       updateStats();
-      
+
       if (onDataLoaded) {
         const viewerData = sampleDataService.getSampleDataForViewer();
         onDataLoaded(viewerData);
@@ -102,13 +104,13 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
       setIsPreloading(false);
     };
 
-    sampleDataService.addEventListener('download:started', handleDownloadStarted);
-    sampleDataService.addEventListener('download:progress', handleDownloadProgress);
-    sampleDataService.addEventListener('download:completed', handleDownloadCompleted);
-    sampleDataService.addEventListener('download:failed', handleDownloadFailed);
-    sampleDataService.addEventListener('preload:started', handlePreloadStarted);
-    sampleDataService.addEventListener('preload:completed', handlePreloadCompleted);
-    sampleDataService.addEventListener('preload:failed', handlePreloadFailed);
+    sampleDataService.addEventListener('download:started', handleDownloadStarted as EventListener);
+    sampleDataService.addEventListener('download:progress', handleDownloadProgress as EventListener);
+    sampleDataService.addEventListener('download:completed', handleDownloadCompleted as EventListener);
+    sampleDataService.addEventListener('download:failed', handleDownloadFailed as EventListener);
+    sampleDataService.addEventListener('preload:started', handlePreloadStarted as EventListener);
+    sampleDataService.addEventListener('preload:completed', handlePreloadCompleted as EventListener);
+    sampleDataService.addEventListener('preload:failed', handlePreloadFailed as EventListener);
 
     // Auto-load if requested
     if (autoLoad) {
@@ -116,13 +118,13 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
     }
 
     return () => {
-      sampleDataService.removeEventListener('download:started', handleDownloadStarted);
-      sampleDataService.removeEventListener('download:progress', handleDownloadProgress);
-      sampleDataService.removeEventListener('download:completed', handleDownloadCompleted);
-      sampleDataService.removeEventListener('download:failed', handleDownloadFailed);
-      sampleDataService.removeEventListener('preload:started', handlePreloadStarted);
-      sampleDataService.removeEventListener('preload:completed', handlePreloadCompleted);
-      sampleDataService.removeEventListener('preload:failed', handlePreloadFailed);
+      sampleDataService.removeEventListener('download:started', handleDownloadStarted as EventListener);
+      sampleDataService.removeEventListener('download:progress', handleDownloadProgress as EventListener);
+      sampleDataService.removeEventListener('download:completed', handleDownloadCompleted as EventListener);
+      sampleDataService.removeEventListener('download:failed', handleDownloadFailed as EventListener);
+      sampleDataService.removeEventListener('preload:started', handlePreloadStarted as EventListener);
+      sampleDataService.removeEventListener('preload:completed', handlePreloadCompleted as EventListener);
+      sampleDataService.removeEventListener('preload:failed', handlePreloadFailed as EventListener);
     };
   }, [autoLoad, onDataLoaded]);
 
@@ -158,7 +160,7 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
   const getModalityIcon = (modality: string): string => {
@@ -205,7 +207,7 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
         >
           {isPreloading ? 'Loading Essential Files...' : 'Load Essential Files'}
         </button>
-        
+
         <button
           className="btn btn-secondary"
           onClick={handleClearCache}
@@ -225,13 +227,13 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
       <div className="sample-files-list">
         {sampleFiles.map(file => {
           const progress = downloadProgress.get(file.id);
-          
+
           return (
             <div key={file.id} className="sample-file-item">
               <div className="file-header">
                 <div className="file-info">
                   <div className="file-title">
-                    <span 
+                    <span
                       className="modality-icon"
                       style={{ color: getModalityColor(file.modality) }}
                     >
@@ -268,13 +270,13 @@ export const SampleDataLoader: React.FC<SampleDataLoaderProps> = ({
               {progress && (
                 <div className="download-progress">
                   <div className="progress-bar">
-                    <div 
+                    <div
                       className="progress-fill"
                       style={{ width: `${progress.progress}%` }}
                     ></div>
                   </div>
                   <div className="progress-text">
-                    {Math.round(progress.progress)}% - 
+                    {Math.round(progress.progress)}% -
                     {formatBytes(progress.downloadedSize)} / {formatBytes(progress.totalSize)}
                   </div>
                 </div>

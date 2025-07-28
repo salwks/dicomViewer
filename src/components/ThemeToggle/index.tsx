@@ -31,9 +31,15 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     large: 'theme-toggle--large',
   };
 
+  const validSizes = ['small', 'medium', 'large'] as const;
+  const safeSize = validSizes.includes(size) ? size : 'medium';
+
   return (
     <button
-      className={`theme-toggle ${sizeClasses[size]} ${className}`}
+      className={`theme-toggle ${
+        // eslint-disable-next-line security/detect-object-injection
+        sizeClasses[safeSize]
+      } ${className}`}
       onClick={handleToggle}
       aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} theme`}
       title={`Switch to ${mode === 'light' ? 'dark' : 'light'} theme`}

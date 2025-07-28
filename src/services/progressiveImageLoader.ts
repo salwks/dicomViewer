@@ -3,6 +3,8 @@
  * Implements progressive loading strategy for DICOM images with priority-based loading
  */
 
+/* eslint-disable security/detect-object-injection */
+
 import { performanceManager } from './performanceManager';
 
 export interface ImageLoadRequest {

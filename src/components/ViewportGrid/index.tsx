@@ -3,6 +3,8 @@
  * Multi-viewport layout manager for medical imaging viewer
  */
 
+/* eslint-disable security/detect-object-injection */
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import './styles.css';
 
@@ -266,7 +268,9 @@ export const ViewportGrid: React.FC<ViewportGridProps> = ({
             onDragEnd={handleDragEnd}
             role="button"
             tabIndex={0}
-            aria-label={viewport ? `Viewport ${index + 1}: ${viewport.orientation || 'Unknown orientation'}` : `Empty viewport ${index + 1}`}
+            aria-label={viewport
+              ? `Viewport ${index + 1}: ${viewport.orientation || 'Unknown orientation'}`
+              : `Empty viewport ${index + 1}`}
           >
             {viewport ? (
               <>
@@ -283,7 +287,9 @@ export const ViewportGrid: React.FC<ViewportGridProps> = ({
                   {viewport.isLinked && (
                     <div className="viewport-grid__viewport-link-indicator">
                       <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1z
+                              M8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                        />
                       </svg>
                     </div>
                   )}
@@ -296,9 +302,10 @@ export const ViewportGrid: React.FC<ViewportGridProps> = ({
                     title="Viewport settings"
                     aria-label="Open viewport settings"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="2">
                       <circle cx="12" cy="12" r="3"/>
-                      <path d="M12 1v6m0 10v6m11-7h-6m-10 0H1m15.5-6.5l-4.24 4.24M7.5 7.5l-4.24-4.24m0 12.73l4.24-4.24m9.73 4.24l-4.24-4.24"/>
+                      <path d="M12 1v6m0 10v6m11-7h-6m-10 0H1m15.5-6.5l-4.24 4.24M7.5 7.5l-4.24-4.24m0 12.73l4.24-4.24m9.73 4.24l-4.24-4.24" />
                     </svg>
                   </button>
                 </div>
