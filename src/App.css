@@ -15,47 +15,48 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #0d1117;
+  overflow: hidden;
 }
 
 .app-header {
   background-color: #161b22;
-  padding: 1rem 2rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid #30363d;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 .header-title h1 {
   color: #58a6ff;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin: 0;
 }
 
 .header-title p {
-  color: #8b949e;
-  font-size: 0.875rem;
+  display: none;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .app-main {
   flex: 1;
   display: flex;
-  overflow: auto;
+  overflow: hidden;
   background-color: var(--color-bg-default, #0d1117);
 }
 
@@ -90,17 +91,7 @@ body {
   background-color: rgba(33, 38, 45, 0.5);
 }
 
-.app-footer {
-  background-color: #161b22;
-  padding: 1rem 2rem;
-  border-top: 1px solid #30363d;
-  text-align: center;
-}
-
-.app-footer p {
-  color: #8b949e;
-  font-size: 0.75rem;
-}
+/* Footer removed for better space utilization */
 
 /* Upload container styles */
 .upload-container {

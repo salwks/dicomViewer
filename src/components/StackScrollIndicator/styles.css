@@ -1,0 +1,149 @@
+/**
+ * Stack Scroll Indicator Styles
+ * Visual gauge and controls for stack navigation
+ */
+
+.stack-scroll-indicator {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.stack-scroll-indicator > * {
+  pointer-events: auto;
+}
+
+/* Vertical Gauge - REMOVED 
+.stack-gauge-vertical {
+  display: none;
+}
+*/
+
+/* Horizontal Slider */
+.stack-slider-horizontal {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 12px 16px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.stack-slider-horizontal:hover {
+  background: rgba(0, 0, 0, 0.9);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.stack-slider {
+  width: 200px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stack-slider:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.stack-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #2196f3;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.stack-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #2196f3;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.stack-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #1976d2;
+}
+
+.stack-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  background: #1976d2;
+}
+
+.stack-slider.dragging::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
+  background: #1565c0;
+}
+
+.stack-slider.dragging::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
+  background: #1565c0;
+}
+
+.stack-slider-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.stack-slider-percentage {
+  color: #00bcd4;
+}
+
+/* Mini Preview Grid - HIDDEN FOR NOW
+.stack-mini-preview {
+  display: none;
+}
+*/
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stack-scroll-indicator {
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .stack-slider-horizontal {
+    padding: 8px 12px;
+  }
+  
+  .stack-slider {
+    width: 150px;
+  }
+}
+
+/* Dark theme integration */
+@media (prefers-color-scheme: dark) {
+  .stack-slider-horizontal {
+    background: rgba(20, 20, 20, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Track fill animation */
+@keyframes fillProgress {
+  from { width: 0; }
+  to { width: var(--progress); }
+}

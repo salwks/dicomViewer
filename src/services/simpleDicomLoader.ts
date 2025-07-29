@@ -19,6 +19,8 @@ export interface DicomMetadata {
   studyDate: string;
   imageNumber?: number;
   sopInstanceUID?: string;
+  numberOfFrames?: number; // For multi-frame DICOM support
+  frameIndex?: number; // For multi-frame DICOM frames
 }
 
 export interface SimpleDicomFile {
@@ -64,6 +66,9 @@ export class SimpleDicomLoader {
       const imageNumber = parseInt(dataSet.string('x00200013') || '1');
       const sopInstanceUID = dataSet.string('x00080018');
 
+      // Check for multi-frame DICOM (NumberOfFrames tag)
+      const numberOfFrames = parseInt(dataSet.string('x00280008') || '1');
+
       return {
         seriesInstanceUID,
         seriesNumber,
@@ -75,6 +80,7 @@ export class SimpleDicomLoader {
         studyDate,
         imageNumber,
         sopInstanceUID,
+        numberOfFrames, // Add number of frames information
       };
     } catch (error) {
       log.warn('Failed to parse DICOM metadata, using defaults', {
@@ -113,27 +119,60 @@ export class SimpleDicomLoader {
         const blob = new Blob([file], { type: 'application/dicom' });
         const blobUrl = URL.createObjectURL(blob);
 
-        // Create WADO URI image ID
-        const imageId = `wadouri:${blobUrl}`;
+        // Handle multi-frame DICOM files
+        const numberOfFrames = metadata.numberOfFrames || 1;
 
-        const dicomFile: SimpleDicomFile = {
-          file,
-          imageId,
-          metadata,
-        };
+        if (numberOfFrames > 1) {
+          // Multi-frame DICOM: create multiple image IDs for each frame
+          for (let frameIndex = 0; frameIndex < numberOfFrames; frameIndex++) {
+            const frameImageId = `wadouri:${blobUrl}?frame=${frameIndex}`;
 
-        this.loadedFiles.push(dicomFile);
+            const frameMetadata = {
+              ...metadata,
+              imageNumber: (metadata.imageNumber || 1) + frameIndex,
+              frameIndex,
+            };
 
-        log.info('DICOM file loaded with metadata', {
-          component: 'SimpleDicomLoader',
-          metadata: {
-            fileName: file.name,
+            const dicomFile: SimpleDicomFile = {
+              file,
+              imageId: frameImageId,
+              metadata: frameMetadata,
+            };
+
+            this.loadedFiles.push(dicomFile);
+          }
+
+          log.info('Multi-frame DICOM file loaded', {
+            component: 'SimpleDicomLoader',
+            metadata: {
+              fileName: file.name,
+              frameCount: numberOfFrames,
+              seriesUID: metadata.seriesInstanceUID,
+              modality: metadata.modality,
+            },
+          });
+        } else {
+          // Single-frame DICOM: create one image ID
+          const imageId = `wadouri:${blobUrl}`;
+
+          const dicomFile: SimpleDicomFile = {
+            file,
             imageId,
-            seriesUID: metadata.seriesInstanceUID,
-            seriesDescription: metadata.seriesDescription,
-            modality: metadata.modality,
-          },
-        });
+            metadata,
+          };
+
+          this.loadedFiles.push(dicomFile);
+
+          log.info('Single-frame DICOM file loaded', {
+            component: 'SimpleDicomLoader',
+            metadata: {
+              fileName: file.name,
+              imageId,
+              seriesUID: metadata.seriesInstanceUID,
+              modality: metadata.modality,
+            },
+          });
+        }
 
       } catch (error) {
         log.error('Failed to load DICOM file', {
@@ -289,6 +328,7 @@ export class SimpleDicomLoader {
       const bitsAllocated = dataSet.uint16('x00280100') || 16; // Bits Allocated
       const pixelRepresentation = dataSet.uint16('x00280103') || 0; // 0 = unsigned, 1 = signed
       const photometricInterpretation = dataSet.string('x00280004') || 'MONOCHROME2';
+      const numberOfFrames = parseInt(dataSet.string('x00280008') || '1'); // Number of frames
 
       // Get pixel data element
       const pixelDataElement = dataSet.elements.x7fe00010;
@@ -300,15 +340,39 @@ export class SimpleDicomLoader {
         return this.getFallbackThumbnailForFile(file);
       }
 
-      // Extract pixel data
+      // Calculate bytes per pixel and frame size
+      const bytesPerPixel = Math.ceil(bitsAllocated / 8);
+      const pixelsPerFrame = width * height;
+      const bytesPerFrame = pixelsPerFrame * bytesPerPixel;
+
+      // Extract pixel data (first frame only for multi-frame DICOM)
       let pixelData: Uint8Array | Uint16Array | Int16Array;
+      let dataLength: number;
+
+      if (numberOfFrames > 1) {
+        // Multi-frame: read only first frame
+        dataLength = bytesPerFrame;
+        log.info('Multi-frame DICOM detected, extracting first frame for thumbnail', {
+          component: 'SimpleDicomLoader',
+          metadata: {
+            numberOfFrames,
+            frameSize: `${width}x${height}`,
+            bytesPerFrame,
+          },
+        });
+      } else {
+        // Single frame: read all pixel data
+        dataLength = pixelDataElement.length;
+      }
+
       if (bitsAllocated === 8) {
-        pixelData = new Uint8Array(arrayBuffer, pixelDataElement.dataOffset, pixelDataElement.length);
+        pixelData = new Uint8Array(arrayBuffer, pixelDataElement.dataOffset, dataLength);
       } else if (bitsAllocated === 16) {
+        const pixelCount = Math.floor(dataLength / 2);
         if (pixelRepresentation === 0) {
-          pixelData = new Uint16Array(arrayBuffer, pixelDataElement.dataOffset, pixelDataElement.length / 2);
+          pixelData = new Uint16Array(arrayBuffer, pixelDataElement.dataOffset, pixelCount);
         } else {
-          pixelData = new Int16Array(arrayBuffer, pixelDataElement.dataOffset, pixelDataElement.length / 2);
+          pixelData = new Int16Array(arrayBuffer, pixelDataElement.dataOffset, pixelCount);
         }
       } else {
         log.warn('Unsupported bits allocated', {
@@ -329,16 +393,31 @@ export class SimpleDicomLoader {
         return this.getFallbackThumbnailForFile(file);
       }
 
+      // Validate pixel data length
+      const expectedPixels = width * height;
+      if (pixelData.length < expectedPixels) {
+        log.warn('Insufficient pixel data for thumbnail generation', {
+          component: 'SimpleDicomLoader',
+          metadata: {
+            expected: expectedPixels,
+            actual: pixelData.length,
+            frameSize: `${width}x${height}`,
+          },
+        });
+        return this.getFallbackThumbnailForFile(file);
+      }
+
       // Calculate scaling
       const scaleX = width / thumbnailSize;
       const scaleY = height / thumbnailSize;
 
-      // Find min/max for window/level
+      // Find min/max for window/level (only sample first frame pixels)
       let min = Number.MAX_VALUE;
       let max = Number.MIN_VALUE;
-      const sampleRate = Math.max(1, Math.floor(pixelData.length / 10000)); // Sample pixels for performance
+      const pixelsToSample = Math.min(expectedPixels, pixelData.length);
+      const sampleRate = Math.max(1, Math.floor(pixelsToSample / 10000)); // Sample pixels for performance
 
-      for (let i = 0; i < pixelData.length; i += sampleRate) {
+      for (let i = 0; i < pixelsToSample; i += sampleRate) {
         const value = pixelData[i];
         if (value !== undefined) {
           if (value < min) min = value;
@@ -354,14 +433,15 @@ export class SimpleDicomLoader {
       // Create thumbnail image data
       const imageData = ctx.createImageData(thumbnailSize, thumbnailSize);
 
-      // Downsample and render
+      // Downsample and render (first frame only)
       for (let y = 0; y < thumbnailSize; y++) {
         for (let x = 0; x < thumbnailSize; x++) {
           const sourceX = Math.floor(x * scaleX);
           const sourceY = Math.floor(y * scaleY);
           const sourceIndex = sourceY * width + sourceX;
 
-          if (sourceIndex < pixelData.length && sourceIndex >= 0) {
+          // Ensure we only access pixels from the first frame
+          if (sourceIndex < expectedPixels && sourceIndex >= 0 && sourceIndex < pixelData.length) {
             const pixelValue = pixelData[sourceIndex];
             if (pixelValue === undefined) continue;
             let normalizedValue = ((pixelValue - min) / range) * 255;
@@ -394,6 +474,8 @@ export class SimpleDicomLoader {
           imageSize: `${width}x${height}`,
           bitsAllocated,
           pixelRange: `${min}-${max}`,
+          numberOfFrames,
+          isMultiFrame: numberOfFrames > 1,
         },
       });
 

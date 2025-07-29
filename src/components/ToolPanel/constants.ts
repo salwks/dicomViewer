@@ -8,6 +8,7 @@ export enum ToolType {
   ZOOM = 'zoom',
   PAN = 'pan',
   ROTATE = 'rotate',
+  STACK_SCROLL = 'stackScroll',
 
   // Windowing
   WINDOW_LEVEL = 'windowLevel',

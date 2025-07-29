@@ -74,7 +74,7 @@ export const useToolSetup = (toolGroupId: string) => {
             return; // Skip this tool
           }
           cornerstoneTools.addTool(ToolClass);
-        } catch {
+        } catch (error) {
           // Tool already exists, ignore the error
           if (!(error as Error).message.includes('already been added')) {
             log.error(`Failed to add tool: ${ToolClass?.toolName || 'unknown'}`, {
@@ -166,7 +166,7 @@ export const useToolSetup = (toolGroupId: string) => {
     }
   }, [toolGroupId]);
 
-  const safeActivateTool = useCallback((toolGroup: any, toolClass: any, toolType: string) => {
+  const safeActivateTool = useCallback((toolGroup: any, toolClass: any, toolType: string, customBindings?: any) => {
     if (!toolClass || !toolClass.toolName) {
       log.warn(`Tool ${toolType} not available in this version`, {
         component: 'useToolSetup',
@@ -176,9 +176,8 @@ export const useToolSetup = (toolGroupId: string) => {
     }
 
     try {
-      toolGroup.setToolActive(toolClass.toolName, {
-        bindings: [{ mouseButton: csToolsEnums.MouseBindings.Primary }],
-      });
+      const bindings = customBindings || [{ mouseButton: csToolsEnums.MouseBindings.Primary }];
+      toolGroup.setToolActive(toolClass.toolName, { bindings });
       log.info(`${toolType} tool activated successfully`, {
         component: 'useToolSetup',
         metadata: { toolName: toolClass.toolName },
@@ -211,7 +210,7 @@ export const useToolSetup = (toolGroupId: string) => {
 
       // First set all available tools to passive
       const availableTools = [
-        WindowLevelTool, PanTool, ZoomTool, LengthTool, BidirectionalTool,
+        WindowLevelTool, PanTool, ZoomTool, StackScrollTool, LengthTool, BidirectionalTool,
         RectangleROITool, EllipticalROITool, AngleTool, ArrowAnnotateTool,
         ProbeTool, PlanarFreehandROITool,
       ].filter(tool => tool && tool.toolName);
@@ -241,6 +240,34 @@ export const useToolSetup = (toolGroupId: string) => {
           break;
         case ToolType.PAN:
           toolActivated = safeActivateTool(toolGroup, PanTool, 'Pan');
+          break;
+        case ToolType.STACK_SCROLL:
+          // StackScrollTool - activate with primary mouse button for drag scrolling
+          try {
+            // First set tool as active without bindings to see if it works
+            toolGroup.setToolActive(StackScrollTool.toolName, {
+              bindings: [
+                {
+                  mouseButton: csToolsEnums.MouseBindings.Primary,
+                  modifierKey: undefined,
+                },
+              ],
+            });
+
+            log.info('Stack Scroll tool activated with primary mouse binding', {
+              component: 'useToolSetup',
+              metadata: { toolName: StackScrollTool.toolName },
+            });
+            toolActivated = true;
+          } catch (error) {
+            log.error('Failed to activate Stack Scroll tool', {
+              component: 'useToolSetup',
+              metadata: { toolName: StackScrollTool.toolName },
+            }, error as Error);
+
+            // Fallback: try without custom bindings
+            toolActivated = safeActivateTool(toolGroup, StackScrollTool, 'Stack Scroll');
+          }
           break;
         case ToolType.LENGTH:
           toolActivated = safeActivateTool(toolGroup, LengthTool, 'Length');

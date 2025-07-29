@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as cornerstoneCore from '@cornerstonejs/core';
 // Use regular version with web workers enabled
 import * as cornerstoneWADOImageLoader from '@cornerstonejs/dicom-image-loader';
@@ -7,7 +7,6 @@ import * as dicomParser from 'dicom-parser';
 import { log } from './utils/logger';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeToggle } from './components/ThemeToggle';
-import { FileUploader } from './components/FileUploader';
 import { ViewerLayout } from './components/ViewerLayout';
 import { SeriesBrowser } from './components/SeriesBrowser';
 import { ToolPanel } from './components/ToolPanel';
@@ -35,7 +34,6 @@ const App: React.FC = () => {
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [showUploader, setShowUploader] = useState(false);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [currentMode, setCurrentMode] = useState<ViewerMode>('viewer');
   const [showModeSelector, setShowModeSelector] = useState(true);
@@ -43,9 +41,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.WINDOW_LEVEL);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file uploads with improved error handling
-  const handleFilesLoaded = async (files: File[]) => {
+  const handleFilesLoaded = useCallback(async (files: File[]) => {
     if (isLoading) {
       log.warn('File upload already in progress, ignoring new request', {
         component: 'App',
@@ -65,7 +64,6 @@ const App: React.FC = () => {
     });
 
     if (files.length > 0) {
-      setShowUploader(false);
 
       try {
         // Add timeout to prevent infinite loading
@@ -121,7 +119,68 @@ const App: React.FC = () => {
     } else {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
+
+  // Handle file input selection
+  const handleFileSelect = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      handleFilesLoaded(Array.from(files));
+    }
+    // Reset input to allow selecting the same file again
+    event.target.value = '';
+  }, [handleFilesLoaded]);
+
+  // Handle drag and drop
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if we're leaving the main container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      // Filter for DICOM files (optional - can be removed to allow all files)
+      const dicomFiles = files.filter(file =>
+        file.name.toLowerCase().endsWith('.dcm') ||
+        file.name.toLowerCase().endsWith('.dicom') ||
+        file.type === 'application/dicom' ||
+        file.type === '',  // Many DICOM files have no MIME type
+      );
+
+      if (dicomFiles.length > 0) {
+        handleFilesLoaded(dicomFiles);
+      } else {
+        // Try all files if no obvious DICOM files found
+        handleFilesLoaded(files);
+      }
+    }
+  }, [handleFilesLoaded]);
 
   // Series selection handlers
   const handleSeriesSelect = (seriesInstanceUID: string) => {
@@ -328,19 +387,18 @@ const App: React.FC = () => {
         <header className="app-header">
           <div className="header-content">
             <div className="header-title">
-              <h1>🏥 Cornerstone3D DICOM Viewer</h1>
-              <p>Advanced Medical Imaging Viewer</p>
+              <h1>Claarity</h1>
             </div>
             <div className="header-actions">
               <button
-                onClick={() => setShowUploader(!showUploader)}
+                onClick={handleFileSelect}
                 style={{
                   background: 'var(--color-primary-main)',
                   color: 'var(--color-primary-contrast)',
                   border: 'none',
                   borderRadius: 'var(--radius-base)',
-                  padding: '0.5rem 1rem',
-                  marginRight: '1rem',
+                  padding: '0.4rem 0.8rem',
+                  marginRight: '0.5rem',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
                   fontWeight: '500',
@@ -349,98 +407,93 @@ const App: React.FC = () => {
                   gap: '0.5rem',
                 }}
               >
-                  📁 {showUploader ? 'Hide' : 'Load'} Files
+                  📁 Load Files
               </button>
 
-              {!showModeSelector && (
-                <button
-                  onClick={() => setShowModeSelector(true)}
-                  style={{
-                    background: 'transparent',
-                    color: 'var(--color-text-primary)',
-                    border: '1px solid var(--color-divider)',
-                    borderRadius: 'var(--radius-base)',
-                    padding: '0.5rem 1rem',
-                    marginRight: '1rem',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                  }}
-                >
-                    🔄 Change Mode
-                </button>
-              )}
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".dcm,.dicom,application/dicom"
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
+              />
 
               {!showModeSelector && (
-                <span style={{
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-secondary)',
-                  marginRight: '1rem',
-                }}>
-                    Current: {currentMode === 'viewer' ? 'Basic Viewer' :
-                    currentMode === 'comparison' ? 'Comparison' : 'Analysis'}
-                </span>
+                <>
+                  <button
+                    onClick={() => setShowModeSelector(true)}
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--color-text-primary)',
+                      border: '1px solid var(--color-divider)',
+                      borderRadius: 'var(--radius-base)',
+                      padding: '0.4rem 0.8rem',
+                      marginRight: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                    }}
+                  >
+                      🔄 Change Mode
+                  </button>
+                  <span style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--color-text-secondary)',
+                    marginRight: '0.5rem',
+                  }}>
+                    {currentMode === 'viewer' ? 'Basic Viewer' :
+                      currentMode === 'comparison' ? 'Comparison' : 'Analysis'}
+                  </span>
+                </>
               )}
               <ThemeToggle />
             </div>
           </div>
         </header>
 
-        <main className="app-main">
-          {showUploader ? (
-          // File Upload Overlay
+        <main
+          className={`app-main ${isDragOver ? 'drag-over' : ''}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Drag and Drop Overlay */}
+          {isDragOver && (
             <div style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'rgba(0, 0, 0, 0.8)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 100,
+              background: 'rgba(33, 150, 243, 0.1)',
+              border: '3px dashed var(--color-primary-main)',
+              borderRadius: '8px',
+              zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '2rem',
+              pointerEvents: 'none',
             }}>
               <div style={{
-                background: 'var(--color-bg-paper)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '2rem',
-                maxWidth: '800px',
-                width: '100%',
-                position: 'relative',
+                textAlign: 'center',
+                color: 'var(--color-primary-main)',
+                fontSize: '1.5rem',
+                fontWeight: '600',
               }}>
-                <button
-                  onClick={() => setShowUploader(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '1rem',
-                    right: '1rem',
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                    color: 'var(--color-text-secondary)',
-                  }}
-                >
-                    ✕
-                </button>
-
-                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    Load DICOM Files
-                </h2>
-
-                <FileUploader
-                  onFilesLoaded={handleFilesLoaded}
-                  maxFiles={100}
-                />
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
+                <div>Drop DICOM files here</div>
+                <div style={{ fontSize: '1rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                  Supports .dcm, .dicom files
+                </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* Mode Selector */}
-          {showModeSelector && !showUploader && (
+          {showModeSelector && (
             <ModeSelector
               currentMode={currentMode}
               onModeChange={handleModeChange}
@@ -449,7 +502,7 @@ const App: React.FC = () => {
           )}
 
           {/* Main Viewer Content */}
-          {!showModeSelector && !showUploader && currentMode === 'viewer' && (
+          {!showModeSelector && currentMode === 'viewer' && (
             <ViewerLayout
               toolPanel={
                 <ToolPanel
@@ -514,7 +567,7 @@ const App: React.FC = () => {
                     <button
                       onClick={() => {
                         setLoadingError(null);
-                        setShowUploader(true);
+                        handleFileSelect();
                       }}
                       style={{
                         background: 'var(--color-primary-main)',
@@ -549,7 +602,7 @@ const App: React.FC = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowUploader(true)}
+                    onClick={handleFileSelect}
                     style={{
                       background: 'var(--color-primary-main)',
                       color: 'var(--color-primary-contrast)',
@@ -577,7 +630,7 @@ const App: React.FC = () => {
             </ViewerLayout>
           )}
 
-          {!showModeSelector && !showUploader && currentMode === 'comparison' && (
+          {!showModeSelector && currentMode === 'comparison' && (
             <StudyComparison
               studies={sampleStudies}
               onStudySelect={handleStudyComparisonSelect}
@@ -586,7 +639,7 @@ const App: React.FC = () => {
             />
           )}
 
-          {!showModeSelector && !showUploader && currentMode === 'analysis' && (
+          {!showModeSelector && currentMode === 'analysis' && (
             <ViewerLayout
               toolPanel={
                 <ToolPanel
@@ -623,12 +676,6 @@ const App: React.FC = () => {
           )}
         </main>
 
-        <footer className="app-footer">
-          <p>
-              Built with Cornerstone3D v3.x • Medical Grade Security •
-            {uploadedFiles.length > 0 && `${uploadedFiles.length} files loaded`}
-          </p>
-        </footer>
       </div>
     </ErrorBoundary>
   );

@@ -11,6 +11,7 @@ import { log } from '../../utils/logger';
 import { useToolSetup } from './hooks/useToolSetup';
 import { useViewportSetup } from './hooks/useViewportSetup';
 import { useImageNavigation } from './hooks/useImageNavigation';
+import { StackScrollIndicator, MiniStackIndicator } from '../StackScrollIndicator';
 import './styles.css';
 
 const { ToolGroupManager } = cornerstoneTools;
@@ -224,6 +225,32 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({
             position: 'relative',
           }}
         />
+
+        {/* Stack Scroll Indicator - Full version */}
+        {!isLoading && imageIds.length > 1 && (
+          <StackScrollIndicator
+            renderingEngineId={renderingEngineId}
+            viewportId={viewportId}
+            imageCount={imageIds.length}
+            currentIndex={currentImageIndex}
+            onIndexChange={(index) => {
+              // Update navigation hook state if needed
+              log.info('Stack index changed via indicator', {
+                component: 'DicomViewer',
+                metadata: { newIndex: index, totalImages: imageIds.length },
+              });
+            }}
+          />
+        )}
+
+        {/* Mini Stack Indicator - Compact version */}
+        {!isLoading && (
+          <MiniStackIndicator
+            renderingEngineId={renderingEngineId}
+            viewportId={viewportId}
+            position="bottom-left"
+          />
+        )}
       </div>
 
       {/* Tool Instructions */}
