@@ -16,6 +16,7 @@ import { ModeSelector, type ViewerMode } from './components/ModeSelector';
 import { ToolType } from './components/ToolPanel/constants';
 import { simpleDicomLoader } from './services/simpleDicomLoader';
 import './styles/global.css';
+import styles from './App.module.css';
 
 // Security validation functions - Web Workers disabled for stability
 
@@ -392,20 +393,7 @@ const App: React.FC = () => {
             <div className="header-actions">
               <button
                 onClick={handleFileSelect}
-                style={{
-                  background: 'var(--color-primary-main)',
-                  color: 'var(--color-primary-contrast)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-base)',
-                  padding: '0.4rem 0.8rem',
-                  marginRight: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
+                className={styles.loadFilesButton}
               >
                   📁 Load Files
               </button>
@@ -417,32 +405,18 @@ const App: React.FC = () => {
                 multiple
                 accept=".dcm,.dicom,application/dicom"
                 onChange={handleFileInputChange}
-                style={{ display: 'none' }}
+                className={styles.hiddenFileInput}
               />
 
               {!showModeSelector && (
                 <>
                   <button
                     onClick={() => setShowModeSelector(true)}
-                    style={{
-                      background: 'transparent',
-                      color: 'var(--color-text-primary)',
-                      border: '1px solid var(--color-divider)',
-                      borderRadius: 'var(--radius-base)',
-                      padding: '0.4rem 0.8rem',
-                      marginRight: '0.5rem',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                    }}
+                    className={styles.changeModeButton}
                   >
                       🔄 Change Mode
                   </button>
-                  <span style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text-secondary)',
-                    marginRight: '0.5rem',
-                  }}>
+                  <span className={styles.modeIndicator}>
                     {currentMode === 'viewer' ? 'Basic Viewer' :
                       currentMode === 'comparison' ? 'Comparison' : 'Analysis'}
                   </span>
@@ -462,30 +436,11 @@ const App: React.FC = () => {
         >
           {/* Drag and Drop Overlay */}
           {isDragOver && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(33, 150, 243, 0.1)',
-              border: '3px dashed var(--color-primary-main)',
-              borderRadius: '8px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}>
-              <div style={{
-                textAlign: 'center',
-                color: 'var(--color-primary-main)',
-                fontSize: '1.5rem',
-                fontWeight: '600',
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
+            <div className={styles.dragOverlay}>
+              <div className={styles.dragOverlayContent}>
+                <div className={styles.dragOverlayIcon}>📁</div>
                 <div>Drop DICOM files here</div>
-                <div style={{ fontSize: '1rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                <div className={styles.dragOverlaySubtext}>
                   Supports .dcm, .dicom files
                 </div>
               </div>
@@ -522,46 +477,25 @@ const App: React.FC = () => {
               {/* Main viewer area */}
               {isLoading ? (
               // Show loading state
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  gap: '2rem',
-                }}>
-                  <div style={{
-                    width: '60px',
-                    height: '60px',
-                    border: '4px solid var(--color-primary-main)',
-                    borderTop: '4px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                  }} />
-                  <div style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--color-text-primary)', marginBottom: '0.5rem' }}>
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingSpinner} />
+                  <div className={styles.loadingContent}>
+                    <h3 className={styles.loadingTitle}>
                         🏥 Loading DICOM Files
                     </h3>
-                    <p style={{ color: 'var(--color-text-secondary)' }}>
+                    <p className={styles.loadingText}>
                         Processing {uploadedFiles.length} files...
                     </p>
                   </div>
                 </div>
               ) : loadingError ? (
               // Show error state
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  gap: '2rem',
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--color-error)', marginBottom: '1rem' }}>
+                <div className={styles.errorContainer}>
+                  <div className={styles.errorContent}>
+                    <h3 className={styles.errorTitle}>
                         ❌ Loading Failed
                     </h3>
-                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
+                    <p className={styles.errorText}>
                       {loadingError}
                     </p>
                     <button
@@ -569,53 +503,25 @@ const App: React.FC = () => {
                         setLoadingError(null);
                         handleFileSelect();
                       }}
-                      style={{
-                        background: 'var(--color-primary-main)',
-                        color: 'var(--color-primary-contrast)',
-                        border: 'none',
-                        borderRadius: 'var(--radius-base)',
-                        padding: '0.75rem 1.5rem',
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                      }}
+                      className={styles.retryButton}
                     >
                         Try Again
                     </button>
                   </div>
                 </div>
               ) : uploadedFiles.length === 0 && !selectedSeries ? (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  gap: '2rem',
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--color-text-primary)', marginBottom: '1rem' }}>
+                <div className={styles.welcomeContainer}>
+                  <div className={styles.welcomeContent}>
+                    <h3 className={styles.welcomeTitle}>
                         Welcome to DICOM Viewer
                     </h3>
-                    <p style={{ color: 'var(--color-text-secondary)' }}>
+                    <p className={styles.welcomeText}>
                         Click "Load Files" button above to start viewing medical images
                     </p>
                   </div>
                   <button
                     onClick={handleFileSelect}
-                    style={{
-                      background: 'var(--color-primary-main)',
-                      color: 'var(--color-primary-contrast)',
-                      border: 'none',
-                      borderRadius: 'var(--radius-base)',
-                      padding: '1rem 2rem',
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
+                    className={styles.welcomeButton}
                   >
                       📁 Load DICOM Files
                   </button>
@@ -648,25 +554,18 @@ const App: React.FC = () => {
                 />
               }
               sidePanel={
-                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                <div className={styles.analysisSidePanel}>
                   <h4>Advanced Analysis Tools</h4>
                   <p>Segmentation, 3D reconstruction, and quantitative analysis</p>
                 </div>
               }
             >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                color: 'var(--color-text-secondary)',
-                textAlign: 'center',
-              }}>
+              <div className={styles.analysisContainer}>
                 <div>
                   <h3>Advanced Analysis Mode</h3>
                   <p>AI-powered insights and measurements</p>
                   {uploadedFiles.length > 0 && (
-                    <p style={{ marginTop: '1rem', color: 'var(--color-primary-main)' }}>
+                    <p className={styles.analysisFileCount}>
                       {uploadedFiles.length} files ready for analysis
                     </p>
                   )}

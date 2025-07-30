@@ -13,6 +13,7 @@ import { useViewportSetup } from './hooks/useViewportSetup';
 import { useImageNavigation } from './hooks/useImageNavigation';
 import { StackScrollIndicator, MiniStackIndicator } from '../StackScrollIndicator';
 import './styles.css';
+import moduleStyles from './DicomViewer.module.css';
 
 const { ToolGroupManager } = cornerstoneTools;
 
@@ -202,14 +203,14 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({
 
         {error && (
           <div className="error-overlay">
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <h3 style={{ color: 'var(--color-text-primary)', marginBottom: '1rem' }}>
+            <div className={moduleStyles.errorContent}>
+              <h3 className={moduleStyles.errorTitle}>
                 📁 No DICOM Images
               </h3>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
+              <p className={moduleStyles.errorMessage}>
                 {error}
               </p>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+              <p className={moduleStyles.errorHint}>
                 Use the "Load Files" button above to upload DICOM files, then select a series from the sidebar.
               </p>
             </div>
@@ -218,12 +219,7 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({
 
         <div
           ref={viewportRef}
-          className="cornerstone-viewport"
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-          }}
+          className={`cornerstone-viewport ${moduleStyles.cornerstoneViewport}`}
         />
 
         {/* Stack Scroll Indicator - Full version */}
@@ -270,16 +266,7 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({
                 tools: toolGroup ? Object.keys(toolGroup.toolOptions) : 'No tools',
               });
             }}
-            style={{
-              marginLeft: '1rem',
-              padding: '0.25rem',
-              fontSize: '0.75rem',
-              background: 'var(--color-primary-main)',
-              color: 'var(--color-primary-contrast)',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className={moduleStyles.debugButton}
           >
             Debug Tools
           </button>
