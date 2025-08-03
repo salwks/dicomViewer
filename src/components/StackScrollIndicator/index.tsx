@@ -1,11 +1,14 @@
 /**
  * Stack Scroll Indicator Component
  * Shows the current position in the image stack with a visual gauge
+ * Rewritten using shadcn/ui components and patterns
  */
 
 import React, { useEffect, useState } from 'react';
-import * as cornerstoneCore from '@cornerstonejs/core';
-import './styles.css';
+import { Card, CardContent } from '../ui/card';
+import { Slider } from '../ui/slider';
+import { Badge } from '../ui/badge';
+import { cn } from '../../lib/utils';
 
 interface StackScrollIndicatorProps {
   renderingEngineId: string;
@@ -13,6 +16,7 @@ interface StackScrollIndicatorProps {
   imageCount: number;
   currentIndex: number;
   onIndexChange?: (index: number) => void;
+  getRenderingEngine?: () => any;
 }
 
 export const StackScrollIndicator: React.FC<StackScrollIndicatorProps> = ({
@@ -21,14 +25,21 @@ export const StackScrollIndicator: React.FC<StackScrollIndicatorProps> = ({
   imageCount,
   currentIndex: initialIndex,
   onIndexChange,
+  getRenderingEngine,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Sync with external index changes
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
+
   useEffect(() => {
     const updateIndex = () => {
       try {
-        const renderingEngine = cornerstoneCore.getRenderingEngine(renderingEngineId);
+        // Get rendering engine using provided getter or fall back
+        const renderingEngine = getRenderingEngine ? getRenderingEngine() : null;
         if (!renderingEngine) return;
 
         const viewport = renderingEngine.getViewport(viewportId) as any;
@@ -53,15 +64,16 @@ export const StackScrollIndicator: React.FC<StackScrollIndicatorProps> = ({
     return () => {
       clearInterval(intervalId);
     };
-  }, [renderingEngineId, viewportId, currentIndex, onIndexChange]);
+  }, [renderingEngineId, viewportId, currentIndex, onIndexChange, getRenderingEngine]);
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newIndex = parseInt(e.target.value);
+  const handleSliderChange = (values: number[]) => {
+    const newIndex = values[0] || 0;
     setCurrentIndex(newIndex);
 
     // Update viewport
     try {
-      const renderingEngine = cornerstoneCore.getRenderingEngine(renderingEngineId);
+      // Get rendering engine using provided getter or fall back
+      const renderingEngine = getRenderingEngine ? getRenderingEngine() : null;
       if (!renderingEngine) return;
 
       const viewport = renderingEngine.getViewport(viewportId) as any;
@@ -76,8 +88,8 @@ export const StackScrollIndicator: React.FC<StackScrollIndicatorProps> = ({
     }
   };
 
-  const handleMouseDown = () => setIsDragging(true);
-  const handleMouseUp = () => setIsDragging(false);
+  const handlePointerDown = () => setIsDragging(true);
+  const handlePointerUp = () => setIsDragging(false);
 
   if (imageCount <= 1) {
     return null; // Don't show indicator for single images
@@ -86,29 +98,37 @@ export const StackScrollIndicator: React.FC<StackScrollIndicatorProps> = ({
   const percentage = imageCount > 1 ? (currentIndex / (imageCount - 1)) * 100 : 0;
 
   return (
-    <div className="stack-scroll-indicator">
-      {/* Horizontal Slider Only */}
-      <div className="stack-slider-horizontal">
-        <input
-          type="range"
-          min="0"
-          max={imageCount - 1}
-          value={currentIndex}
-          onChange={handleSliderChange}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className={`stack-slider ${isDragging ? 'dragging' : ''}`}
-          aria-label="Stack scroll position"
-        />
-        <div className="stack-slider-info">
-          <span>Frame {currentIndex + 1} of {imageCount}</span>
-          <span className="stack-slider-percentage">{Math.round(percentage)}%</span>
+    <Card className={cn(
+      'absolute bottom-4 left-4 right-4',
+      'bg-background/90 backdrop-blur-sm border-border/50',
+    )}>
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          <Slider
+            value={[currentIndex]}
+            onValueChange={handleSliderChange}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            max={imageCount - 1}
+            min={0}
+            step={1}
+            className={cn(
+              'w-full',
+              isDragging && 'opacity-100',
+              !isDragging && 'opacity-90',
+            )}
+            aria-label="Stack scroll position"
+          />
+          <div className="flex justify-between items-center">
+            <Badge variant="secondary" className="text-xs">
+              Frame {currentIndex + 1} of {imageCount}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {Math.round(percentage)}%
+            </Badge>
+          </div>
         </div>
-      </div>
-
-      {/* Mini Preview removed as requested by user */}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
-

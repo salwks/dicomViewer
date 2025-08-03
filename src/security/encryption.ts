@@ -53,11 +53,7 @@ class MedicalEncryption {
   /**
    * Derive encryption key from password using PBKDF2
    */
-  deriveKey(
-    password: string,
-    salt: string,
-    iterations = this.defaultOptions.iterations,
-  ): string {
+  deriveKey(password: string, salt: string, iterations = this.defaultOptions.iterations): string {
     try {
       const key = CryptoJS.PBKDF2(password, salt, {
         keySize: 256 / 32,
@@ -72,9 +68,13 @@ class MedicalEncryption {
 
       return key.toString();
     } catch (error) {
-      log.error('Key derivation failed', {
-        component: 'MedicalEncryption',
-      }, error as Error);
+      log.error(
+        'Key derivation failed',
+        {
+          component: 'MedicalEncryption',
+        },
+        error as Error,
+      );
       throw new Error('Failed to derive encryption key');
     }
   }
@@ -82,12 +82,7 @@ class MedicalEncryption {
   /**
    * Encrypt sensitive data using AES-256-GCM
    */
-  encrypt(
-    data: string,
-    key: string,
-    metadata: EncryptionMetadata,
-    options: EncryptionOptions = {},
-  ): EncryptedData {
+  encrypt(data: string, key: string, metadata: EncryptionMetadata, options: EncryptionOptions = {}): EncryptedData {
     try {
       const config = { ...this.defaultOptions, ...options };
       const salt = this.generateSalt(config.saltLength);
@@ -122,12 +117,15 @@ class MedicalEncryption {
       });
 
       return result;
-
     } catch (error) {
-      log.error('Encryption failed', {
-        component: 'MedicalEncryption',
-        metadata: { purpose: metadata.purpose },
-      }, error as Error);
+      log.error(
+        'Encryption failed',
+        {
+          component: 'MedicalEncryption',
+          metadata: { purpose: metadata.purpose },
+        },
+        error as Error,
+      );
       throw new Error('Failed to encrypt data');
     }
   }
@@ -135,16 +133,11 @@ class MedicalEncryption {
   /**
    * Decrypt sensitive data
    */
-  decrypt(
-    encryptedData: EncryptedData,
-    key: string,
-    metadata: EncryptionMetadata,
-  ): string {
+  decrypt(encryptedData: EncryptedData, key: string, metadata: EncryptionMetadata): string {
     try {
       // Derive key if password provided
-      const decryptionKey = key.length < 64
-        ? this.deriveKey(key, encryptedData.salt, this.defaultOptions.iterations)
-        : key;
+      const decryptionKey =
+        key.length < 64 ? this.deriveKey(key, encryptedData.salt, this.defaultOptions.iterations) : key;
 
       const iv = CryptoJS.enc.Hex.parse(encryptedData.iv);
 
@@ -172,12 +165,15 @@ class MedicalEncryption {
       });
 
       return result;
-
     } catch (error) {
-      log.error('Decryption failed', {
-        component: 'MedicalEncryption',
-        metadata: { purpose: metadata.purpose },
-      }, error as Error);
+      log.error(
+        'Decryption failed',
+        {
+          component: 'MedicalEncryption',
+          metadata: { purpose: metadata.purpose },
+        },
+        error as Error,
+      );
       throw new Error('Failed to decrypt data - key may be incorrect or data corrupted');
     }
   }
@@ -209,10 +205,7 @@ class MedicalEncryption {
       nonce: this.generateKey(16),
     };
 
-    const token = CryptoJS.AES.encrypt(
-      JSON.stringify(payload),
-      this.generateKey(),
-    ).toString();
+    const token = CryptoJS.AES.encrypt(JSON.stringify(payload), this.generateKey()).toString();
 
     log.security('Session token generated', {
       component: 'MedicalEncryption',
@@ -243,9 +236,13 @@ class MedicalEncryption {
         expiresAt: payload.expiresAt,
       };
     } catch (error) {
-      log.security('Invalid session token', {
-        component: 'MedicalEncryption',
-      }, error as Error);
+      log.security(
+        'Invalid session token',
+        {
+          component: 'MedicalEncryption',
+        },
+        error as Error,
+      );
       return null;
     }
   }
@@ -254,9 +251,7 @@ class MedicalEncryption {
    * Create secure hash for data integrity verification
    */
   createHash(data: string, algorithm: 'SHA-256' | 'SHA-512' = 'SHA-256'): string {
-    const hash = algorithm === 'SHA-256'
-      ? CryptoJS.SHA256(data)
-      : CryptoJS.SHA512(data);
+    const hash = algorithm === 'SHA-256' ? CryptoJS.SHA256(data) : CryptoJS.SHA512(data);
 
     return hash.toString();
   }

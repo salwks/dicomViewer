@@ -15,11 +15,13 @@ export interface DICOMImageLoaderConfig {
   /** Callback triggered on download progress */
   onprogress?: (event: ProgressEvent, params: unknown) => void;
   /** Error interceptor callback */
-  errorInterceptor?: (error: Error & {
-    request?: XMLHttpRequest;
-    response?: unknown;
-    status?: number;
-  }) => void;
+  errorInterceptor?: (
+    error: Error & {
+      request?: XMLHttpRequest;
+      response?: unknown;
+      status?: number;
+    }
+  ) => void;
   /** Callback for modifying newly created image objects */
   imageCreated?: (imageObject: unknown) => void;
   /** Decoder configuration */

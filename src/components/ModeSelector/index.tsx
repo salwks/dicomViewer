@@ -4,9 +4,11 @@
  */
 
 import React from 'react';
-import './styles.css';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { cn } from '../../lib/utils';
 
-export type ViewerMode = 'viewer' | 'comparison' | 'analysis';
+export type ViewerMode = 'viewer' | 'analysis' | 'system-test';
 
 interface ModeSelectorProps {
   currentMode: ViewerMode;
@@ -26,25 +28,14 @@ interface ModeInfo {
 const MODES: ModeInfo[] = [
   {
     id: 'viewer',
-    title: 'Basic Viewer',
-    description: 'View and navigate single patient images',
-    icon: '🖼️',
+    title: 'Medical Viewer',
+    description: 'Professional DICOM viewing with advanced tools',
+    icon: '🏥',
     features: [
-      'Single image viewing',
+      'Single & multi-viewport display',
+      'Synchronized navigation',
       'Zoom, pan, window/level',
       'Basic measurements',
-      'Image navigation',
-    ],
-  },
-  {
-    id: 'comparison',
-    title: 'Comparison',
-    description: 'Compare multiple images side by side',
-    icon: '⚖️',
-    features: [
-      'Multi-viewport display',
-      'Synchronized navigation',
-      'Before/after comparison',
       'Timeline analysis',
     ],
   },
@@ -53,80 +44,98 @@ const MODES: ModeInfo[] = [
     title: 'Advanced Analysis',
     description: 'Quantitative analysis and 3D visualization',
     icon: '🔬',
+    features: ['3D reconstruction', 'Volume measurements', 'Segmentation tools', 'Report generation'],
+  },
+  {
+    id: 'system-test',
+    title: 'System Integration Test',
+    description: 'Test all major systems and integrations',
+    icon: '🧪',
     features: [
-      '3D reconstruction',
-      'Volume measurements',
-      'Segmentation tools',
-      'Report generation',
+      'Annotation selection testing',
+      'Highlight state management',
+      'Performance monitoring',
+      'Synchronization optimization',
+      'System integration validation',
     ],
   },
 ];
 
-export const ModeSelector: React.FC<ModeSelectorProps> = ({
-  currentMode,
-  onModeChange,
-  hasImages = false,
-}) => {
+export const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onModeChange, hasImages = false }) => {
   return (
-    <div className="mode-selector">
-      <div className="mode-selector__header">
-        <h3>Select Viewing Mode</h3>
-        <p>Choose the appropriate mode for your medical imaging workflow</p>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Select Viewing Mode</h3>
+        <p className="text-sm text-muted-foreground">Choose the appropriate mode for your medical imaging workflow</p>
       </div>
 
-      <div className="mode-selector__grid">
-        {MODES.map((mode) => (
-          <div
-            key={mode.id}
-            className={`mode-card ${
-              currentMode === mode.id ? 'mode-card--active' : ''
-            } ${!hasImages && mode.id !== 'viewer' ? 'mode-card--disabled' : ''}`}
-            onClick={() => {
-              if (hasImages || mode.id === 'viewer') {
-                onModeChange(mode.id);
-              }
-            }}
-          >
-            <div className="mode-card__header">
-              <div className="mode-card__icon">{mode.icon}</div>
-              <h4 className="mode-card__title">{mode.title}</h4>
-            </div>
+      <div className="grid gap-4">
+        {MODES.map(mode => {
+          const isDisabled = !hasImages && mode.id !== 'viewer';
+          const isActive = currentMode === mode.id;
 
-            <p className="mode-card__description">{mode.description}</p>
+          return (
+            <Card
+              key={mode.id}
+              className={cn(
+                'cursor-pointer transition-all duration-200 hover:shadow-md',
+                isActive && 'ring-2 ring-primary border-primary',
+                isDisabled && 'opacity-50 cursor-not-allowed',
+              )}
+              onClick={() => {
+                if (!isDisabled) {
+                  onModeChange(mode.id);
+                }
+              }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{mode.icon}</div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {mode.title}
+                      {isActive && <Badge variant="secondary" className="text-xs">Active</Badge>}
+                    </CardTitle>
+                  </div>
+                </div>
+              </CardHeader>
 
-            <ul className="mode-card__features">
-              {mode.features.map((feature, index) => (
-                <li key={index}>{feature}</li>
-              ))}
-            </ul>
+              <CardContent className="pt-0 space-y-3">
+                <p className="text-sm text-muted-foreground">{mode.description}</p>
 
-            {!hasImages && mode.id !== 'viewer' && (
-              <div className="mode-card__overlay">
-                <span>Load images first</span>
-              </div>
-            )}
+                <ul className="space-y-1">
+                  {mode.features.map((feature, index) => (
+                    <li key={index} className="text-xs text-muted-foreground flex items-center gap-2">
+                      <div className="w-1 h-1 bg-muted-foreground rounded-full" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
 
-            {currentMode === mode.id && (
-              <div className="mode-card__active-indicator">
-                ✓ Active Mode
-              </div>
-            )}
-          </div>
-        ))}
+                {isDisabled && (
+                  <Badge variant="outline" className="text-xs">
+                    Load images first
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {!hasImages && (
-        <div className="mode-selector__notice">
-          <div className="notice-content">
-            <div className="notice-icon">ℹ️</div>
-            <div>
-              <h4>Load DICOM Images First</h4>
-              <p>Upload your medical images to access comparison and analysis modes</p>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-primary text-lg">ℹ️</div>
+              <div className="space-y-1">
+                <h4 className="font-medium text-primary">Load DICOM Images First</h4>
+                <p className="text-sm text-primary/80">Upload your medical images to access analysis mode</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 };
-

@@ -5,7 +5,6 @@
  * Library ID: /cornerstonejs/cornerstone3d (443 code examples)
  */
 
-
 export const CONTEXT7_CONFIG = {
   libraryId: '/cornerstonejs/cornerstone3d',
   codeExamplesCount: 443,
@@ -19,11 +18,7 @@ export const DOCUMENTATION_REFERENCES = {
   initialization: {
     title: 'Cornerstone3D Initialization',
     context7Query: 'initialization basic setup',
-    keyPatterns: [
-      'await coreInit()',
-      'await dicomImageLoaderInit()',
-      'await cornerstoneToolsInit()',
-    ],
+    keyPatterns: ['await coreInit()', 'await dicomImageLoaderInit()', 'await cornerstoneToolsInit()'],
     usage: 'Core library initialization pattern',
   },
 
@@ -74,11 +69,7 @@ export const DOCUMENTATION_REFERENCES = {
   dicomLoader: {
     title: 'DICOM Image Loading',
     context7Query: 'dicom image loader configuration',
-    keyPatterns: [
-      'dicomImageLoaderInit({ maxWebWorkers })',
-      'createImageIdsAndCacheMetaData',
-      'wadoRsRoot',
-    ],
+    keyPatterns: ['dicomImageLoaderInit({ maxWebWorkers })', 'createImageIdsAndCacheMetaData', 'wadoRsRoot'],
     usage: 'Loading and caching DICOM images',
   },
 } as const;
@@ -88,8 +79,8 @@ export const DOCUMENTATION_REFERENCES = {
  */
 export function getContext7Query(functionality: keyof typeof DOCUMENTATION_REFERENCES): string {
   const ref = Object.prototype.hasOwnProperty.call(DOCUMENTATION_REFERENCES, functionality)
-    // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
-    ? DOCUMENTATION_REFERENCES[functionality]
+    ? // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
+    DOCUMENTATION_REFERENCES[functionality]
     : null;
   return ref?.context7Query || '';
 }
@@ -99,8 +90,8 @@ export function getContext7Query(functionality: keyof typeof DOCUMENTATION_REFER
  */
 export function getUsageDescription(functionality: keyof typeof DOCUMENTATION_REFERENCES): string {
   const ref = Object.prototype.hasOwnProperty.call(DOCUMENTATION_REFERENCES, functionality)
-    // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
-    ? DOCUMENTATION_REFERENCES[functionality]
+    ? // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
+    DOCUMENTATION_REFERENCES[functionality]
     : null;
   return ref?.usage || '';
 }
@@ -110,8 +101,8 @@ export function getUsageDescription(functionality: keyof typeof DOCUMENTATION_RE
  */
 export function getKeyPatterns(functionality: keyof typeof DOCUMENTATION_REFERENCES): string[] {
   const ref = Object.prototype.hasOwnProperty.call(DOCUMENTATION_REFERENCES, functionality)
-    // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
-    ? DOCUMENTATION_REFERENCES[functionality]
+    ? // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
+    DOCUMENTATION_REFERENCES[functionality]
     : null;
   return ref?.keyPatterns ? [...ref.keyPatterns] : [];
 }
@@ -121,8 +112,8 @@ export function getKeyPatterns(functionality: keyof typeof DOCUMENTATION_REFEREN
  */
 export function formatContext7Reference(functionality: keyof typeof DOCUMENTATION_REFERENCES): string {
   const ref = Object.prototype.hasOwnProperty.call(DOCUMENTATION_REFERENCES, functionality)
-    // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
-    ? DOCUMENTATION_REFERENCES[functionality]
+    ? // eslint-disable-next-line security/detect-object-injection -- Safe: functionality is constrained to keys of DOCUMENTATION_REFERENCES
+    DOCUMENTATION_REFERENCES[functionality]
     : DOCUMENTATION_REFERENCES.dicomLoader; // fallback
   return `/**
  * ${ref.title}

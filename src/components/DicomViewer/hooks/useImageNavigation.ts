@@ -20,11 +20,14 @@ export const useImageNavigation = (imageIds: string[]) => {
     }
   }, [currentImageIndex]);
 
-  const navigateToIndex = useCallback((index: number) => {
-    if (index >= 0 && index < imageIds.length) {
-      setCurrentImageIndex(index);
-    }
-  }, [imageIds.length]);
+  const navigateToIndex = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < imageIds.length) {
+        setCurrentImageIndex(index);
+      }
+    },
+    [imageIds.length],
+  );
 
   const canNavigateNext = currentImageIndex < imageIds.length - 1;
   const canNavigatePrevious = currentImageIndex > 0;

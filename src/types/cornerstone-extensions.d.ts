@@ -14,7 +14,15 @@ interface DICOMImageData {
 }
 
 // TypedArray union type for better type safety
-type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array;
+type TypedArray =
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array;
 
 interface CornerstoneConfiguration {
   webWorkerPath?: string;
@@ -152,7 +160,7 @@ declare module '@cornerstonejs/core' {
     enum ViewportType {
       ORTHOGRAPHIC = 'orthographic',
       PERSPECTIVE = 'perspective',
-      STACK = 'stack'
+      STACK = 'stack',
     }
   }
 

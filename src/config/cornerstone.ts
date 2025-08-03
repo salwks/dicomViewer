@@ -50,9 +50,9 @@ export const CORNERSTONE_CONFIG = {
   tools: {
     defaultToolGroup: 'defaultToolGroup',
     mouseBindings: {
-      primary: 1,    // Left click
-      secondary: 2,  // Middle click
-      auxiliary: 4,  // Right click
+      primary: 1, // Left click
+      secondary: 2, // Middle click
+      auxiliary: 4, // Right click
     },
     wheelBinding: 'zoom',
   },

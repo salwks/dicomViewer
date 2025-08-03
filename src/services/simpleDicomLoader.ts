@@ -83,10 +83,14 @@ export class SimpleDicomLoader {
         numberOfFrames, // Add number of frames information
       };
     } catch (error) {
-      log.warn('Failed to parse DICOM metadata, using defaults', {
-        component: 'SimpleDicomLoader',
-        metadata: { fileName: file.name },
-      }, error as Error);
+      log.warn(
+        'Failed to parse DICOM metadata, using defaults',
+        {
+          component: 'SimpleDicomLoader',
+          metadata: { fileName: file.name },
+        },
+        error as Error,
+      );
 
       // Return default metadata if parsing fails
       return {
@@ -173,12 +177,15 @@ export class SimpleDicomLoader {
             },
           });
         }
-
       } catch (error) {
-        log.error('Failed to load DICOM file', {
-          component: 'SimpleDicomLoader',
-          metadata: { fileName: file.name },
-        }, error as Error);
+        log.error(
+          'Failed to load DICOM file',
+          {
+            component: 'SimpleDicomLoader',
+            metadata: { fileName: file.name },
+          },
+          error as Error,
+        );
       }
     }
 
@@ -455,10 +462,10 @@ export class SimpleDicomLoader {
 
             const destIndex = (y * thumbnailSize + x) * 4;
             if (destIndex >= 0 && destIndex + 3 < imageData.data.length) {
-              imageData.data[destIndex] = clampedValue;     // R
+              imageData.data[destIndex] = clampedValue; // R
               imageData.data[destIndex + 1] = clampedValue; // G
               imageData.data[destIndex + 2] = clampedValue; // B
-              imageData.data[destIndex + 3] = 255;          // A
+              imageData.data[destIndex + 3] = 255; // A
             }
           }
         }
@@ -480,12 +487,15 @@ export class SimpleDicomLoader {
       });
 
       return canvas.toDataURL('image/png');
-
     } catch (error) {
-      log.error('Failed to generate DICOM thumbnail', {
-        component: 'SimpleDicomLoader',
-        metadata: { seriesUID: file.metadata.seriesInstanceUID },
-      }, error as Error);
+      log.error(
+        'Failed to generate DICOM thumbnail',
+        {
+          component: 'SimpleDicomLoader',
+          metadata: { seriesUID: file.metadata.seriesInstanceUID },
+        },
+        error as Error,
+      );
       return this.getFallbackThumbnailForFile(file);
     }
   }
@@ -498,17 +508,17 @@ export class SimpleDicomLoader {
 
     // Modality-specific colors
     const modalityColors: Record<string, string> = {
-      'CT': '#4a90e2',
-      'MR': '#7ed321',
-      'US': '#f5a623',
-      'XA': '#bd10e0',
-      'RF': '#b8e986',
-      'CR': '#50e3c2',
-      'DX': '#9013fe',
-      'MG': '#e91e63',
-      'PT': '#ff9800',
-      'NM': '#795548',
-      'OT': '#607d8b',
+      CT: '#4a90e2',
+      MR: '#7ed321',
+      US: '#f5a623',
+      XA: '#bd10e0',
+      RF: '#b8e986',
+      CR: '#50e3c2',
+      DX: '#9013fe',
+      MG: '#e91e63',
+      PT: '#ff9800',
+      NM: '#795548',
+      OT: '#607d8b',
     };
 
     const color = modalityColors[modality] || '#607d8b';
@@ -525,9 +535,7 @@ export class SimpleDicomLoader {
       </svg>
     `)}`;
   }
-
 }
 
 // Export singleton
 export const simpleDicomLoader = SimpleDicomLoader.getInstance();
-

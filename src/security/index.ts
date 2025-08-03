@@ -6,19 +6,10 @@
 import { log } from '../utils/logger';
 
 // Encryption utilities
-export {
-  medicalEncryption,
-  type EncryptionOptions,
-  type EncryptedData,
-  type EncryptionMetadata,
-} from './encryption';
+export { medicalEncryption, type EncryptionOptions, type EncryptedData, type EncryptionMetadata } from './encryption';
 
 // Secure storage
-export {
-  secureStorage,
-  type SecureStorageOptions,
-  type StoredData,
-} from './secureStorage';
+export { secureStorage, type SecureStorageOptions, type StoredData } from './secureStorage';
 
 // Authentication and session management
 export {
@@ -53,9 +44,13 @@ export async function initializeSecurity(masterKey?: string): Promise<void> {
       component: 'SecuritySubsystem',
     });
   } catch (error) {
-    log.error('Failed to initialize security subsystem', {
-      component: 'SecuritySubsystem',
-    }, error as Error);
+    log.error(
+      'Failed to initialize security subsystem',
+      {
+        component: 'SecuritySubsystem',
+      },
+      error as Error,
+    );
     throw error;
   }
 }
@@ -69,8 +64,12 @@ export async function cleanupSecurity(): Promise<void> {
       component: 'SecuritySubsystem',
     });
   } catch (error) {
-    log.error('Failed to cleanup security subsystem', {
-      component: 'SecuritySubsystem',
-    }, error as Error);
+    log.error(
+      'Failed to cleanup security subsystem',
+      {
+        component: 'SecuritySubsystem',
+      },
+      error as Error,
+    );
   }
 }

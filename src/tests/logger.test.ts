@@ -3,7 +3,7 @@
  * Tests for secure logging practices
  */
 
-console.log('📝 Starting Logger Security Tests...');
+console.info('📝 Starting Logger Security Tests...');
 
 // Test 1: Logger should not expose sensitive information
 (() => {
@@ -19,7 +19,7 @@ console.log('📝 Starting Logger Security Tests...');
     if (logMessage.includes('undefined-secret-field')) {
       throw new Error('Logger exposes sensitive data');
     }
-    console.log('✅ Logger sensitive data filtering verified');
+    console.info('✅ Logger sensitive data filtering verified');
   } catch (error) {
     console.error('❌ Logger sensitive data test failed:', error);
     process.exit(1);
@@ -38,7 +38,7 @@ console.log('📝 Starting Logger Security Tests...');
     if (sanitizedInput !== 'alert("xss")') {
       throw new Error('Unexpected sanitization result');
     }
-    console.log('✅ Logger XSS sanitization verified');
+    console.info('✅ Logger XSS sanitization verified');
   } catch (error) {
     console.error('❌ Logger XSS sanitization test failed:', error);
     process.exit(1);
@@ -52,7 +52,7 @@ console.log('📝 Starting Logger Security Tests...');
     if (!logLevels.includes('error') || !logLevels.includes('warn')) {
       throw new Error('Missing required log levels');
     }
-    console.log('✅ Logger levels configuration verified');
+    console.info('✅ Logger levels configuration verified');
   } catch (error) {
     console.error('❌ Logger levels test failed:', error);
     process.exit(1);
@@ -68,12 +68,12 @@ console.log('📝 Starting Logger Security Tests...');
     if (typeof shouldLog !== 'boolean') {
       throw new Error('Production logging logic error');
     }
-    console.log('✅ Production logging restrictions verified');
+    console.info('✅ Production logging restrictions verified');
   } catch (error) {
     console.error('❌ Production logging test failed:', error);
     process.exit(1);
   }
 })();
 
-console.log('📝 Logger Security Tests Complete - All Passed!');
+console.info('📝 Logger Security Tests Complete - All Passed!');
 process.exit(0);

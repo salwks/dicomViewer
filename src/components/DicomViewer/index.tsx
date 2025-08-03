@@ -244,7 +244,7 @@ const DicomViewerComponent = React.forwardRef<DicomViewerRef, DicomViewerProps>(
             // Try more direct approach - get annotations directly from Cornerstone3D
             console.info('🔍 Trying DIRECT Cornerstone3D approach...');
             
-            // Import cornerstoneTools dynamically using ES modules
+            // Import cornerstoneTools dynamically for v3.32.5
             const cornerstoneTools = await import('@cornerstonejs/tools');
             const element = viewportRef.current;
             

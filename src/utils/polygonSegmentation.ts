@@ -64,12 +64,7 @@ export default class ICRPolySeg {
       return null;
     }
 
-    const {
-      threshold = 128,
-      minArea = 100,
-      smoothing = true,
-      tolerance = 2,
-    } = options;
+    const { threshold = 128, minArea = 100, smoothing = true, tolerance = 2 } = options;
 
     try {
       // Convert input to standardized format
@@ -82,9 +77,7 @@ export default class ICRPolySeg {
       const rawContours = this.findContours(binaryImage, width, height);
 
       // Filter contours by minimum area
-      const filteredContours = rawContours.filter(contour =>
-        this.calculatePolygonArea(contour) >= minArea,
-      );
+      const filteredContours = rawContours.filter(contour => this.calculatePolygonArea(contour) >= minArea);
 
       // Smooth contours if requested
       const finalContours = smoothing
@@ -105,11 +98,14 @@ export default class ICRPolySeg {
         areas,
         boundingBoxes,
       };
-
     } catch (error) {
-      log.error('Polygon segmentation failed', {
-        component: 'ICRPolySeg',
-      }, error as Error);
+      log.error(
+        'Polygon segmentation failed',
+        {
+          component: 'ICRPolySeg',
+        },
+        error as Error,
+      );
       return null;
     }
   }
@@ -129,8 +125,8 @@ export default class ICRPolySeg {
         const rgbaIndex = i * 4;
         grayscale[i] = Math.round(
           imageData.data[rgbaIndex] * 0.299 +
-          imageData.data[rgbaIndex + 1] * 0.587 +
-          imageData.data[rgbaIndex + 2] * 0.114,
+            imageData.data[rgbaIndex + 1] * 0.587 +
+            imageData.data[rgbaIndex + 2] * 0.114,
         );
       }
       return grayscale;
@@ -153,12 +149,7 @@ export default class ICRPolySeg {
   /**
    * Apply threshold to create binary image
    */
-  private applyThreshold(
-    pixels: Uint8Array,
-    _width: number,
-    _height: number,
-    threshold: number,
-  ): Uint8Array {
+  private applyThreshold(pixels: Uint8Array, _width: number, _height: number, threshold: number): Uint8Array {
     const binary = new Uint8Array(pixels.length);
     for (let i = 0; i < pixels.length; i++) {
       binary[i] = pixels[i] > threshold ? 255 : 0;
@@ -169,19 +160,20 @@ export default class ICRPolySeg {
   /**
    * Find contours using Moore's boundary tracing algorithm
    */
-  private findContours(
-    binaryImage: Uint8Array,
-    width: number,
-    height: number,
-  ): SegmentationPoint[][] {
+  private findContours(binaryImage: Uint8Array, width: number, height: number): SegmentationPoint[][] {
     const contours: SegmentationPoint[][] = [];
     const visited = new Set<number>();
 
     // Directions for 8-connectivity (Moore neighborhood)
     const directions = [
-      [-1, -1], [-1, 0], [-1, 1],
-      [0, 1], [1, 1], [1, 0],
-      [1, -1], [0, -1],
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [1, -1],
+      [0, -1],
     ];
 
     for (let y = 0; y < height; y++) {
@@ -189,11 +181,10 @@ export default class ICRPolySeg {
         const index = y * width + x;
 
         if (binaryImage[index] === 255 && !visited.has(index)) {
-          const contour = this.traceContour(
-            binaryImage, width, height, x, y, directions, visited,
-          );
+          const contour = this.traceContour(binaryImage, width, height, x, y, directions, visited);
 
-          if (contour.length > 3) { // Minimum viable polygon
+          if (contour.length > 3) {
+            // Minimum viable polygon
             contours.push(contour);
           }
         }
@@ -216,7 +207,8 @@ export default class ICRPolySeg {
     visited: Set<number>,
   ): SegmentationPoint[] {
     const contour: SegmentationPoint[] = [];
-    let x = startX, y = startY;
+    let x = startX,
+      y = startY;
     let direction = 0; // Start looking up
 
     do {
@@ -245,7 +237,6 @@ export default class ICRPolySeg {
       }
 
       if (!found) break;
-
     } while (!(x === startX && y === startY) && contour.length < width * height);
 
     return contour;

@@ -128,8 +128,9 @@ export class SampleDataService extends EventTarget {
         id: 'ct-abdomen-series',
         name: 'CT Abdomen Series',
         description: 'Multi-slice CT abdomen series',
-        url: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs/studies/' +
-             '1.3.6.1.4.1.14519.5.2.1.6279.6001.298806137288633453246975630178',
+        url:
+          'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs/studies/' +
+          '1.3.6.1.4.1.14519.5.2.1.6279.6001.298806137288633453246975630178',
         size: 25 * 1024 * 1024, // 25MB estimate
         modality: 'CT',
         studyDescription: 'Abdomen CT Series',
@@ -239,7 +240,6 @@ export class SampleDataService extends EventTarget {
       this.triggerEvent('download:completed', { fileId: id, file, data: result });
 
       return result;
-
     } catch (error) {
       file.loading = false;
       this.triggerEvent('download:failed', {
@@ -258,7 +258,7 @@ export class SampleDataService extends EventTarget {
    */
   public async downloadMultipleFiles(fileIds: string[]): Promise<Map<string, ArrayBuffer>> {
     const results = new Map<string, ArrayBuffer>();
-    const promises = fileIds.map(async (id) => {
+    const promises = fileIds.map(async id => {
       try {
         const data = await this.downloadSampleFile(id);
         results.set(id, data);
@@ -315,9 +315,7 @@ export class SampleDataService extends EventTarget {
    * Get sample files by modality
    */
   public getSampleFilesByModality(modality: string): SampleDicomFile[] {
-    return Array.from(this.sampleFiles.values()).filter(
-      file => file.modality === modality,
-    );
+    return Array.from(this.sampleFiles.values()).filter(file => file.modality === modality);
   }
 
   /**
@@ -362,16 +360,18 @@ export class SampleDataService extends EventTarget {
         seriesDescription: file.seriesDescription,
         modality: file.modality,
         seriesNumber: '1',
-        instances: [{
-          sopInstanceUID: `1.2.3.4.${file.id}.1.1`,
-          instanceNumber: '1',
-          imageId: `dicom:${file.id}`,
-          rows: 512,
-          columns: 512,
-          bitsAllocated: 16,
-          windowCenter: 40,
-          windowWidth: 400,
-        }],
+        instances: [
+          {
+            sopInstanceUID: `1.2.3.4.${file.id}.1.1`,
+            instanceNumber: '1',
+            imageId: `dicom:${file.id}`,
+            rows: 512,
+            columns: 512,
+            bitsAllocated: 16,
+            windowCenter: 40,
+            windowWidth: 400,
+          },
+        ],
         thumbnailPath: null,
         isLoading: false,
       });
@@ -405,10 +405,13 @@ export class SampleDataService extends EventTarget {
 
     return {
       // Single image viewer
-      singleImage: downloadedFiles.length > 0 ? {
-        imageId: this.generateImageId(downloadedFiles[0].id),
-        file: downloadedFiles[0],
-      } : null,
+      singleImage:
+        downloadedFiles.length > 0
+          ? {
+            imageId: this.generateImageId(downloadedFiles[0].id),
+            file: downloadedFiles[0],
+          }
+          : null,
 
       // Series browser
       seriesList: downloadedFiles.map(file => ({
@@ -426,13 +429,13 @@ export class SampleDataService extends EventTarget {
       studies: this.groupFilesByStudy(downloadedFiles),
 
       // Tool demonstration
-      toolDemoImages: downloadedFiles.filter(file =>
-        ['CT', 'MR'].includes(file.modality),
-      ).map(file => ({
-        imageId: this.generateImageId(file.id),
-        file,
-        tools: this.getRecommendedTools(file.modality),
-      })),
+      toolDemoImages: downloadedFiles
+        .filter(file => ['CT', 'MR'].includes(file.modality))
+        .map(file => ({
+          imageId: this.generateImageId(file.id),
+          file,
+          tools: this.getRecommendedTools(file.modality),
+        })),
     };
   }
 

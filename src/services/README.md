@@ -8,12 +8,7 @@ This module provides a comprehensive barrel export system for all medical imagin
 
 ```typescript
 // Clean, single import statement
-import { 
-  CornerstoneService, 
-  ErrorManager, 
-  AdvancedDICOMLoader,
-  measurementOrchestrator 
-} from './services';
+import { CornerstoneService, ErrorManager, AdvancedDICOMLoader, measurementOrchestrator } from './services';
 
 // Instead of multiple import statements:
 // import { CornerstoneService } from './services/cornerstoneService';
@@ -25,40 +20,22 @@ import {
 ### Service Bundles for Common Use Cases
 
 ```typescript
-import { 
-  essentialServices,
-  dicomServiceBundle,
-  annotationServiceBundle,
-  exportServiceBundle 
-} from './services';
+import { essentialServices, dicomServiceBundle, annotationServiceBundle, exportServiceBundle } from './services';
 
 // Essential services for basic medical imaging
 const { CornerstoneService, ErrorManager, PerformanceOptimizer } = essentialServices;
 
 // Complete DICOM handling setup
-const { 
-  AdvancedDICOMLoader, 
-  MetadataManager, 
-  SOPClassHandler 
-} = dicomServiceBundle;
+const { AdvancedDICOMLoader, MetadataManager, SOPClassHandler } = dicomServiceBundle;
 
 // Annotation workflow
-const { 
-  AnnotationImportService, 
-  AnnotationPersistenceService 
-} = annotationServiceBundle;
+const { AnnotationImportService, AnnotationPersistenceService } = annotationServiceBundle;
 ```
 
 ### Type Imports
 
 ```typescript
-import type { 
-  Point2,
-  Point3,
-  MeasurementMetadata,
-  Segmentation,
-  DICOMLoaderConfig 
-} from './services';
+import type { Point2, Point3, MeasurementMetadata, Segmentation, DICOMLoaderConfig } from './services';
 ```
 
 ### Specific Module Imports (Tree-shakable)
@@ -73,12 +50,14 @@ import { DicomSRExporter } from './services';
 ## Service Categories
 
 ### Core Services
+
 - `CornerstoneService` - Main Cornerstone3D integration
 - `ErrorManager` - Centralized error handling
 - `PerformanceOptimizer` - Performance monitoring
 - `UndoRedoManager` - Action history management
 
 ### DICOM Services
+
 - `AdvancedDICOMLoader` - High-performance DICOM loading
 - `MetadataManager` - DICOM metadata extraction
 - `SOPClassHandler` - SOP class validation
@@ -86,27 +65,32 @@ import { DicomSRExporter } from './services';
 - `ProgressiveLoader` - Progressive image loading
 
 ### Measurement Services
+
 - `measurementOrchestrator` - Main measurement coordination
 - `MeasurementCalculator` - Legacy measurement calculations
 - `MeasurementManager` - Measurement lifecycle management
 - Individual calculators: `LinearCalculator`, `AreaCalculator`, `VolumeCalculator`, etc.
 
 ### Segmentation Services
+
 - `SegmentationManager` - Main segmentation coordination
 - `SegmentationToolkit` - Complete toolkit for convenience
 - Individual tools: `BrushTool`, `ThresholdTool`, `RegionGrowingTool`, etc.
 - `SegmentationVisualizer` - Visualization support
 
 ### Annotation Services
+
 - `AnnotationImportService` - Import annotations from various formats
 - `AnnotationPersistenceService` - Annotation storage and retrieval
 - `AnnotationPersistenceManager` - Lifecycle management
 
 ### Export Services
+
 - `DicomSRExporter` - DICOM Structured Report export
 - `PDFExportService` - PDF report generation
 
 ### Persistence Services
+
 - `ViewportPersistenceService` - Viewport state persistence
 
 ## Service Information and Utilities
@@ -123,13 +107,14 @@ const moduleInfo = getModuleInfo();
 console.log(`${moduleInfo.name} v${moduleInfo.version}`);
 
 // Check service dependencies
-console.log(serviceDependencies.AdvancedDICOMLoader); 
+console.log(serviceDependencies.AdvancedDICOMLoader);
 // ['ErrorManager', 'MetadataManager', 'SOPClassHandler']
 ```
 
 ## Migration Guide
 
 ### From Individual Imports
+
 ```typescript
 // Old way
 import { CornerstoneService } from '../services/cornerstoneService';
@@ -137,14 +122,11 @@ import { ErrorManager } from '../services/errorManager';
 import { measurementOrchestrator } from '../services/measurement';
 
 // New way
-import { 
-  CornerstoneService, 
-  ErrorManager, 
-  measurementOrchestrator 
-} from '../services';
+import { CornerstoneService, ErrorManager, measurementOrchestrator } from '../services';
 ```
 
 ### From Direct Service Paths
+
 ```typescript
 // Old way
 import { BrushTool } from '../services/segmentation/tools/BrushTool';

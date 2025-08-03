@@ -3,20 +3,22 @@
  * Tests for secure error handling practices
  */
 
-console.log('⚠️ Starting Secure Error Handling Tests...');
+console.info('⚠️ Starting Secure Error Handling Tests...');
 
 // Test 1: Errors should not expose sensitive information
 (() => {
   try {
     const mockError = new Error('Database connection failed');
 
-    if (mockError.message.includes('password') ||
-        mockError.message.includes('/home/user') ||
-        mockError.message.includes('localhost:3306')) {
+    if (
+      mockError.message.includes('password') ||
+      mockError.message.includes('/home/user') ||
+      mockError.message.includes('localhost:3306')
+    ) {
       throw new Error('Error message contains sensitive information');
     }
 
-    console.log('✅ Error message security verified');
+    console.info('✅ Error message security verified');
   } catch (error) {
     console.error('❌ Error message security test failed:', error);
     process.exit(1);
@@ -43,7 +45,7 @@ console.log('⚠️ Starting Secure Error Handling Tests...');
       }
     }
 
-    console.log('✅ Stack trace handling verified');
+    console.info('✅ Stack trace handling verified');
   } catch (error) {
     console.error('❌ Stack trace handling test failed:', error);
     process.exit(1);
@@ -56,12 +58,11 @@ console.log('⚠️ Starting Secure Error Handling Tests...');
     const userError = 'Invalid credentials';
     const systemError = 'An error occurred. Please try again.';
 
-    if (userError.includes('user not found in database') ||
-        systemError.includes('SQL injection')) {
+    if (userError.includes('user not found in database') || systemError.includes('SQL injection')) {
       throw new Error('Error messages too specific');
     }
 
-    console.log('✅ Generic error messages verified');
+    console.info('✅ Generic error messages verified');
   } catch (error) {
     console.error('❌ Generic error messages test failed:', error);
     process.exit(1);
@@ -81,12 +82,12 @@ console.log('⚠️ Starting Secure Error Handling Tests...');
       throw new Error('Error logging structure invalid');
     }
 
-    console.log('✅ Secure error logging verified');
+    console.info('✅ Secure error logging verified');
   } catch (error) {
     console.error('❌ Secure error logging test failed:', error);
     process.exit(1);
   }
 })();
 
-console.log('⚠️ Secure Error Handling Tests Complete - All Passed!');
+console.info('⚠️ Secure Error Handling Tests Complete - All Passed!');
 process.exit(0);

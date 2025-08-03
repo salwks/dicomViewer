@@ -8,15 +8,9 @@
 export * from './dicom';
 
 // Re-export Cornerstone3D types for convenience
-export type {
-  Types as CornerstoneTypes,
-  Enums as CornerstoneEnums,
-} from '@cornerstonejs/core';
+export type { Types as CornerstoneTypes, Enums as CornerstoneEnums } from '@cornerstonejs/core';
 
-export type {
-  Types as CornerstoneToolsTypes,
-  Enums as CornerstoneToolsEnums,
-} from '@cornerstonejs/tools';
+export type { Types as CornerstoneToolsTypes, Enums as CornerstoneToolsEnums } from '@cornerstonejs/tools';
 
 // Application-specific types
 export interface AppConfig {
@@ -30,6 +24,73 @@ export interface AppConfig {
     multiplanarReconstruction: boolean;
     volumeRendering: boolean;
   };
+}
+
+// Error Recovery System Types
+export interface ViewportStateBackup {
+  id: string;
+  type: 'stack' | 'volume' | 'multiplanar';
+  seriesInstanceUID?: string;
+  imageIndex?: number;
+  windowLevel?: {
+    window: number;
+    level: number;
+  };
+  zoom?: number;
+  pan?: { x: number; y: number };
+  rotation?: number;
+}
+
+export interface ToolStateBackup {
+  activeTool?: string;
+  toolSettings: Record<string, any>;
+  annotations: Array<{
+    id: string;
+    type: string;
+    data: Record<string, any>;
+  }>;
+  measurements: Array<{
+    id: string;
+    type: string;
+    value: number;
+    unit: string;
+  }>;
+}
+
+export interface UserPreferencesBackup {
+  windowLevelPresets: Array<{
+    name: string;
+    window: number;
+    level: number;
+  }>;
+  displaySettings: {
+    showAnnotations: boolean;
+    showMeasurements: boolean;
+    theme: 'light' | 'dark';
+  };
+  keyboardShortcuts: Record<string, string>;
+}
+
+export interface SessionDataBackup {
+  sessionId: string;
+  startTime: number;
+  studyInstanceUIDs: string[];
+  activeViewports: string[];
+  lastActivity: number;
+}
+
+// Migration System Types
+export interface MigrationData {
+  version: string;
+  viewportStates?: ViewportStateBackup[];
+  annotations?: Array<{
+    id: string;
+    type: string;
+    data: Record<string, any>;
+    metadata: Record<string, any>;
+  }>;
+  settings?: UserPreferencesBackup;
+  [key: string]: any;
 }
 
 export interface User {
@@ -60,7 +121,7 @@ export enum ErrorCategory {
   CONFIGURATION = 'CONFIGURATION',
   CORRUPTION = 'CORRUPTION',
   PERFORMANCE = 'PERFORMANCE',
-  LOADING = 'LOADING'
+  LOADING = 'LOADING',
 }
 
 export interface MedicalImagingError extends Error {
@@ -107,3 +168,28 @@ export interface BaseComponentProps {
   style?: React.CSSProperties;
   'data-testid'?: string;
 }
+
+// Viewport State types
+export type {
+  ViewportState,
+  ViewportStateUpdate,
+  ViewportStateChange,
+  ViewportStateValidator,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  CameraState,
+  WindowLevelState,
+  TransformState,
+  StackState,
+  VolumeState,
+  ToolState,
+  AnnotationState,
+  MeasurementState,
+  RenderingState,
+  SeriesAssignment,
+  ActivationState,
+  PerformanceState,
+  StatePersistenceConfig,
+} from './viewportState';
+export { createDefaultViewportState, DEFAULT_PERSISTENCE_CONFIG } from './viewportState';

@@ -45,18 +45,49 @@ export interface DICOMSeries {
   seriesInstanceUID: string;
   seriesDescription: string;
   modality: string;
+  seriesNumber?: number;
   numberOfInstances: number;
   imageIds: string[];
   metadata: DICOMMetadata[];
+  // Enhanced multi-study management
+  studyInstanceUID: string; // Parent study reference
+  thumbnailUrl?: string; // Series thumbnail
+  seriesDate?: string;
+  seriesTime?: string;
+  bodyPartExamined?: string;
+  protocolName?: string;
+  acquisitionDate?: string;
+  acquisitionTime?: string;
+  // Viewport assignment tracking
+  assignedViewport?: string; // Currently assigned viewport ID
+  lastViewedAt?: Date; // Last time this series was viewed
+  viewCount?: number; // Number of times viewed in session
+  isLoaded?: boolean; // Whether series data is loaded
+  loadingProgress?: number; // Loading progress 0-100
 }
 
 export interface DICOMStudy {
   studyInstanceUID: string;
   studyDescription?: string;
   studyDate?: string;
+  studyTime?: string;
   patientName?: string;
   patientID?: string;
+  patientAge?: string;
+  patientSex?: string;
+  accessionNumber?: string;
+  studyID?: string;
+  institutionName?: string;
+  referringPhysicianName?: string;
   series: DICOMSeries[];
+  // Enhanced multi-study management
+  color?: string; // Color coding for multi-study visualization
+  priority?: number; // Display priority for studies
+  isActive?: boolean; // Currently selected/active study
+  loadingState?: 'idle' | 'loading' | 'loaded' | 'error';
+  thumbnailUrl?: string; // Representative thumbnail for the study
+  numberOfSeries?: number; // Cached series count
+  totalImages?: number; // Cached total image count across all series
 }
 
 export interface ViewportDisplaySettings {
@@ -154,4 +185,112 @@ export interface ToolConfig {
   configuration?: {
     [key: string]: unknown;
   };
+}
+
+// Enhanced Series Management Types for Multi-Study Support
+export interface SeriesAssignment {
+  seriesInstanceUID: string;
+  viewportId: string;
+  assignedAt: Date;
+  studyInstanceUID: string;
+}
+
+export interface StudyColorScheme {
+  studyInstanceUID: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  textColor: string;
+}
+
+export interface MultiStudySession {
+  sessionId: string;
+  studies: DICOMStudy[];
+  activeStudyId: string | null;
+  viewportAssignments: Map<string, SeriesAssignment>;
+  colorSchemes: Map<string, StudyColorScheme>;
+  loadedSeries: Set<string>;
+  createdAt: Date;
+  lastActivity: Date;
+}
+
+export interface SeriesManagementState {
+  studies: DICOMStudy[];
+  selectedStudy: string | null;
+  selectedSeries: string | null;
+  viewportAssignments: Record<string, string>; // viewport -> seriesInstanceUID
+  draggedSeries: string | null;
+  loadingStates: Record<string, boolean>;
+  colorMappings: Record<string, string>; // studyUID -> color
+  filterModality: string;
+  sortBy: 'seriesNumber' | 'seriesDescription' | 'modality' | 'studyDate';
+  viewMode: 'grid' | 'list' | 'tree';
+  showThumbnails: boolean;
+  groupByStudy: boolean;
+}
+
+export interface SeriesDropData {
+  seriesInstanceUID: string;
+  studyInstanceUID: string;
+  modality: string;
+  seriesDescription: string;
+  numberOfInstances: number;
+  sourceViewport?: string;
+  dragStartTime: number;
+}
+
+export interface ViewportDropZone {
+  viewportId: string;
+  isActive: boolean;
+  isValidTarget: boolean;
+  position: { x: number; y: number; width: number; height: number };
+}
+
+// Viewport Synchronization Types
+export type SyncType = 'windowLevel' | 'zoom' | 'pan' | 'scroll' | 'crosshairs' | 'orientation';
+
+export interface SynchronizationSettings {
+  windowLevel: boolean;
+  zoom: boolean;
+  pan: boolean;
+  scroll: boolean;
+  crosshairs: boolean;
+  orientation: boolean;
+  globalSync: boolean; // Sync all viewports or just selected ones
+}
+
+export interface ViewportSyncState {
+  viewportId: string;
+  isSource: boolean; // Whether this viewport initiated the sync
+  windowCenter: number;
+  windowWidth: number;
+  zoom: number;
+  pan: [number, number];
+  scrollIndex: number;
+  orientation?: 'AXIAL' | 'SAGITTAL' | 'CORONAL';
+  lastSyncTime: number;
+}
+
+export interface CrossReferenceSettings {
+  enabled: boolean;
+  color: string;
+  thickness: number;
+  dashLength: number;
+  gapLength: number;
+  opacity: number;
+}
+
+export interface SynchronizationEvent {
+  type: SyncType;
+  sourceViewportId: string;
+  targetViewportIds: string[];
+  data: {
+    windowCenter?: number;
+    windowWidth?: number;
+    zoom?: number;
+    pan?: [number, number];
+    scrollIndex?: number;
+    orientation?: string;
+  };
+  timestamp: number;
 }

@@ -7,21 +7,72 @@
 
 // Define message types for type safety
 export interface WorkerMessage {
-  type: string;
+  type: 'process' | 'cancel' | 'init';
   id: string;
-  data?: any;
+  data?: ImageProcessingTask;
 }
+
+export interface DecompressionOptions {
+  compressionType: 'jpeg' | 'jpeg2000' | 'jpegls' | 'rle';
+  quality?: number;
+}
+
+export interface TransformOptions {
+  windowLevel?: { window: number; level: number };
+  rotation?: number;
+  flip?: { horizontal: boolean; vertical: boolean };
+  scale?: number;
+}
+
+export interface FilterOptions {
+  filterType: 'sharpen' | 'blur' | 'denoise' | 'edge';
+  strength?: number;
+  kernel?: number[][];
+}
+
+export interface AnalysisOptions {
+  includeHistogram: boolean;
+  includeStatistics: boolean;
+  region?: { x: number; y: number; width: number; height: number };
+}
+
+export interface SegmentationOptions {
+  algorithm: 'threshold' | 'region-growing' | 'watershed';
+  seedPoints?: Array<{ x: number; y: number }>;
+  threshold?: number;
+  tolerance?: number;
+}
+
+export type ProcessingOptions =
+  | DecompressionOptions
+  | TransformOptions
+  | FilterOptions
+  | AnalysisOptions
+  | SegmentationOptions;
 
 export interface ImageProcessingTask {
   type: 'decompress' | 'transform' | 'filter' | 'analyze' | 'segment';
   imageId: string;
   data: ArrayBuffer | Uint8Array | Uint16Array;
-  options?: any;
+  options?: ProcessingOptions;
 }
 
 export interface ProcessingResult {
   imageId: string;
-  result: any;
+  result: {
+    data?: ArrayBuffer | Uint8Array | Uint16Array;
+    width?: number;
+    height?: number;
+    statistics?: {
+      min: number;
+      max: number;
+      mean: number;
+      std: number;
+    };
+    histogram?: number[];
+    segments?: Uint8Array;
+    [key: string]: any;
+  };
   processingTime: number;
   error?: string;
 }
@@ -83,7 +134,7 @@ class ImageProcessingWorker {
     const startTime = performance.now();
 
     try {
-      let result: any;
+      let result: ProcessingResult['result'];
 
       switch (task.type) {
         case 'decompress':
@@ -112,7 +163,6 @@ class ImageProcessingWorker {
         result,
         processingTime,
       });
-
     } catch (error) {
       const processingTime = performance.now() - startTime;
 
@@ -128,7 +178,10 @@ class ImageProcessingWorker {
   /**
    * Decompress image data
    */
-  private async decompressImage(data: ArrayBuffer | Uint8Array | Uint16Array, _options: any = {}): Promise<any> {
+  private async decompressImage(
+    data: ArrayBuffer | Uint8Array | Uint16Array,
+    _options: DecompressionOptions = { compressionType: 'jpeg' },
+  ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     // Simulate decompression processing
     await this.simulateProcessing(50, 200);
 
@@ -149,7 +202,10 @@ class ImageProcessingWorker {
   /**
    * Transform image (rotate, flip, scale)
    */
-  private async transformImage(data: ArrayBuffer | Uint8Array | Uint16Array, options: any = {}): Promise<any> {
+  private async transformImage(
+    data: ArrayBuffer | Uint8Array | Uint16Array,
+    options: TransformOptions = {},
+  ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     const { transform = 'none' } = options;
 
     await this.simulateProcessing(30, 150);
@@ -189,7 +245,10 @@ class ImageProcessingWorker {
   /**
    * Apply filters to image
    */
-  private async filterImage(data: ArrayBuffer | Uint8Array | Uint16Array, options: any = {}): Promise<any> {
+  private async filterImage(
+    data: ArrayBuffer | Uint8Array | Uint16Array,
+    options: FilterOptions = { filterType: 'sharpen' },
+  ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     const { filter = 'none', strength = 1.0 } = options;
 
     await this.simulateProcessing(40, 180);
@@ -224,7 +283,10 @@ class ImageProcessingWorker {
   /**
    * Analyze image properties
    */
-  private async analyzeImage(data: ArrayBuffer | Uint8Array | Uint16Array, _options: any = {}): Promise<any> {
+  private async analyzeImage(
+    data: ArrayBuffer | Uint8Array | Uint16Array,
+    _options: AnalysisOptions = { includeHistogram: true, includeStatistics: true },
+  ): Promise<{ statistics: { min: number; max: number; mean: number; std: number }; histogram: number[] }> {
     await this.simulateProcessing(60, 250);
 
     let pixelData: Uint16Array;
@@ -250,7 +312,10 @@ class ImageProcessingWorker {
   /**
    * Segment image regions
    */
-  private async segmentImage(data: ArrayBuffer | Uint8Array | Uint16Array, options: any = {}): Promise<any> {
+  private async segmentImage(
+    data: ArrayBuffer | Uint8Array | Uint16Array,
+    options: SegmentationOptions = { algorithm: 'threshold', threshold: 128 },
+  ): Promise<{ segments: Uint8Array; width: number; height: number }> {
     const { method = 'threshold', threshold = 100 } = options;
 
     await this.simulateProcessing(100, 500);
@@ -376,7 +441,7 @@ class ImageProcessingWorker {
     const result = new Uint16Array(data.length);
     for (let i = 0; i < data.length; i++) {
       // Reduce noise by averaging nearby values
-      const denoised = data[i] * (1 - strength * 0.1) + (data[i] * strength * 0.1);
+      const denoised = data[i] * (1 - strength * 0.1) + data[i] * strength * 0.1;
       result[i] = Math.min(65535, Math.max(0, denoised));
     }
     return result;

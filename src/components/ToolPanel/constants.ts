@@ -7,6 +7,7 @@ export enum ToolType {
   // Navigation
   ZOOM = 'zoom',
   PAN = 'pan',
+  SELECTION = 'selection',
   ROTATE = 'rotate',
   STACK_SCROLL = 'stackScroll',
 

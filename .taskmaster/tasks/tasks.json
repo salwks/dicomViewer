@@ -515,7 +515,7 @@
         "dependencies": [
           2
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -695,11 +695,1358 @@
             "testStrategy": ""
           }
         ]
+      },
+      {
+        "id": 13,
+        "title": "Implement ViewportGrid Component",
+        "description": "Create flexible viewport grid system supporting 1x1, 1x2, and 2x2 layouts with responsive sizing and advanced viewport management features",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "ViewportGrid component implementation with comprehensive features:\n\nCore Components:\n- ViewportGrid: Flexible grid system for 1x1, 1x2, 2x2 layouts\n- LayoutSelector: Visual layout selector with keyboard shortcuts (1, 2, 4)\n- SynchronizationControls: Sync controls with keyboard shortcuts (Ctrl+Z/P/S/W/R/L/A)\n- ViewportManager: Central coordination layer\n\nTechnical Architecture:\n- Separation of concerns: Grid (UI) + Manager (Logic)\n- Forward refs for external control\n- TypeScript interfaces and strict typing\n- Security-compliant property access patterns\n- ESLint/TypeScript validation compliance\n\nComponent Interface:\n```typescript\ninterface ViewportGridProps {\n  layout: '1x1' | '1x2' | '2x2';\n  viewports: ViewportState[];\n  onViewportActivated: (id: string) => void;\n  ref?: React.ForwardedRef<ViewportGridHandle>;\n}\n```",
+        "testStrategy": "1. Unit tests for layout calculations and viewport positioning\n2. Integration tests with Cornerstone3D\n3. Responsive layout testing across different screen sizes\n4. Performance testing with multiple viewports\n5. Keyboard shortcut functionality testing\n6. Memory optimization verification\n7. Component cleanup testing",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Core Layout Implementation",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implement CSS Grid-based responsive layouts with viewport identification",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Viewport UI Components",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implement active viewport highlighting, identification badges, and series information display",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Layout Controls",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implement LayoutSelector with keyboard shortcuts and visual interface",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Synchronization System",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implement comprehensive sync controls with keyboard shortcuts",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Performance Optimization",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implement React.memo optimization and proper cleanup on layout changes",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Series Drag & Drop",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Add drag and drop functionality for series loading",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Layout Persistence",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Implement layout state persistence across sessions",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Enhanced BasicViewer Integration",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Integrate ViewportGrid with enhanced BasicViewer component",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Advanced Synchronization Integration",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Implement advanced viewport synchronization features",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Enhance Series Management System",
+        "description": "Extend series management to support multi-study selection and viewport assignment with advanced organization and interaction capabilities",
+        "status": "done",
+        "dependencies": [
+          13
+        ],
+        "priority": "high",
+        "details": "Enhanced series management implementation with three core components:\n\n1. EnhancedSeriesPanel:\n- Multi-study support with color-coding\n- Drag & drop series assignment\n- Click-to-assign workflow\n- Viewport assignment cards\n- Series thumbnails and metadata\n\n2. useViewportAssignments Hook:\n- Viewport-to-series mapping\n- State management with cleanup\n- Layout-aware assignments\n\n3. StudyManager Utility:\n- Study grouping and organization\n- Automatic description extraction\n- Color-coded visualization\n\n```typescript\ninterface EnhancedSeriesManager {\n  studies: Study[];\n  selectedSeries: Map<string, number>;\n  onSeriesAssigned: (viewportId: string, seriesIndex: number) => void;\n  clearAssignments: (viewportIds?: string[]) => void;\n  getStudyColor: (studyId: string) => string;\n}\n```",
+        "testStrategy": "1. Unit tests for series selection and assignment logic\n2. Integration tests for drag & drop functionality\n3. State management and cleanup tests\n4. Performance testing with large series sets\n5. Visual regression tests for color coding and badges\n6. Layout change handling tests",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Core Component Implementation",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Created EnhancedSeriesPanel, useViewportAssignments hook, and StudyManager utility",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Multi-study Support",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implemented color-coded organization and study-level grouping",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Viewport Assignment",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implemented drag & drop and click-to-assign workflows with viewport badges",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "State Management",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implemented responsive state handling with proper cleanup",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integration Features",
+            "description": "",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Added ViewportGrid integration and dynamic viewport ID generation",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Advanced Filtering",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Add search and filtering capabilities for series management",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Series Comparison Tools",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Implement tools for comparing series across viewports",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Study Metadata Display",
+            "description": "",
+            "status": "done",
+            "dependencies": [],
+            "details": "Add comprehensive study-level metadata visualization",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Implement Synchronization Controls",
+        "description": "Create synchronization control system for viewport coordination",
+        "details": "Develop synchronization system:\n- Integrate ViewportSynchronizer utility\n- Implement sync controls for Window/Level, Zoom/Pan, Slice/Scroll\n- Add cross-reference lines\n- Create persistent sync settings\n\n```typescript\ninterface SyncController {\n  settings: SynchronizationSettings;\n  enableSync: (feature: SyncFeature) => void;\n  disableSync: (feature: SyncFeature) => void;\n  updateViewports: (sourceId: string, change: ViewportChange) => void;\n}\n```",
+        "testStrategy": "1. Unit tests for sync logic\n2. Integration tests with Cornerstone3D\n3. Performance testing of synchronized operations\n4. State persistence testing",
+        "priority": "high",
+        "dependencies": [
+          13,
+          14
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement ViewportSynchronizer Core",
+            "description": "Create the core synchronization utility class with basic sync functionality",
+            "dependencies": [],
+            "details": "Develop ViewportSynchronizer class with core methods for enabling/disabling sync features and managing sync state between viewports\n<info added on 2025-07-31T13:30:07.856Z>\nSecurity analysis of ViewportSynchronizer completed. Refactoring requirements identified:\n\n1. Replace console.log usage with appropriate logging levels:\n- console.warn for sync state conflicts\n- console.error for critical synchronization failures\n- Implement structured error handling for sync operations\n\n2. Type safety improvements:\n- Add strict type checking for viewport state objects\n- Implement interface guards for sync feature validation\n- Add runtime type validation for incoming sync messages\n\n3. Core functionality separation:\n- Extract sync state management into dedicated StateManager\n- Create separate SyncMessageBroker for inter-viewport communication\n- Implement SyncFeatureValidator for feature compatibility checks\n\n4. Safe property access patterns:\n- Add null checks for viewport references\n- Implement getter/setter patterns for sync properties\n- Add validation for sync parameter boundaries\n- Use optional chaining for nested sync state access\n\nTechnical debt items to address:\n- Add input validation for all public methods\n- Implement proper error boundaries\n- Add sync state recovery mechanisms\n- Create comprehensive sync state validation\n</info added on 2025-07-31T13:30:07.856Z>\n<info added on 2025-07-31T13:33:28.384Z>\nViewportSynchronizer core refactoring completed. Key improvements implemented:\n\n1. Logging security compliance:\n- Replaced all console.log statements with appropriate levels (warn/error/info)\n- Added structured logging for sync operations with proper severity levels\n\n2. Enhanced type safety:\n- Implemented ViewportLike and CameraLike interfaces for strict type checking\n- Added runtime type guards for sync feature validation\n- Implemented strict typing for all sync state objects\n\n3. Property access security:\n- Added comprehensive null checks for viewport references\n- Implemented getter/setter patterns with validation\n- Added boundary validation for sync parameters\n- Integrated optional chaining for nested state access\n\n4. Input validation:\n- Added parameter validation for all public methods\n- Implemented sync feature compatibility checks\n- Added state validation before sync operations\n\n5. Error handling and recovery:\n- Implemented error boundaries for sync operations\n- Added automatic sync state recovery mechanisms\n- Created fallback handlers for sync failures\n\n6. Memory management:\n- Implemented proper cleanup for sync subscriptions\n- Added disposal of event listeners\n- Implemented weak references for viewport tracking\n- Added automatic resource cleanup on synchronizer disposal\n\nAll changes pass TypeScript compilation and conform to ESLint rules. Code formatting completed according to project standards.\n</info added on 2025-07-31T13:33:28.384Z>",
+            "status": "done",
+            "testStrategy": "Unit tests for sync state management and basic synchronization operations"
+          },
+          {
+            "id": 2,
+            "title": "Implement Window/Level and Zoom/Pan Sync",
+            "description": "Add synchronization support for window/level adjustments and zoom/pan operations",
+            "dependencies": [
+              "15.1"
+            ],
+            "details": "Create handlers for window/level and zoom/pan events, implement viewport update logic, and add sync state persistence\n<info added on 2025-07-31T13:36:25.600Z>\nCompleted Window/Level and Zoom/Pan synchronization improvements with the following key implementations:\n\n1. Enhanced mouse-based camera synchronization with real-time pan/zoom detection\n2. Added touch event support for mobile compatibility\n3. Implemented precision debouncing system (camera: 50ms, W/L: 100ms)\n4. Added camera state validation logic for infinity values and range checks\n5. Implemented VOI range validation and safeguards\n6. Added context menu disabling support for W/L adjustments\n7. Implemented automatic W/L synchronization on image load\n8. Enhanced error handling and recovery mechanisms\n9. Comprehensive cleanup implementation to prevent memory leaks\n\nTechnical scope included addition of 30+ new methods with full TypeScript compliance. All synchronization handlers maintain viewport consistency while ensuring optimal performance and stability across different interaction modes.\n</info added on 2025-07-31T13:36:25.600Z>",
+            "status": "done",
+            "testStrategy": "Integration tests with Cornerstone3D viewport manipulation tools"
+          },
+          {
+            "id": 3,
+            "title": "Implement Slice/Scroll Synchronization",
+            "description": "Add support for synchronized slice navigation and scrolling across viewports",
+            "dependencies": [
+              "15.1"
+            ],
+            "details": "Implement slice position tracking, scroll event handling, and cross-viewport position synchronization\n<info added on 2025-07-31T17:02:38.921Z>\nSlice synchronization implementation completed with enhanced event handling and validation:\n\nWheel events optimized with 10ms debouncing for smooth scrolling performance. Added comprehensive event handling for CORNERSTONE_STACK_NEW_IMAGE and CORNERSTONE_IMAGE_VOLUME_MODIFIED events to ensure consistent synchronization across viewport types. Implemented keyboard navigation support with ArrowUp/Down and PageUp/Down controls.\n\nSlice synchronization logic enhanced with robust index-based synchronization including bounds validation, and position-based synchronization with vector validation. Established anatomical mapping initialization framework (currently 1:1 mapping) to support future DICOM metadata integration.\n\nAdded handleSliceIndexChanged method to automatically trigger synchronization on slice changes. Implementation includes comprehensive error handling, input validation, and security-compliant logging throughout the system. All synchronization operations are optimized with debouncing to prevent excessive calls while maintaining responsive viewport coordination.\n\nThe system now provides reliable slice position tracking across viewports with improved error handling, validation checks, and performance optimization through debounced events. Security standards are maintained with appropriate logging levels and input sanitization.\n</info added on 2025-07-31T17:02:38.921Z>",
+            "status": "done",
+            "testStrategy": "Performance testing of scroll operations and slice position updates"
+          },
+          {
+            "id": 4,
+            "title": "Add Cross-Reference Line System",
+            "description": "Implement cross-reference line rendering between synchronized viewports",
+            "dependencies": [
+              "15.1",
+              "15.2",
+              "15.3"
+            ],
+            "details": "Create cross-reference line renderer, position calculator, and viewport intersection logic\n<info added on 2025-07-31T17:08:48.159Z>\nCross-reference line system implementation completed with the following components and features:\n\nCreated CrossReferenceLines component with shadcn/ui integration and canvas-based rendering system. The implementation includes visual elements with dashed pattern lines, center intersection circles, and color-coded indicators (red, green, blue, purple) to represent different viewport relationships.\n\nCore functionality:\n- Horizontal and vertical reference line rendering on overlay canvas\n- Automatic updates based on active viewport changes\n- Dynamic color coding for viewport relationship visualization\n- Dashed line patterns with center intersection circles\n- Status badge displaying active cross-reference connections\n- Performance-optimized animation loop using requestAnimationFrame\n- Support for configurable labels and opacity settings\n\nIntegration features:\n- Full integration with ViewportGrid component via showCrossReferenceLines prop\n- TypeScript strict typing implementation throughout codebase\n- Synchronization with SynchronizationControls enableReferenceLines setting\n- Demo component created for functionality showcase\n\nThe system successfully provides visual anatomical correspondence between synchronized viewports, enhancing spatial relationship understanding in multi-viewport comparison scenarios.\n</info added on 2025-07-31T17:08:48.159Z>",
+            "status": "done",
+            "testStrategy": "Visual testing of cross-reference line accuracy and performance"
+          },
+          {
+            "id": 5,
+            "title": "Implement Sync Settings Persistence",
+            "description": "Create system for managing and persisting synchronization settings",
+            "dependencies": [
+              "15.1",
+              "15.2",
+              "15.3",
+              "15.4"
+            ],
+            "details": "Develop settings storage system, implement save/load functionality, and add user preference management",
+            "status": "done",
+            "testStrategy": "State persistence testing across page reloads and browser sessions"
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "Create Layout Selector Component",
+        "description": "Implement UI component for switching between viewport layouts",
+        "details": "Build layout selector:\n- Create visual layout icons\n- Implement smooth transition animations\n- Add keyboard shortcuts (1,2,4)\n- Preserve viewport content during transitions\n\n```typescript\ninterface LayoutSelector {\n  currentLayout: ViewportLayout;\n  onLayoutChange: (layout: ViewportLayout) => void;\n  transitions: LayoutTransition[];\n}\n```",
+        "testStrategy": "1. Unit tests for layout switching logic\n2. Animation testing\n3. Keyboard shortcut testing\n4. Content preservation verification",
+        "priority": "medium",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement Viewport State Management",
+        "description": "Create centralized state management system for viewport configuration",
+        "details": "Develop state management system:\n- Create ViewportState interface\n- Implement state updates and persistence\n- Handle viewport activation/deactivation\n- Manage tool selection per viewport\n\n```typescript\ninterface ViewportStateManager {\n  viewports: Map<string, ViewportState>;\n  activeViewport: string | null;\n  updateViewportState: (id: string, updates: Partial<ViewportState>) => void;\n  setActiveTool: (viewportId: string, tool: string) => void;\n}\n```",
+        "testStrategy": "1. Unit tests for state management\n2. Integration tests with viewport components\n3. Tool state testing\n4. Performance testing of state updates",
+        "priority": "high",
+        "dependencies": [
+          13,
+          14,
+          15
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ViewportState Interface",
+            "description": "Define and implement the core ViewportState interface with all required properties and types",
+            "dependencies": [],
+            "details": "Implement ViewportState interface including properties for viewport configuration, tool state, rendering settings, and activation status",
+            "status": "done",
+            "testStrategy": "Unit tests for interface implementation and type checking"
+          },
+          {
+            "id": 2,
+            "title": "Implement State Update System",
+            "description": "Create system for handling viewport state updates and persistence",
+            "dependencies": [
+              "17.1"
+            ],
+            "details": "Develop updateViewportState method with partial updates support, state validation, and change notification system",
+            "status": "done",
+            "testStrategy": "Unit tests for state updates and persistence mechanisms"
+          },
+          {
+            "id": 3,
+            "title": "Develop Viewport Activation Handler",
+            "description": "Implement logic for viewport activation and deactivation management",
+            "dependencies": [
+              "17.1",
+              "17.2"
+            ],
+            "details": "Create handlers for activating/deactivating viewports, managing active viewport reference, and cleanup procedures",
+            "status": "done",
+            "testStrategy": "Integration tests for activation/deactivation flows"
+          },
+          {
+            "id": 4,
+            "title": "Implement Tool State Management",
+            "description": "Create tool selection and state management system per viewport",
+            "dependencies": [
+              "17.1",
+              "17.3"
+            ],
+            "details": "Develop setActiveTool method, tool state tracking, and tool-specific configuration management",
+            "status": "done",
+            "testStrategy": "Unit tests for tool state management and integration tests with tool APIs"
+          },
+          {
+            "id": 5,
+            "title": "Create State Persistence Layer",
+            "description": "Implement mechanism for persisting viewport state across sessions",
+            "dependencies": [
+              "17.1",
+              "17.2",
+              "17.4"
+            ],
+            "details": "Develop storage strategy for viewport configurations, tool states, and user preferences with serialization/deserialization support",
+            "status": "done",
+            "testStrategy": "End-to-end tests for state persistence and recovery"
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Enhance Error Handling System",
+        "description": "Implement robust error recovery and handling mechanisms",
+        "details": "Create error handling system:\n- Implement viewport-level error boundaries\n- Add error recovery mechanisms\n- Create user feedback system\n- Preserve viewport state during errors\n\n```typescript\ninterface ErrorHandler {\n  onViewportError: (viewportId: string, error: Error) => void;\n  recoverViewport: (viewportId: string) => Promise<void>;\n  showErrorFeedback: (message: string, level: ErrorLevel) => void;\n}\n```",
+        "testStrategy": "1. Unit tests for error handling\n2. Integration tests with error scenarios\n3. Recovery mechanism testing\n4. User feedback testing",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement Performance Optimization",
+        "description": "Optimize rendering and memory management for multiple viewports",
+        "details": "Implement optimization strategies:\n- Add viewport-level rendering optimization\n- Implement memory management for inactive viewports\n- Create rendering priority system\n- Optimize synchronization operations\n\n```typescript\ninterface ViewportOptimizer {\n  optimizeRendering: (activeId: string) => void;\n  manageMemory: (viewports: ViewportState[]) => void;\n  setPriority: (viewportId: string, priority: RenderPriority) => void;\n}\n```",
+        "testStrategy": "1. Performance benchmarking\n2. Memory usage testing\n3. Load testing with multiple viewports\n4. Synchronization performance testing",
+        "priority": "high",
+        "dependencies": [
+          13,
+          15,
+          17
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Viewport-Level Rendering Optimization",
+            "description": "Create system for optimizing rendering performance of individual viewports based on activity state",
+            "dependencies": [],
+            "details": "Implement optimizeRendering method to handle viewport-specific rendering optimizations including frame rate management, quality adjustments, and GPU resource allocation\n<info added on 2025-07-31T20:32:05.681Z>\nImplementation completed for optimizeRendering method. Key implementation details:\n- ViewportManager integration: Added optimizeRendering trigger on viewport activation\n- Priority system: Implemented setPriority with RenderPriority enum mapping\n- Memory management: Added support for multiple viewport resource allocation\n- DicomViewer optimization: Implemented CRITICAL priority handling for single viewport scenarios\n- Test coverage: Created comprehensive test suite validating viewport optimization, GPU resource management, and priority-based quality adjustments\n- Performance validation: Confirmed proper rendering optimization based on viewport activity states\n\nAll functionality implemented according to task requirements with verified GPU resource management and quality adjustment capabilities.\n</info added on 2025-07-31T20:32:05.681Z>",
+            "status": "done",
+            "testStrategy": "Benchmark rendering performance metrics, measure frame rates, and validate resource allocation"
+          },
+          {
+            "id": 2,
+            "title": "Develop Memory Management System",
+            "description": "Create memory management system for handling inactive viewport resources",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Implement manageMemory method to handle texture unloading, cache management, and resource cleanup for inactive viewports\n<info added on 2025-07-31T21:06:04.754Z>\nReview needed enhancements for manageMemory method in ViewportOptimizer:\n\n1. Integrate with existing memoryManager.ts by implementing viewport-specific memory thresholds and cleanup triggers\n2. Add intelligent texture prioritization based on viewport activity status and last interaction time\n3. Implement progressive resource cleanup stages:\n   - Immediate release of WebGL textures for hidden viewports\n   - Delayed cache invalidation for recently inactive viewports\n   - Periodic memory pressure checks with cascading cleanup levels\n4. Add memory usage monitoring hooks to track per-viewport resource consumption\n5. Implement resource reallocation strategy to prioritize memory for active viewports during high-load scenarios\n6. Create recovery mechanism to efficiently restore viewport state when reactivated\n\nTechnical considerations:\n- Coordinate with viewportOptimizer.ts's existing optimization pipeline\n- Maintain compatibility with ViewportSynchronizer utility\n- Ensure proper handling of shared resources between synchronized viewports\n- Consider impact on rendering priority system implementation\n</info added on 2025-07-31T21:06:04.754Z>",
+            "status": "done",
+            "testStrategy": "Monitor memory usage patterns, validate resource cleanup, test memory leak prevention"
+          },
+          {
+            "id": 3,
+            "title": "Create Rendering Priority System",
+            "description": "Implement priority-based rendering system for multiple viewports",
+            "dependencies": [
+              "19.1",
+              "19.2"
+            ],
+            "details": "Develop setPriority method to manage rendering priorities, implement priority queue, and handle resource allocation based on viewport importance",
+            "status": "done",
+            "testStrategy": "Test priority queue behavior, validate resource distribution, measure rendering performance across priority levels"
+          },
+          {
+            "id": 4,
+            "title": "Optimize Synchronization Operations",
+            "description": "Enhance performance of viewport synchronization operations",
+            "dependencies": [
+              "19.3"
+            ],
+            "details": "Optimize sync operations for Window/Level, Zoom/Pan, and Slice/Scroll actions across multiple viewports",
+            "status": "done",
+            "testStrategy": "Measure sync operation latency, test concurrent sync operations, validate sync accuracy"
+          },
+          {
+            "id": 5,
+            "title": "Implement Performance Monitoring System",
+            "description": "Create system for monitoring and reporting optimization metrics",
+            "dependencies": [
+              "19.1",
+              "19.2",
+              "19.3",
+              "19.4"
+            ],
+            "details": "Develop performance monitoring tools to track rendering times, memory usage, and synchronization efficiency",
+            "status": "done",
+            "testStrategy": "Validate metric collection accuracy, test reporting system, verify monitoring overhead impact"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Create Keyboard Shortcut System",
+        "description": "Implement comprehensive keyboard shortcuts for viewer operations",
+        "details": "Develop keyboard shortcut system:\n- Define shortcut mappings\n- Implement shortcut handler\n- Add user customization support\n- Create shortcut overlay help\n\n```typescript\ninterface ShortcutManager {\n  shortcuts: Map<string, ShortcutAction>;\n  registerShortcut: (key: string, action: ShortcutAction) => void;\n  handleKeyEvent: (event: KeyboardEvent) => void;\n  showShortcutHelp: () => void;\n}\n```",
+        "testStrategy": "1. Unit tests for shortcut handling\n2. Integration tests with viewer actions\n3. Customization testing\n4. Help overlay testing",
+        "priority": "low",
+        "dependencies": [
+          13,
+          16,
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Implement Migration System",
+        "description": "Create system for migrating from old viewer to enhanced BasicViewer",
+        "details": "Build migration system:\n- Create state migration utilities\n- Implement backward compatibility layer\n- Add deprecation warnings\n- Create migration documentation\n\n```typescript\ninterface MigrationSystem {\n  migrateState: (oldState: OldViewerState) => EnhancedViewerState;\n  validateCompatibility: (props: ViewerProps) => ValidationResult;\n  showDeprecationWarnings: (usage: DeprecatedFeature) => void;\n}\n```",
+        "testStrategy": "1. Migration logic testing\n2. Backward compatibility testing\n3. Warning system testing\n4. Integration testing with old components",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          14,
+          15,
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Create Documentation and Examples",
+        "description": "Develop comprehensive documentation and usage examples",
+        "details": "Create documentation:\n- API documentation\n- Usage examples\n- Migration guides\n- Performance optimization guidelines\n\n```typescript\ninterface Documentation {\n  sections: DocSection[];\n  examples: CodeExample[];\n  migrationGuides: MigrationGuide[];\n  generateDocs: () => void;\n}\n```",
+        "testStrategy": "1. Documentation accuracy testing\n2. Example code validation\n3. Migration guide testing\n4. API documentation completeness check",
+        "priority": "low",
+        "dependencies": [
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Implement ViewportGrid Component",
+        "description": "Create flexible viewport grid system supporting 1x1, 1x2, and 2x2 layouts with responsive sizing",
+        "details": "Create ViewportGrid component using CSS Grid:\n- Define grid templates for each layout (1x1, 1x2, 2x2)\n- Implement responsive sizing based on container dimensions\n- Add viewport identification (A,B,C,D)\n- Handle active viewport highlighting\n- Implement smooth transition animations between layouts\n\nTypeScript Interface:\n```typescript\ninterface ViewportGridProps {\n  layout: '1x1' | '1x2' | '2x2';\n  children: React.ReactNode[];\n  activeViewportIndex: number;\n}\n```",
+        "testStrategy": "- Unit tests for layout calculations and viewport identification\n- Visual regression tests for layout transitions\n- Responsive layout testing across different screen sizes\n- Performance testing for animation smoothness",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Enhance Series Management System",
+        "description": "Extend series management to support multi-study selection and viewport assignment",
+        "details": "Modify existing series management:\n- Update SeriesPanel component for multi-study support\n- Implement color-coding for different studies\n- Add drag & drop functionality for series thumbnails\n- Create unified data structure for series management\n\n```typescript\ninterface EnhancedSeriesManager {\n  studies: Study[];\n  viewportAssignments: Map<string, number>;\n  activeStudy: string;\n  onSeriesAssign: (seriesId: number, viewportId: string) => void;\n}\n```",
+        "testStrategy": "- Unit tests for series assignment logic\n- Integration tests for drag & drop functionality\n- State management testing\n- Performance testing with large series sets",
+        "priority": "high",
+        "dependencies": [
+          23
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update SeriesPanel Component Architecture",
+            "description": "Modify SeriesPanel component to support multiple studies with color-coding and enhanced UI",
+            "dependencies": [],
+            "details": "Implement new component structure with study selector, color-coded series thumbnails, and metadata display. Update component props and state management to handle multiple studies simultaneously.",
+            "status": "done",
+            "testStrategy": "Unit tests for component rendering, study selection logic, and color-coding implementation"
+          },
+          {
+            "id": 2,
+            "title": "Implement Drag & Drop System",
+            "description": "Create drag & drop functionality for series thumbnails with viewport assignment",
+            "dependencies": [
+              "24.1"
+            ],
+            "details": "Develop drag & drop handlers using React DnD, implement drop zones for viewports, add visual feedback during drag operations, and handle series-to-viewport assignment logic",
+            "status": "done",
+            "testStrategy": "Integration tests for drag & drop interactions, viewport assignment verification, and error handling"
+          },
+          {
+            "id": 3,
+            "title": "Create Unified Data Structure",
+            "description": "Design and implement centralized data structure for multi-study series management",
+            "dependencies": [],
+            "details": "Define TypeScript interfaces for study management, implement state containers for series data, create utility functions for data transformation and study organization",
+            "status": "done",
+            "testStrategy": "Unit tests for data structure operations, state management, and performance testing with large datasets"
+          },
+          {
+            "id": 4,
+            "title": "Implement Viewport Assignment System",
+            "description": "Develop system for managing series-to-viewport assignments and state",
+            "dependencies": [
+              "24.2",
+              "24.3"
+            ],
+            "details": "Create viewport assignment manager, implement assignment validation, handle viewport state updates, and manage active study context",
+            "status": "done",
+            "testStrategy": "Unit tests for assignment logic, integration tests for viewport state management"
+          },
+          {
+            "id": 5,
+            "title": "Add Study Selection Interface",
+            "description": "Create UI components for study selection and management",
+            "dependencies": [
+              "24.1",
+              "24.3"
+            ],
+            "details": "Implement study selector component, add study filtering and search capabilities, create study metadata display, integrate with series panel\n<info added on 2025-07-31T22:35:44.714Z>\nTechnical implementation details for study selection interface integration:\n\n1. Component Structure:\n- Create StudySelector component with study list, search bar, and filter controls\n- Implement StudyCard subcomponent to display study metadata (patient name, study date, modality, description)\n- Add study thumbnail grid with lazy loading support\n\n2. Data Flow Updates:\n- Extend useAppState to maintain activeStudyId and studyList\n- Create useStudySelection hook for study filtering and search logic\n- Implement study-to-series mapping in SeriesContext\n\n3. BasicViewer Integration:\n- Add StudySelector above existing series list in sidebar\n- Implement collapsible study details section\n- Update series list to filter based on selected study\n\n4. EnhancedSeriesBrowser Integration:\n- Connect StudySelector to EnhancedSeriesBrowser's study management\n- Implement study color coding system\n- Add study grouping and sorting capabilities\n\n5. Performance Optimizations:\n- Implement virtual scrolling for large study lists\n- Add study metadata caching\n- Optimize thumbnail loading with progressive enhancement\n\n6. UI/UX Enhancements:\n- Add keyboard shortcuts for study navigation\n- Implement study comparison mode\n- Add study tags and favorites system\n</info added on 2025-07-31T22:35:44.714Z>",
+            "status": "done",
+            "testStrategy": "Unit tests for selection interface, user interaction testing, accessibility testing"
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "title": "Implement Synchronization Controls",
+        "description": "Create comprehensive viewport synchronization system with toggleable controls",
+        "details": "Develop synchronization system:\n- Implement sync controls UI in toolbar\n- Create ViewportSynchronizer class\n- Add support for W/L, zoom, pan, and scroll sync\n- Implement cross-reference lines\n\n```typescript\nclass ViewportSynchronizer {\n  private syncSettings: SynchronizationSettings;\n  private viewports: Map<string, ViewportState>;\n  \n  synchronize(type: SyncType, sourceViewport: string): void;\n  updateSyncSettings(settings: Partial<SynchronizationSettings>): void;\n}\n```",
+        "testStrategy": "- Unit tests for each sync feature\n- Integration tests for multi-viewport sync\n- Performance testing under heavy sync load\n- Edge case testing for sync conflicts",
+        "priority": "high",
+        "dependencies": [
+          23,
+          24
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Sync Controls UI Component",
+            "description": "Create toolbar UI component for synchronization controls with toggles for different sync features",
+            "dependencies": [],
+            "details": "Develop React component with toggles for W/L, zoom, pan, and scroll sync. Include visual indicators for active sync states. Implement event handlers for toggle interactions.",
+            "status": "done",
+            "testStrategy": "Unit tests for UI component rendering and state management. Integration tests for toggle interactions."
+          },
+          {
+            "id": 2,
+            "title": "Develop ViewportSynchronizer Core Class",
+            "description": "Implement core ViewportSynchronizer class with basic sync functionality and state management",
+            "dependencies": [
+              "25.1"
+            ],
+            "details": "Create ViewportSynchronizer class with methods for managing viewport states, sync settings, and basic synchronization operations. Implement state management for sync settings.",
+            "status": "done",
+            "testStrategy": "Unit tests for core synchronization logic. Test state management and settings updates."
+          },
+          {
+            "id": 3,
+            "title": "Implement Viewport Parameter Synchronization",
+            "description": "Add support for synchronizing Window/Level, zoom, pan, and scroll parameters between viewports",
+            "dependencies": [
+              "25.2"
+            ],
+            "details": "Implement specific sync handlers for each parameter type. Create event system for parameter changes. Add validation and error handling for sync operations.",
+            "status": "done",
+            "testStrategy": "Integration tests for each sync parameter type. Performance testing under multiple viewport scenarios."
+          },
+          {
+            "id": 4,
+            "title": "Add Cross-Reference Lines System",
+            "description": "Implement cross-reference lines functionality between synchronized viewports",
+            "dependencies": [
+              "25.2",
+              "25.3"
+            ],
+            "details": "Create system for calculating and rendering cross-reference lines. Implement line position updates based on viewport scroll. Add visual customization options.",
+            "status": "done",
+            "testStrategy": "Unit tests for line calculations. Visual regression testing for line rendering."
+          },
+          {
+            "id": 5,
+            "title": "Implement Sync State Persistence",
+            "description": "Add functionality to persist and restore synchronization settings across sessions",
+            "dependencies": [
+              "25.2",
+              "25.3"
+            ],
+            "details": "Implement storage system for sync settings. Add methods for saving and loading sync state. Create migration system for handling setting format changes.",
+            "status": "done",
+            "testStrategy": "Integration tests for state persistence. Cross-browser storage testing."
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "title": "Create Layout Selector Component",
+        "description": "Implement UI component for switching between viewport layouts with preview icons",
+        "details": "Build layout selector component:\n- Create visual layout preview icons\n- Implement layout switching logic\n- Add keyboard shortcuts (1,2,4)\n- Handle layout transition states\n\n```typescript\ninterface LayoutSelectorProps {\n  currentLayout: ViewportLayout;\n  onLayoutChange: (layout: ViewportLayout) => void;\n  disabled?: boolean;\n}\n```",
+        "testStrategy": "- Unit tests for layout switching logic\n- Keyboard shortcut testing\n- Accessibility testing\n- Visual regression tests for layout previews",
+        "priority": "medium",
+        "dependencies": [
+          23
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Implement Viewport State Management",
+        "description": "Create centralized state management system for viewport configurations and settings",
+        "details": "Develop viewport state management:\n- Create ViewportManager class\n- Implement state persistence\n- Handle viewport configuration changes\n- Manage tool states per viewport\n\n```typescript\nclass ViewportManager {\n  private viewportStates: Map<string, ViewportState>;\n  private syncManager: ViewportSynchronizer;\n  \n  updateViewportState(id: string, state: Partial<ViewportState>): void;\n  getViewportState(id: string): ViewportState;\n  resetViewport(id: string): void;\n}\n```",
+        "testStrategy": "- Unit tests for state management\n- Integration tests with viewport components\n- State persistence testing\n- Memory leak testing",
+        "priority": "high",
+        "dependencies": [
+          23,
+          25
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ViewportManager Class Foundation",
+            "description": "Implement core ViewportManager class with basic state management functionality",
+            "dependencies": [],
+            "details": "Create ViewportManager class with viewportStates Map, implement constructor, add basic CRUD methods for viewport state management, define ViewportState interface",
+            "status": "done",
+            "testStrategy": "Unit tests for state initialization, CRUD operations, and basic error handling"
+          },
+          {
+            "id": 2,
+            "title": "Implement State Persistence Layer",
+            "description": "Add persistence capabilities to save and restore viewport configurations",
+            "dependencies": [
+              "27.1"
+            ],
+            "details": "Implement state serialization/deserialization, add local storage integration, handle state versioning, implement auto-save functionality",
+            "status": "done",
+            "testStrategy": "Test persistence across page reloads, storage limit handling, and data integrity validation"
+          },
+          {
+            "id": 3,
+            "title": "Develop ViewportSynchronizer Integration",
+            "description": "Integrate synchronization functionality with ViewportManager",
+            "dependencies": [
+              "27.1",
+              "27.2"
+            ],
+            "details": "Create sync event system, implement ViewportSynchronizer interface, add sync state tracking, handle multi-viewport synchronization logic",
+            "status": "done",
+            "testStrategy": "Integration tests for sync operations, performance testing with multiple viewports"
+          },
+          {
+            "id": 4,
+            "title": "Implement Tool State Management",
+            "description": "Add support for managing tool states and configurations per viewport",
+            "dependencies": [
+              "27.1"
+            ],
+            "details": "Create tool state tracking system, implement tool activation/deactivation logic, add tool configuration persistence, handle tool state synchronization",
+            "status": "done",
+            "testStrategy": "Unit tests for tool state management, integration tests with Cornerstone Tools"
+          },
+          {
+            "id": 5,
+            "title": "Add Configuration Change Handlers",
+            "description": "Implement handlers for viewport configuration changes and events",
+            "dependencies": [
+              "27.1",
+              "27.3",
+              "27.4"
+            ],
+            "details": "Create event handling system, implement configuration validation, add change notification system, implement configuration conflict resolution",
+            "status": "done",
+            "testStrategy": "Event handling tests, configuration validation tests, stress testing with rapid changes"
+          }
+        ]
+      },
+      {
+        "id": 28,
+        "title": "Implement Drag & Drop Series Assignment",
+        "description": "Create drag & drop system for assigning series to specific viewports",
+        "details": "Implement drag & drop functionality:\n- Add drag handlers to series thumbnails\n- Create drop zones in viewports\n- Handle drag preview\n- Implement series loading on drop\n\n```typescript\ninterface DragDropManager {\n  onDragStart(series: DicomSeries): void;\n  onDrop(viewportId: string, seriesId: number): void;\n  getDragPreview(series: DicomSeries): React.ReactNode;\n}\n```",
+        "testStrategy": "- Unit tests for drag & drop logic\n- Integration tests with series browser\n- Cross-browser compatibility testing\n- Performance testing with large series",
+        "priority": "medium",
+        "dependencies": [
+          24,
+          27
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Implement Error Recovery System",
+        "description": "Create robust error handling and recovery system for viewport operations",
+        "details": "Develop error recovery system:\n- Implement viewport state backup\n- Create error boundary components\n- Add recovery mechanisms\n- Implement error notifications\n\n```typescript\nclass ViewportErrorHandler {\n  private stateBackup: Map<string, ViewportState>;\n  \n  handleError(error: Error, viewportId: string): void;\n  restoreViewport(viewportId: string): void;\n  createStateSnapshot(): void;\n}\n```",
+        "testStrategy": "- Unit tests for error handling\n- Integration tests for recovery mechanisms\n- Stress testing with forced errors\n- User interaction testing during errors",
+        "priority": "medium",
+        "dependencies": [
+          27
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Implement Performance Optimization",
+        "description": "Optimize rendering and memory usage for multi-viewport scenarios",
+        "details": "Implement performance optimizations:\n- Add viewport-level rendering optimization\n- Implement memory management\n- Add lazy loading for inactive viewports\n- Optimize synchronization operations\n\n```typescript\nclass ViewportOptimizer {\n  private activeViewports: Set<string>;\n  \n  optimizeRendering(viewportId: string): void;\n  manageViewportMemory(): void;\n  scheduleUpdate(viewportId: string): void;\n}\n```",
+        "testStrategy": "- Performance benchmarking\n- Memory usage monitoring\n- Load testing with multiple viewports\n- FPS monitoring during operations",
+        "priority": "high",
+        "dependencies": [
+          23,
+          25,
+          27
+        ],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Viewport-Level Rendering Optimization",
+            "description": "Create optimized rendering pipeline for individual viewports with frame rate control and priority management",
+            "dependencies": [],
+            "details": "Implement optimizeRendering method in ViewportOptimizer class to handle viewport-specific rendering optimization, including frame rate throttling and priority-based rendering queue\n<info added on 2025-08-01T15:11:27.689Z>\nSuccessfully completed ViewportOptimizer implementation with the following enhancements:\n- Advanced rendering optimization system with FPS targeting and dynamic adjustment\n- Performance-based frame rate throttling using real-time metrics\n- Priority queue management for rendering operations with dynamic priority levels\n- Memory-aware quality scaling that adapts to system pressure\n- Viewport priority system that responds to user interactions\n- System load monitoring and automatic throttling mechanisms\n- Per-priority FPS targeting and adjustment logic\n- Extended TypeScript definitions for performance state tracking\n- Comprehensive test suite covering all optimization features\n- Integration with existing viewport management architecture\n\nAll features have been tested and verified for performance impact. Memory footprint remains within expected bounds and rendering optimization shows measurable improvements in viewport responsiveness.\n</info added on 2025-08-01T15:11:27.689Z>",
+            "status": "done",
+            "testStrategy": "Measure FPS before and after optimization, benchmark rendering performance under various viewport configurations"
+          },
+          {
+            "id": 2,
+            "title": "Develop Memory Management System",
+            "description": "Implement efficient memory allocation and deallocation for viewport resources",
+            "dependencies": [
+              "30.1"
+            ],
+            "details": "Create memory management system in manageViewportMemory method to handle resource cleanup, texture management, and memory pooling for inactive viewports",
+            "status": "done",
+            "testStrategy": "Monitor memory usage patterns, test memory leak scenarios, validate cleanup effectiveness"
+          },
+          {
+            "id": 3,
+            "title": "Implement Lazy Loading Mechanism",
+            "description": "Create system for delayed loading of inactive viewport content",
+            "dependencies": [
+              "30.2"
+            ],
+            "details": "Add lazy loading functionality to ViewportOptimizer to defer resource allocation and content loading for inactive viewports until needed",
+            "status": "done",
+            "testStrategy": "Verify load time improvements, test resource allocation patterns, measure initial render performance"
+          },
+          {
+            "id": 4,
+            "title": "Optimize Synchronization Operations",
+            "description": "Enhance performance of multi-viewport synchronization processes",
+            "dependencies": [
+              "30.1",
+              "30.2",
+              "30.3"
+            ],
+            "details": "Optimize scheduleUpdate method to handle efficient synchronization between viewports while minimizing performance impact",
+            "status": "done",
+            "testStrategy": "Benchmark sync operations, measure latency between viewport updates, test under high-load scenarios"
+          },
+          {
+            "id": 5,
+            "title": "Implement Performance Monitoring System",
+            "description": "Create comprehensive performance tracking and reporting system",
+            "dependencies": [
+              "30.1",
+              "30.4"
+            ],
+            "details": "Add performance metrics collection, monitoring, and reporting capabilities to ViewportOptimizer class for continuous optimization",
+            "status": "done",
+            "testStrategy": "Validate accuracy of performance metrics, test monitoring overhead, verify reporting functionality"
+          }
+        ]
+      },
+      {
+        "id": 31,
+        "title": "Implement Session Management",
+        "description": "Create system for managing and persisting viewport configurations and sync settings",
+        "details": "Develop session management:\n- Implement session storage\n- Add configuration persistence\n- Handle layout preferences\n- Manage sync settings persistence\n\n```typescript\nclass SessionManager {\n  private storage: Storage;\n  \n  saveSession(config: ViewerConfiguration): void;\n  loadSession(): ViewerConfiguration;\n  clearSession(): void;\n}\n```",
+        "testStrategy": "- Unit tests for storage operations\n- Integration tests for session restoration\n- Cross-browser storage testing\n- Edge case testing for corrupt data",
+        "priority": "medium",
+        "dependencies": [
+          27,
+          25
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 32,
+        "title": "Create Migration Utility",
+        "description": "Implement utility for migrating from old ComparisonViewer to enhanced BasicViewer",
+        "details": "Develop migration utility:\n- Create state mapping functions\n- Add prop conversion utilities\n- Implement backward compatibility layer\n- Add migration documentation\n\n```typescript\nclass ViewerMigration {\n  private legacyProps: any;\n  \n  convertProps(oldProps: any): EnhancedBasicViewerProps;\n  migrateState(oldState: any): ViewportState[];\n  validateMigration(result: any): boolean;\n}\n```",
+        "testStrategy": "- Unit tests for prop conversion\n- Integration tests with legacy components\n- Backward compatibility testing\n- Migration path validation",
+        "priority": "low",
+        "dependencies": [
+          23,
+          24,
+          25,
+          27
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 33,
+        "title": "API Structure Analysis and Compatibility Layer Setup",
+        "description": "Analyze v3.32.5 API changes and implement compatibility layer for annotation property differences",
+        "details": "1. Create AnnotationCompat interface as defined in PRD\n2. Implement property mapping utility:\n```typescript\nclass AnnotationCompatLayer {\n  static getAnnotationId(annotation: any): string {\n    return annotation.uid || annotation.id || \n           annotation.annotationId || annotation.annotationUID;\n  }\n  static normalizeAnnotation(annotation: any): AnnotationCompat {\n    // Transform between v1 and v3 structures\n  }\n}\n```\n3. Add fallback mechanisms for changed property names\n4. Document all discovered API changes",
+        "testStrategy": "1. Unit tests for property mapping\n2. Integration tests with both v1 and v3 annotation structures\n3. Validation of all property access patterns",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Fix Annotation Selection System",
+        "description": "Restore annotation selection functionality using v3 API structure",
+        "details": "1. Update selection handler to use v3 API:\n```typescript\nclass SelectionHandler {\n  selectAnnotation(annotation: AnnotationCompat) {\n    const uid = AnnotationCompatLayer.getAnnotationId(annotation);\n    annotation.selection.setAnnotationSelected(uid, true, false);\n    this.highlightSelectedAnnotation(uid);\n  }\n  \n  highlightSelectedAnnotation(uid: string) {\n    // Apply sky blue highlight to selected annotation\n  }\n}\n```\n2. Implement click handler with proper event binding\n3. Add visual feedback system",
+        "testStrategy": "1. E2E tests for selection workflow\n2. Visual regression tests for highlight state\n3. Performance testing for selection operations",
+        "priority": "high",
+        "dependencies": [
+          33
+        ],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update SelectionHandler Class Implementation",
+            "description": "Refactor SelectionHandler class to properly integrate with v3 API structure and handle annotation selection state management",
+            "dependencies": [],
+            "details": "1. Update SelectionHandler class with v3 API methods\n2. Implement proper type definitions for AnnotationCompat\n3. Add error handling for invalid annotations\n4. Implement selection state management\n5. Add method for clearing selection",
+            "status": "done",
+            "testStrategy": "Unit tests for SelectionHandler class with mock annotations, verify proper state management and error handling"
+          },
+          {
+            "id": 2,
+            "title": "Implement Highlight Visualization System",
+            "description": "Create robust highlight system for selected annotations with proper styling and rendering",
+            "dependencies": [
+              "34.1"
+            ],
+            "details": "1. Create highlight style configuration object\n2. Implement highlightSelectedAnnotation method with sky blue styling\n3. Add highlight removal functionality\n4. Handle multiple selected annotations\n5. Implement highlight refresh mechanism",
+            "status": "done",
+            "testStrategy": "Visual regression tests for highlight styles, unit tests for highlight logic"
+          },
+          {
+            "id": 3,
+            "title": "Implement Click Handler and Event Binding",
+            "description": "Create click handler system with proper event binding for annotation selection",
+            "dependencies": [
+              "34.1"
+            ],
+            "details": "1. Create ClickHandler class\n2. Implement event listener registration\n3. Add click detection logic\n4. Create proper event propagation control\n5. Implement cleanup methods for event listeners",
+            "status": "done",
+            "testStrategy": "Integration tests for click handling, event propagation tests, cleanup verification"
+          },
+          {
+            "id": 4,
+            "title": "Add Selection State Management",
+            "description": "Implement comprehensive selection state management system with proper updates",
+            "dependencies": [
+              "34.1",
+              "34.2",
+              "34.3"
+            ],
+            "details": "1. Create SelectionState class\n2. Implement methods for tracking selected annotations\n3. Add state update notifications\n4. Implement selection history\n5. Add methods for bulk selection operations",
+            "status": "pending",
+            "testStrategy": "Unit tests for state management, integration tests for state updates"
+          },
+          {
+            "id": 5,
+            "title": "Implement Selection API Integration",
+            "description": "Create public API for selection system and integrate with existing annotation system",
+            "dependencies": [
+              "34.1",
+              "34.2",
+              "34.3",
+              "34.4"
+            ],
+            "details": "1. Define public API interface\n2. Implement selection API methods\n3. Add proper error handling\n4. Create documentation for API usage\n5. Add example implementations\n<info added on 2025-08-01T14:47:35.717Z>\nESLint code quality improvements completed:\n- Fixed 1932 linting errors including:\n  - Code style issues (trailing spaces, indentation, missing commas)\n  - Unreachable code blocks removed\n  - React hooks dependency array corrections\n  - Security vulnerability patches\n  - Code parsing errors resolved\n- 252 warnings remain (primarily console.log statements and object injection patterns)\n- Codebase now passes ESLint validation with zero errors\n</info added on 2025-08-01T14:47:35.717Z>",
+            "status": "pending",
+            "testStrategy": "API integration tests, documentation verification, example validation"
+          }
+        ]
+      },
+      {
+        "id": 35,
+        "title": "Implement Annotation Deletion System",
+        "description": "Restore annotation deletion functionality with proper UID handling",
+        "details": "1. Implement deletion handler:\n```typescript\nclass DeletionHandler {\n  deleteSelectedAnnotations() {\n    const selected = annotation.selection.getAnnotationsSelected();\n    selected.forEach(anno => {\n      const uid = AnnotationCompatLayer.getAnnotationId(anno);\n      annotation.state.removeAnnotation(uid);\n    });\n    this.refreshViewport();\n  }\n}\n```\n2. Add keyboard event listeners for Delete/Backspace\n3. Implement proper cleanup and state management",
+        "testStrategy": "1. Unit tests for deletion logic\n2. Cross-platform testing (Windows/Mac)\n3. Memory leak testing\n4. Viewport update verification",
+        "priority": "high",
+        "dependencies": [
+          33,
+          34
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 36,
+        "title": "Tool System Migration and Verification",
+        "description": "Ensure all measurement and navigation tools are compatible with v3 API",
+        "details": "1. Verify each tool implementation:\n```typescript\nconst toolsToVerify = [\n  'Length',\n  'Angle',\n  'RectangleROI',\n  'Pan',\n  'Zoom',\n  'WindowLevel'\n];\n\nclass ToolVerification {\n  validateTool(toolName: string) {\n    // Verify tool activation/deactivation\n    // Check annotation creation\n    // Validate tool-specific operations\n  }\n}\n```\n2. Update tool activation mechanism\n3. Implement tool state management",
+        "testStrategy": "1. Functional testing for each tool\n2. Tool switching validation\n3. Annotation creation verification\n4. Performance benchmarking",
+        "priority": "high",
+        "dependencies": [
+          33
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 37,
+        "title": "Rendering Engine Integration Updates",
+        "description": "Update viewport rendering integration and optimize performance",
+        "details": "1. Review and update rendering calls:\n```typescript\nclass ViewportRenderer {\n  updateViewport() {\n    // Implement v3 rendering pipeline\n    // Handle memory management\n    // Optimize render loop\n  }\n  \n  cleanupResources() {\n    // Proper resource disposal\n  }\n}\n```\n2. Implement memory management optimizations\n3. Add performance monitoring",
+        "testStrategy": "1. Performance benchmarking\n2. Memory leak testing\n3. Render quality verification\n4. Stress testing with multiple viewports",
+        "priority": "medium",
+        "dependencies": [
+          33
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 38,
+        "title": "Error Handling and Logging System",
+        "description": "Implement comprehensive error handling and debugging system",
+        "details": "1. Create error handling system:\n```typescript\nclass ErrorHandler {\n  static handleError(error: Error, context: string) {\n    console.error(`[Cornerstone3D v3] ${context}:`, error);\n    // Log to monitoring system\n    // Provide user feedback if necessary\n  }\n  \n  static gracefulDegradation(feature: string) {\n    // Handle unavailable features\n  }\n}\n```\n2. Add debug logging\n3. Implement graceful degradation",
+        "testStrategy": "1. Error scenario testing\n2. Log output validation\n3. Degradation behavior verification",
+        "priority": "medium",
+        "dependencies": [
+          33,
+          34,
+          35
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 39,
+        "title": "Cross-browser Compatibility Testing",
+        "description": "Ensure functionality across all major browsers and platforms",
+        "details": "1. Implement browser testing suite:\n```typescript\nclass BrowserCompatibility {\n  static async testSuite() {\n    // Test annotation workflow\n    // Verify keyboard handling\n    // Check rendering performance\n    // Validate tool behavior\n  }\n}\n```\n2. Create browser-specific patches if needed\n3. Document browser requirements",
+        "testStrategy": "1. Automated tests in major browsers\n2. Manual testing of critical paths\n3. Performance benchmarking across browsers",
+        "priority": "medium",
+        "dependencies": [
+          34,
+          35,
+          36
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 40,
+        "title": "Performance Optimization and Monitoring",
+        "description": "Implement performance optimizations and monitoring system",
+        "details": "1. Create performance monitoring:\n```typescript\nclass PerformanceMonitor {\n  static measure(operation: string) {\n    const start = performance.now();\n    return () => {\n      const duration = performance.now() - start;\n      if (duration > 100) {\n        console.warn(`${operation} exceeded 100ms threshold`);\n      }\n    };\n  }\n}\n```\n2. Optimize critical paths\n3. Implement performance logging",
+        "testStrategy": "1. Performance benchmark suite\n2. Memory usage monitoring\n3. Load testing\n4. Response time verification",
+        "priority": "medium",
+        "dependencies": [
+          37
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 41,
+        "title": "Documentation and Migration Guide",
+        "description": "Create comprehensive documentation for v3 migration changes",
+        "details": "1. Document migration changes:\n```markdown\n# Cornerstone3D v3.32.5 Migration Guide\n- API Changes\n- Breaking Changes\n- Migration Steps\n- Troubleshooting Guide\n```\n2. Update API documentation\n3. Add code examples\n4. Include troubleshooting guide",
+        "testStrategy": "1. Documentation review\n2. Code example validation\n3. Migration guide testing",
+        "priority": "low",
+        "dependencies": [
+          33,
+          34,
+          35,
+          36
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 42,
+        "title": "Deployment and Rollback Strategy",
+        "description": "Prepare deployment strategy with rollback capability",
+        "details": "1. Create deployment plan:\n```typescript\nclass DeploymentManager {\n  static async deploy() {\n    // Version verification\n    // Feature validation\n    // Gradual rollout\n  }\n  \n  static async rollback() {\n    // Restore v1.77.9 if needed\n  }\n}\n```\n2. Implement version checking\n3. Create rollback procedures",
+        "testStrategy": "1. Deployment process testing\n2. Rollback procedure validation\n3. Version compatibility checks",
+        "priority": "medium",
+        "dependencies": [
+          33,
+          34,
+          35,
+          36,
+          37,
+          38
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 43,
+        "title": "Implement Viewport Management Service",
+        "description": "Create a service to handle multiple viewport instances and manage their lifecycle",
+        "details": "Create ViewportManager class with methods:\n- createViewport(config)\n- destroyViewport(id)\n- getViewport(id)\n- setLayout(type: '1x2'|'2x2')\n- assignStudyToViewport(studyId, viewportId)\n\nImplement memory optimization using:\n- Lazy loading of viewport instances\n- Garbage collection of unused viewports\n- Viewport pooling for reuse",
+        "testStrategy": "Unit tests for viewport lifecycle management\nIntegration tests for layout changes\nMemory leak detection tests\nPerformance benchmarks for viewport operations",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core ViewportManager Class",
+            "description": "Create the base ViewportManager class with essential viewport lifecycle methods",
+            "dependencies": [],
+            "details": "Implement createViewport(config), destroyViewport(id), and getViewport(id) methods. Include type definitions and basic error handling. Set up the internal viewport registry map.",
+            "status": "done",
+            "testStrategy": "Unit tests for viewport creation, destruction, and retrieval. Test error cases and invalid inputs."
+          },
+          {
+            "id": 2,
+            "title": "Develop Layout Management System",
+            "description": "Implement layout management functionality with support for different viewport arrangements",
+            "dependencies": [
+              "43.1"
+            ],
+            "details": "Create setLayout method supporting 1x2 and 2x2 configurations. Implement viewport position calculations and grid management. Handle viewport resizing and repositioning during layout changes.",
+            "status": "done",
+            "testStrategy": "Integration tests for layout transitions. Verify viewport positioning and dimensions after layout changes."
+          },
+          {
+            "id": 3,
+            "title": "Implement Study Assignment System",
+            "description": "Create system for assigning medical studies to specific viewports",
+            "dependencies": [
+              "43.1",
+              "43.2"
+            ],
+            "details": "Implement assignStudyToViewport method. Create study loading queue. Handle study metadata validation and error cases. Implement study-viewport association tracking.",
+            "status": "done",
+            "testStrategy": "Test study assignment workflow, invalid study IDs, and concurrent assignments."
+          },
+          {
+            "id": 4,
+            "title": "Implement Lazy Loading Mechanism",
+            "description": "Create lazy loading system for viewport instances to optimize memory usage",
+            "dependencies": [
+              "43.1",
+              "43.3"
+            ],
+            "details": "Implement viewport instance lazy initialization. Create viewport state prediction system. Add viewport pre-loading for anticipated user actions. Implement viewport activation/deactivation logic.",
+            "status": "done",
+            "testStrategy": "Performance testing of lazy loading behavior. Memory usage monitoring during viewport operations."
+          },
+          {
+            "id": 5,
+            "title": "Implement Viewport Pooling and Garbage Collection",
+            "description": "Create viewport pooling system and implement garbage collection for unused viewports",
+            "dependencies": [
+              "43.1",
+              "43.4"
+            ],
+            "details": "Implement viewport pool manager. Create garbage collection triggers and cleanup logic. Add viewport recycling mechanism. Implement memory usage monitoring and automatic cleanup thresholds.",
+            "status": "done",
+            "testStrategy": "Memory leak detection tests. Pool efficiency metrics. Garbage collection timing tests."
+          }
+        ]
+      },
+      {
+        "id": 44,
+        "title": "Develop Study Selection Interface",
+        "description": "Create UI components for selecting multiple studies for comparison",
+        "details": "Implement:\n- Multi-select study list component\n- Drag-and-drop study assignment\n- Study metadata display panel\n- Patient safety indicators for different patient studies\n- URL parameter handling for direct study loading",
+        "testStrategy": "Unit tests for selection logic\nE2E tests for drag-and-drop\nAccessibility testing\nURL parameter parsing tests",
+        "priority": "high",
+        "dependencies": [
+          43
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Multi-select Study List Component",
+            "description": "Create a reusable component for selecting multiple studies with checkboxes and selection state management",
+            "dependencies": [],
+            "details": "Develop a list component with checkbox selection, keyboard navigation, selection state management, and study preview thumbnails",
+            "status": "done",
+            "testStrategy": "Unit tests for selection logic, keyboard interaction tests, accessibility testing with screen readers"
+          },
+          {
+            "id": 2,
+            "title": "Build Drag-and-drop Study Assignment",
+            "description": "Implement drag-and-drop functionality for assigning studies to comparison slots",
+            "dependencies": [
+              "44.1"
+            ],
+            "details": "Create drag handlers, drop zones, visual feedback during drag operations, and study position management",
+            "status": "done",
+            "testStrategy": "E2E tests for drag-and-drop operations, cross-browser compatibility testing"
+          },
+          {
+            "id": 3,
+            "title": "Create Study Metadata Display Panel",
+            "description": "Develop a panel to show detailed metadata for selected studies",
+            "dependencies": [
+              "44.1"
+            ],
+            "details": "Display study date, modality, patient info, series count, and key measurements with proper formatting",
+            "status": "done",
+            "testStrategy": "Unit tests for metadata formatting, integration tests for data display"
+          },
+          {
+            "id": 4,
+            "title": "Implement Patient Safety Indicators",
+            "description": "Add visual indicators for patient safety alerts and study compatibility",
+            "dependencies": [
+              "44.1",
+              "44.3"
+            ],
+            "details": "Create warning indicators for patient mismatches, study date conflicts, and modality compatibility issues",
+            "status": "pending",
+            "testStrategy": "Unit tests for safety logic, visual regression tests for indicators"
+          },
+          {
+            "id": 5,
+            "title": "Develop URL Parameter Handling",
+            "description": "Implement URL-based study loading and state management",
+            "dependencies": [
+              "44.1",
+              "44.2"
+            ],
+            "details": "Parse URL parameters for direct study loading, maintain state in URL, handle deep linking and browser navigation",
+            "status": "pending",
+            "testStrategy": "Unit tests for URL parsing, integration tests for state management, browser history testing"
+          }
+        ]
+      },
+      {
+        "id": 45,
+        "title": "Implement Synchronization Engine",
+        "description": "Create core synchronization system for coordinating viewport states and events",
+        "details": "Develop SyncEngine class with:\n- Scroll sync using requestAnimationFrame\n- Window/level sync with debouncing\n- Zoom/pan sync with matrix transformations\n- Selective sync toggle system\n- Event emission for external integrations",
+        "testStrategy": "Unit tests for each sync feature\nPerformance tests for sync operations\nCross-browser compatibility testing\nSync accuracy verification",
+        "priority": "high",
+        "dependencies": [
+          43
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core Scroll Synchronization",
+            "description": "Develop scroll synchronization using requestAnimationFrame for smooth viewport coordination",
+            "dependencies": [],
+            "details": "Create ScrollSync class with requestAnimationFrame implementation, throttle control, scroll position calculation, and viewport offset management",
+            "status": "done",
+            "testStrategy": "Unit tests for scroll accuracy, performance testing with multiple viewports, FPS monitoring during rapid scrolling"
+          },
+          {
+            "id": 2,
+            "title": "Develop Window/Level Sync System",
+            "description": "Implement window/level synchronization with debouncing mechanism",
+            "dependencies": [
+              "45.1"
+            ],
+            "details": "Create WindowLevelSync class with debounce implementation, value normalization, and state management across viewports",
+            "status": "done",
+            "testStrategy": "Unit tests for window/level accuracy, debounce timing verification, stress testing with rapid adjustments"
+          },
+          {
+            "id": 3,
+            "title": "Create Zoom/Pan Matrix Transformation System",
+            "description": "Implement zoom and pan synchronization using matrix transformations",
+            "dependencies": [
+              "45.1",
+              "45.2"
+            ],
+            "details": "Develop MatrixTransformSync class handling zoom matrices, pan operations, and coordinate system transformations",
+            "status": "pending",
+            "testStrategy": "Matrix calculation accuracy tests, transformation consistency verification, performance benchmarking"
+          },
+          {
+            "id": 4,
+            "title": "Implement Selective Sync Toggle System",
+            "description": "Create system for enabling/disabling specific sync features per viewport",
+            "dependencies": [
+              "45.1",
+              "45.2",
+              "45.3"
+            ],
+            "details": "Develop SyncToggleManager class with feature flags, viewport-specific settings, and state persistence",
+            "status": "pending",
+            "testStrategy": "Integration tests for toggle functionality, state persistence verification, cross-viewport sync testing"
+          },
+          {
+            "id": 5,
+            "title": "Implement Event Emission System",
+            "description": "Create event emission system for external integrations and sync state notifications",
+            "dependencies": [
+              "45.1",
+              "45.2",
+              "45.3",
+              "45.4"
+            ],
+            "details": "Develop SyncEventEmitter class with custom event types, subscription management, and event propagation control",
+            "status": "pending",
+            "testStrategy": "Event emission timing tests, subscription management verification, integration testing with external systems"
+          }
+        ]
+      },
+      {
+        "id": 46,
+        "title": "Create Layout Management System",
+        "description": "Implement flexible viewport layout system supporting 1x2 and 2x2 configurations",
+        "details": "Build LayoutManager with:\n- Responsive grid system\n- Layout transition animations\n- Viewport resize handling\n- Layout state persistence\n- Dynamic layout switching logic",
+        "testStrategy": "Unit tests for layout calculations\nResponsive design tests\nBrowser compatibility testing\nPerformance testing for layout transitions",
+        "priority": "medium",
+        "dependencies": [
+          43,
+          44
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 47,
+        "title": "Implement Cross-reference Lines",
+        "description": "Add visual indicators showing corresponding anatomy across viewports",
+        "details": "Create CrossReferenceService:\n- Calculate intersection planes\n- Draw reference lines using WebGL\n- Handle coordinate system transformations\n- Implement line style customization\n- Add enable/disable toggle",
+        "testStrategy": "Unit tests for geometry calculations\nVisual regression testing\nPerformance impact testing\nAccuracy verification with sample datasets",
+        "priority": "medium",
+        "dependencies": [
+          43,
+          45
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 48,
+        "title": "Develop Annotation Management System",
+        "description": "Create system for handling independent annotations per viewport with copy functionality",
+        "details": "Implement AnnotationManager:\n- Viewport-specific annotation storage\n- Annotation copy/paste between viewports\n- Measurement comparison tools\n- Visibility toggles per viewport\n- Annotation serialization/deserialization",
+        "testStrategy": "Unit tests for annotation operations\nE2E tests for user interactions\nData persistence testing\nCross-viewport functionality verification",
+        "priority": "medium",
+        "dependencies": [
+          43,
+          46
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 49,
+        "title": "Create Synchronization Control Panel",
+        "description": "Implement UI for managing synchronization settings and controls",
+        "details": "Build SyncControlPanel component:\n- Individual sync feature toggles\n- Sync group management\n- Visual sync status indicators\n- Keyboard shortcut integration\n- Settings persistence",
+        "testStrategy": "Unit tests for control logic\nUsability testing\nKeyboard navigation testing\nSettings persistence verification",
+        "priority": "medium",
+        "dependencies": [
+          45
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 50,
+        "title": "Implement Memory Optimization",
+        "description": "Optimize memory usage and implement caching strategy for multiple studies",
+        "details": "Implement:\n- Study data streaming\n- Intelligent cache management\n- Memory usage monitoring\n- Automatic garbage collection\n- Performance profiling system",
+        "testStrategy": "Memory usage benchmarks\nLoad testing with multiple studies\nCache hit rate testing\nMemory leak detection",
+        "priority": "high",
+        "dependencies": [
+          43,
+          45
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 51,
+        "title": "Add Export Capabilities",
+        "description": "Implement functionality to export comparison views and sessions",
+        "details": "Create ExportService:\n- Screenshot capture\n- Comparison session state export\n- DICOM secondary capture generation\n- Export format selection\n- Batch export capability",
+        "testStrategy": "Unit tests for export formats\nOutput validation testing\nPerformance testing for large exports\nFormat compatibility verification",
+        "priority": "low",
+        "dependencies": [
+          43,
+          46,
+          48
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 52,
+        "title": "Implement Browser Compatibility Layer",
+        "description": "Ensure consistent functionality across specified browser versions",
+        "details": "Create BrowserCompatibility service:\n- Feature detection system\n- Polyfill management\n- Graceful degradation handlers\n- Browser-specific optimizations\n- Performance monitoring",
+        "testStrategy": "Cross-browser testing suite\nFeature detection verification\nPerformance benchmarks per browser\nGraceful degradation testing",
+        "priority": "medium",
+        "dependencies": [
+          43,
+          45,
+          50
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-07-23T09:44:37.429Z",
-      "updated": "2025-07-26T10:47:30.554Z",
+      "updated": "2025-08-03T00:31:40.819Z",
       "description": "Tasks for master context"
     }
   }

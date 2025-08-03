@@ -20,10 +20,7 @@ interface ThemeProviderProps {
 /**
  * Theme provider component
  */
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({
-  children,
-  defaultMode = 'light',
-}) => {
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, defaultMode = 'light' }) => {
   // Initialize theme from localStorage or default
   const [mode, setMode] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
@@ -66,6 +63,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
     // Add new theme class
     root.classList.add(`theme-${mode}`);
+
+    // Add/remove dark class for Tailwind CSS
+    if (mode === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
 
     // Update CSS variables
     const colors = theme.colors;
@@ -119,7 +123,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     root.style.setProperty('--duration-base', theme.transitions.duration.base);
     root.style.setProperty('--duration-slow', theme.transitions.duration.slow);
     root.style.setProperty('--easing-base', theme.transitions.easing.easeInOut);
-
   }, [mode, theme]);
 
   // Listen for system theme changes
@@ -158,11 +161,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     setTheme,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 // Hooks moved to ./hooks.ts for React fast refresh compatibility

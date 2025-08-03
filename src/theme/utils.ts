@@ -111,7 +111,10 @@ export const withOpacity = (color: string, opacity: number): string => {
   // Handle rgb/rgba colors
   if (color.startsWith('rgb')) {
     // Use a simpler approach to avoid complex regex
-    const numbers = color.replace(/[^\d,]/g, '').split(',').map(n => parseInt(n, 10));
+    const numbers = color
+      .replace(/[^\d,]/g, '')
+      .split(',')
+      .map(n => parseInt(n, 10));
     if (numbers.length >= 3) {
       return `rgba(${numbers[0]}, ${numbers[1]}, ${numbers[2]}, ${opacity})`;
     }
@@ -126,7 +129,9 @@ export const withOpacity = (color: string, opacity: number): string => {
 export const getContrastText = (background: string): string => {
   // Simple luminance calculation
   const getLuminance = (color: string): number => {
-    let r = 0, g = 0, b = 0;
+    let r = 0,
+      g = 0,
+      b = 0;
 
     if (color.startsWith('#')) {
       r = parseInt(color.slice(1, 3), 16) / 255;
@@ -163,10 +168,12 @@ export const getContrastText = (background: string): string => {
 /**
  * Create responsive spacing based on theme
  */
-export const spacing = (theme: UITheme) => (multiplier: number): string => {
-  const base = parseFloat(theme.spacing[4]); // 1rem = base
-  return `${base * multiplier}rem`;
-};
+export const spacing =
+  (theme: UITheme) =>
+    (multiplier: number): string => {
+      const base = parseFloat(theme.spacing[4]); // 1rem = base
+      return `${base * multiplier}rem`;
+    };
 
 /**
  * Create media query helpers

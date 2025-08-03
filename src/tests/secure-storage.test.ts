@@ -3,7 +3,7 @@
  * Tests for secure data storage practices
  */
 
-console.log('🔐 Starting Secure Storage Tests...');
+console.info('🔐 Starting Secure Storage Tests...');
 
 // Test 1: Sensitive data should not be stored in localStorage
 (() => {
@@ -17,15 +17,13 @@ console.log('🔐 Starting Secure Storage Tests...');
     };
 
     for (const key of Object.keys(mockLocalStorage)) {
-      const isSensitive = sensitiveKeys.some(sensitive =>
-        key.toLowerCase().includes(sensitive),
-      );
+      const isSensitive = sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive));
       if (isSensitive) {
         throw new Error(`Sensitive key found in localStorage: ${key}`);
       }
     }
 
-    console.log('✅ localStorage security verified');
+    console.info('✅ localStorage security verified');
   } catch (error) {
     console.error('❌ localStorage security test failed:', error);
     process.exit(1);
@@ -41,7 +39,7 @@ console.log('🔐 Starting Secure Storage Tests...');
       throw new Error('sessionStorage structure invalid');
     }
 
-    console.log('✅ sessionStorage security verified');
+    console.info('✅ sessionStorage security verified');
   } catch (error) {
     console.error('❌ sessionStorage security test failed:', error);
     process.exit(1);
@@ -64,7 +62,7 @@ console.log('🔐 Starting Secure Storage Tests...');
       throw new Error('Cookie sameSite attribute not strict');
     }
 
-    console.log('✅ Cookie security attributes verified');
+    console.info('✅ Cookie security attributes verified');
   } catch (error) {
     console.error('❌ Cookie security test failed:', error);
     process.exit(1);
@@ -81,12 +79,12 @@ console.log('🔐 Starting Secure Storage Tests...');
       throw new Error('Data encryption components missing');
     }
 
-    console.log('✅ Data encryption verification complete');
+    console.info('✅ Data encryption verification complete');
   } catch (error) {
     console.error('❌ Data encryption test failed:', error);
     process.exit(1);
   }
 })();
 
-console.log('🔐 Secure Storage Tests Complete - All Passed!');
+console.info('🔐 Secure Storage Tests Complete - All Passed!');
 process.exit(0);

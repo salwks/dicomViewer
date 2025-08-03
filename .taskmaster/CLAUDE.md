@@ -516,4 +516,166 @@ Before completing any task:
 
 ---
 
-_This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows AND enforces critical security standards._
+## 🎨 SHADCN/UI ENFORCEMENT RULES (강제 준수사항)
+
+### ⚠️ MANDATORY shadcn/ui STANDARDS - ALWAYS FOLLOW
+
+#### 1. Component Creation Rules (필수)
+```typescript
+// ❌ NEVER - Direct Tailwind classes without shadcn/ui structure
+const Component = () => (
+  <div className="bg-gray-100 border rounded p-4">
+    <span className="text-sm">Content</span>
+  </div>
+);
+
+// ✅ ALWAYS - Use shadcn/ui components with cn() utility
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { cn } from '../../lib/utils';
+
+const Component = ({ className, ...props }) => (
+  <Card className={cn('bg-background/90 backdrop-blur-sm', className)} {...props}>
+    <CardContent className="p-4">
+      <Badge variant="secondary" className="text-xs">
+        Content
+      </Badge>
+    </CardContent>
+  </Card>
+);
+```
+
+#### 2. Styling Pattern Rules (필수)
+```typescript
+// ❌ NEVER - Inline styles
+<div style={{ zIndex: 10, display: 'none' }}>
+
+// ❌ NEVER - Direct className strings without cn()
+<div className="absolute top-4 right-4 bg-white p-2">
+
+// ✅ ALWAYS - Use cn() utility for className composition
+import { cn } from '../../lib/utils';
+
+<div className={cn(
+  'absolute top-4 right-4',
+  'bg-background/90 backdrop-blur-sm',
+  'border-border/50',
+  isActive && 'opacity-100'
+)}>
+```
+
+#### 3. UI Component Requirements (필수)
+```typescript
+// ✅ REQUIRED - All UI components must follow shadcn/ui patterns
+// Location: src/components/ui/
+
+// ✅ REQUIRED - Use Radix UI primitives
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import * as SelectPrimitive from "@radix-ui/react-select"
+
+// ✅ REQUIRED - ForwardRef pattern
+const Component = React.forwardRef<
+  React.ElementRef<typeof Primitive.Root>,
+  React.ComponentPropsWithoutRef<typeof Primitive.Root>
+>(({ className, ...props }, ref) => (
+  <Primitive.Root
+    ref={ref}
+    className={cn("base-styles", className)}
+    {...props}
+  />
+))
+Component.displayName = Primitive.Root.displayName
+```
+
+#### 4. Prohibited Patterns (금지사항)
+```typescript
+// ❌ FORBIDDEN - Raw HTML input elements for complex controls
+<input type="range" className="slider" />
+
+// ❌ FORBIDDEN - Direct style objects
+const styles = { backgroundColor: '#fff', padding: '16px' };
+
+// ❌ FORBIDDEN - Non-shadcn component patterns
+const CustomComponent = ({ children }) => {
+  return <div className="custom-style">{children}</div>;
+};
+
+// ✅ REQUIRED - Use shadcn/ui components
+import { Slider } from '../ui/slider';
+import { Card } from '../ui/card';
+
+const Component = ({ children, className }) => (
+  <Card className={cn('default-styles', className)}>
+    {children}
+  </Card>
+);
+```
+
+#### 5. Component File Structure (필수)
+```typescript
+// ✅ REQUIRED - All components must follow this structure:
+/**
+ * Component Name
+ * Description of component purpose
+ * Built with shadcn/ui components
+ */
+
+import React from 'react';
+import { ComponentPrimitive } from '@radix-ui/react-component';
+import { cn } from '../../lib/utils';
+import { Card } from '../ui/card';
+import { Badge } from '../ui/badge';
+
+interface ComponentProps {
+  // Typed props
+}
+
+export const Component: React.FC<ComponentProps> = ({
+  className,
+  ...props
+}) => {
+  return (
+    <Card className={cn('base-styles', className)}>
+      {/* shadcn/ui components only */}
+    </Card>
+  );
+};
+```
+
+### 🛡️ PRE-COMMIT SHADCN/UI VALIDATION
+
+These checks run automatically before every commit:
+- All UI components must use shadcn/ui patterns
+- No inline styles allowed (`style={{}}`)
+- No direct className strings without `cn()` utility
+- All form controls must use shadcn/ui primitives
+- Component files must follow shadcn/ui structure
+
+### 📋 SHADCN/UI CODE REVIEW CHECKLIST
+
+Before completing any UI task:
+- [ ] Uses shadcn/ui components exclusively
+- [ ] All className uses cn() utility function
+- [ ] No inline styles present
+- [ ] Follows Radix UI primitive patterns
+- [ ] Component has proper forwardRef if needed
+- [ ] Uses CSS variables for theming
+- [ ] Accessible markup with proper ARIA attributes
+
+### 🎯 APPROVED SHADCN/UI COMPONENTS
+
+Only use these pre-approved shadcn/ui components:
+- `Card`, `CardContent`, `CardHeader`, `CardTitle`
+- `Button` with proper variants
+- `Badge` with semantic variants  
+- `Dialog`, `DialogContent`, `DialogHeader`
+- `Select`, `SelectContent`, `SelectItem`
+- `Progress` for progress indicators
+- `Slider` for range controls
+- `Tabs`, `TabsContent`, `TabsList`, `TabsTrigger`
+
+**Any new UI components MUST be created following shadcn/ui patterns in `/src/components/ui/` directory.**
+
+---
+
+_This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows AND enforces critical security standards AND shadcn/ui compliance._

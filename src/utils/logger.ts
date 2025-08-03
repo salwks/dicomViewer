@@ -8,7 +8,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  FATAL = 4
+  FATAL = 4,
 }
 
 export interface LogContext {
@@ -97,13 +97,16 @@ class Logger {
   /**
    * Medical operation logging with structured context
    */
-  medical(message: string, context: LogContext & {
-    operation: string;
-    imageId?: string;
-    studyInstanceUID?: string;
-    seriesInstanceUID?: string;
-    sopInstanceUID?: string;
-  }): void {
+  medical(
+    message: string,
+    context: LogContext & {
+      operation: string;
+      imageId?: string;
+      studyInstanceUID?: string;
+      seriesInstanceUID?: string;
+      sopInstanceUID?: string;
+    },
+  ): void {
     this.info(`[MEDICAL] ${message}`, context);
   }
 
@@ -195,12 +198,18 @@ class Logger {
    */
   private getLevelEmoji(level: LogLevel): string {
     switch (level) {
-      case LogLevel.DEBUG: return '🔍';
-      case LogLevel.INFO: return '📄';
-      case LogLevel.WARN: return '⚠️';
-      case LogLevel.ERROR: return '❌';
-      case LogLevel.FATAL: return '🚨';
-      default: return '📝';
+      case LogLevel.DEBUG:
+        return '🔍';
+      case LogLevel.INFO:
+        return '📄';
+      case LogLevel.WARN:
+        return '⚠️';
+      case LogLevel.ERROR:
+        return '❌';
+      case LogLevel.FATAL:
+        return '🚨';
+      default:
+        return '📝';
     }
   }
 
@@ -209,19 +218,21 @@ class Logger {
    */
   private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
     switch (level) {
-      // eslint-disable-next-line no-console
-      case LogLevel.DEBUG: return console.debug;
-      // eslint-disable-next-line no-console
-      case LogLevel.INFO: return console.info;
 
+      case LogLevel.DEBUG:
+        // eslint-disable-next-line no-console
+        return console.debug;
 
-      case LogLevel.WARN: return console.warn;
+      case LogLevel.INFO:
+        // eslint-disable-next-line no-console
+        return console.info;
+
+      case LogLevel.WARN:
+        return console.warn;
       case LogLevel.ERROR:
       case LogLevel.FATAL:
-
         return console.error;
       default:
-
         return console.log;
     }
   }
@@ -289,7 +300,8 @@ export const log = {
   error: (message: string, context?: LogContext, error?: Error) => logger.error(message, context, error),
   fatal: (message: string, context?: LogContext, error?: Error) => logger.fatal(message, context, error),
   medical: (message: string, context: LogContext & { operation: string }) => logger.medical(message, context),
-  performance: (message: string, duration: number, context?: LogContext) => logger.performance(message, duration, context),
+  performance: (message: string, duration: number, context?: LogContext) =>
+    logger.performance(message, duration, context),
   security: (message: string, context?: LogContext, error?: Error) => logger.security(message, context, error),
   interaction: (message: string, context?: LogContext) => logger.interaction(message, context),
 };
