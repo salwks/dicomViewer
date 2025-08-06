@@ -50,7 +50,7 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('viewer');
 
-  const handleSeriesAssign = useCallback((seriesUID: string, viewportId: string) => {
+  const handleSeriesAssign = useCallback((seriesUID: string, _viewportId: string) => {
     // Find the series index in seriesData
     const seriesIndex = seriesData.findIndex(series =>
       series.seriesInstanceUID === seriesUID,
@@ -60,6 +60,14 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
       handleSeriesSelect(seriesIndex);
     }
   }, [seriesData, handleSeriesSelect]);
+
+  // Safe series data access helper
+  const getSelectedSeriesUID = useCallback(() => {
+    if (seriesData.length === 0 || selectedSeries < 0 || selectedSeries >= seriesData.length) {
+      return undefined;
+    }
+    return seriesData[selectedSeries]?.seriesInstanceUID;
+  }, [seriesData, selectedSeries]);
 
   return (
     <DragDropProvider onSeriesAssign={handleSeriesAssign}>
@@ -76,7 +84,7 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
             </div>
 
             <div className="flex-1 overflow-hidden">
-              <TabsContent value="viewer" className="h-full m-0 p-4">
+              <TabsContent value="viewer" className="h-full m-0">
                 <div className="space-y-4">
                   {/* Mode Selector */}
                   <div>
@@ -90,7 +98,7 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
                 </div>
               </TabsContent>
 
-              <TabsContent value="studies" className="h-full m-0 p-4">
+              <TabsContent value="studies" className="h-full m-0">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-sm font-medium text-foreground">Studies</h3>
@@ -119,9 +127,8 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
 
               <TabsContent value="tools" className="h-full m-0">
                 <ToolPanel
-                  activeTool={activeTool}
+                  activeTool={activeTool as any}
                   onToolSelect={handleToolSelect}
-                  comparisonMode={false}
                 />
               </TabsContent>
             </div>
@@ -147,31 +154,34 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
           </div>
 
           {/* Viewer Content */}
-          <div className="flex-1 bg-muted/20">
-            {seriesData.length === 0 ? (
-            // Empty State
-              <div className="flex items-center justify-center h-full">
+          <div className="flex-1 bg-muted/20 relative">
+            {/* Empty State Overlay - only shown when no data, doesn't destroy DicomViewer */}
+            {seriesData.length === 0 && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
                 <div className="text-center">
                   <div className="text-6xl mb-4">🏥</div>
                   <h2 className="text-xl font-semibold mb-2 text-foreground">Medical Image Viewer</h2>
                   <p className="text-muted-foreground mb-6">Load DICOM files to start viewing and analyzing medical images</p>
                   <Button onClick={handleLoadFilesClick} size="lg">
-                  Load DICOM Files
+                    Load DICOM Files
                   </Button>
                 </div>
               </div>
-            ) : (
-            // Single Viewport
-              <div className="h-full bg-muted/20">
-                <DicomViewer
-                  ref={dicomViewerRef}
-                  seriesData={seriesData}
-                  selectedSeries={selectedSeries}
-                  seriesInstanceUID={seriesData[selectedSeries]?.seriesInstanceUID}
-                  activeTool={activeTool}
-                />
-              </div>
             )}
+
+            {/* CRITICAL: DicomViewer always exists, never destroyed by conditional rendering */}
+            <div
+              className="h-full"
+              style={{
+                visibility: seriesData.length === 0 ? 'hidden' : 'visible',
+              }}
+            >
+              <DicomViewer
+                key="stable-dicom-viewer" // CRITICAL: Stable key prevents remount
+                ref={dicomViewerRef}
+                seriesInstanceUID={getSelectedSeriesUID()}
+              />
+            </div>
           </div>
         </div>
       </div>
