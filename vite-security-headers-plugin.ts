@@ -80,8 +80,24 @@ export function securityHeaders(): Plugin {
     name: 'security-headers',
     configureServer(server) {
       server.middlewares.use((_req, res, next) => {
+        // Modify CSP for development environment to allow test URLs
+        const isDevelopment = process.env.NODE_ENV === 'development' || server.config.command === 'serve';
+        let cspConfig = { ...medicalCSPConfig };
+        
+        if (isDevelopment) {
+          // Add test URLs for development testing
+          cspConfig = {
+            ...cspConfig,
+            'connect-src': [
+              ...medicalCSPConfig['connect-src'],
+              'http://test-registration-check/', // Allow wadouri test URL
+              'wadouri://', // Allow wadouri protocol testing
+            ],
+          };
+        }
+        
         // Content Security Policy - Medical Grade
-        res.setHeader('Content-Security-Policy', generateCSPString(medicalCSPConfig));
+        res.setHeader('Content-Security-Policy', generateCSPString(cspConfig));
         
         // Additional security headers for medical applications
         res.setHeader('X-Content-Type-Options', 'nosniff');

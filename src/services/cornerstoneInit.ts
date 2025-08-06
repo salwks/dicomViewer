@@ -90,72 +90,37 @@ async function initializeDicomImageLoaders(): Promise<void> {
     const cornerstone = await import('@cornerstonejs/core');
     const dicomParser = await import('dicom-parser');
 
-    // CRITICAL: Completely skip codec initialization in development
+    // CRITICAL: Configure codec behavior for development without overriding ES module properties
     if (import.meta.env.DEV) {
-      log.info('Development mode: Codecs completely disabled to prevent loading errors');
+      log.info('Development mode: Configuring codecs via official APIs to prevent loading errors');
 
-      // Override all codec-related functions to prevent any codec loading
       const loader = cornerstoneWADOImageLoader as any;
 
-      // Block any codec initialization attempts - use try/catch for readonly properties
+      // Try to use official configuration methods instead of property override
       try {
-        if (loader.codecManager) {
-          Object.defineProperty(loader.codecManager, 'initialize', {
-            value: () => Promise.resolve(),
-            writable: true,
-            configurable: true,
-          });
-          Object.defineProperty(loader.codecManager, 'destroy', {
-            value: () => {},
-            writable: true,
-            configurable: true,
-          });
-        }
-      } catch (codecError) {
-        log.warn('Could not override codec manager (readonly properties)', { codecError });
-      }
-
-      // Override decode function to handle uncompressed images only - use try/catch
-      try {
-        if (loader.decodeImageFrame) {
-          // Store original decode function (currently unused but available for fallback)
-          // const _originalDecode = loader.decodeImageFrame;
-          Object.defineProperty(loader, 'decodeImageFrame', {
-            value(_imageFrame: any, transferSyntaxUID: string, pixelData: any, _options: any) {
-              // Only support uncompressed transfer syntaxes
-              if (transferSyntaxUID === '1.2.840.10008.1.2' ||      // Implicit VR Little Endian
-                  transferSyntaxUID === '1.2.840.10008.1.2.1' ||    // Explicit VR Little Endian
-                  transferSyntaxUID === '1.2.840.10008.1.2.2') {    // Explicit VR Big Endian
-                log.info('Processing uncompressed DICOM image', { transferSyntaxUID });
-                return Promise.resolve(pixelData);
-              }
-
-              // Reject compressed images in development
-              const error = new Error(`Compressed DICOM images not supported in development mode (Transfer Syntax: ${transferSyntaxUID})`);
-              log.warn('Compressed DICOM rejected in development mode', { transferSyntaxUID, error });
-              return Promise.reject(error);
+        // Look for official configuration options
+        if (loader.configure && typeof loader.configure === 'function') {
+          loader.configure({
+            useWebWorkers: false,
+            initializeCodecs: false,
+            enableCompressionSupport: false,
+            decodeConfig: {
+              useWebWorkers: false,
             },
-            writable: true,
-            configurable: true,
           });
+          log.info('DICOM loader configured via official API');
+        } else if (loader.webWorkerManager) {
+          // Disable web workers if manager exists
+          try {
+            loader.webWorkerManager.terminate();
+            log.info('Web workers terminated to prevent codec loading');
+          } catch {
+            log.info('Web worker termination not needed or already done');
+          }
         }
-      } catch (decodeError) {
-        log.warn('Could not override decode function (readonly property)', { decodeError });
-      }
-
-      // Block any codec registration attempts
-      try {
-        if (loader.registerCodecs) {
-          Object.defineProperty(loader, 'registerCodecs', {
-            value: () => {
-              log.info('Codec registration blocked in development mode');
-            },
-            writable: true,
-            configurable: true,
-          });
-        }
-      } catch (registrationError) {
-        log.warn('Could not override codec registration (readonly property)', { registrationError });
+      } catch (configError) {
+        log.warn('Could not configure DICOM loader via official API - codecs may still load', { configError });
+        // Don't attempt to override readonly properties - just log and continue
       }
     }
 
