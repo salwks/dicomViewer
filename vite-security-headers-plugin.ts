@@ -85,13 +85,12 @@ export function securityHeaders(): Plugin {
         let cspConfig = { ...medicalCSPConfig };
         
         if (isDevelopment) {
-          // Add test URLs for development testing
+          // Add development-specific URLs if needed
           cspConfig = {
             ...cspConfig,
             'connect-src': [
               ...medicalCSPConfig['connect-src'],
-              'http://test-registration-check/', // Allow wadouri test URL
-              'wadouri://', // Allow wadouri protocol testing
+              // Removed test URLs - verification now uses function checks instead of network requests
             ],
           };
         }

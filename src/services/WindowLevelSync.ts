@@ -7,6 +7,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 export interface WindowLevelState {
   windowWidth: number;
@@ -68,12 +69,12 @@ const DEFAULT_PRESETS: WindowLevelPreset[] = [
   { name: 'Liver', modality: 'CT', windowWidth: 150, windowCenter: 30 },
   { name: 'Lung', modality: 'CT', windowWidth: 1500, windowCenter: -600 },
   { name: 'Mediastinum', modality: 'CT', windowWidth: 350, windowCenter: 50 },
-  
+
   // MR Presets
   { name: 'T1', modality: 'MR', windowWidth: 600, windowCenter: 300 },
   { name: 'T2', modality: 'MR', windowWidth: 1000, windowCenter: 500 },
   { name: 'FLAIR', modality: 'MR', windowWidth: 1200, windowCenter: 600 },
-  
+
   // CR/DR Presets
   { name: 'Chest X-Ray', modality: 'CR', windowWidth: 2000, windowCenter: 1000 },
   { name: 'Chest X-Ray', modality: 'DX', windowWidth: 2000, windowCenter: 1000 },
@@ -126,7 +127,7 @@ export class WindowLevelSync extends EventEmitter {
       debounceDelay?: number;
       tolerance?: number;
       masterViewportId?: string;
-    } = {}
+    } = {},
   ): string {
     if (this.syncGroups.size >= this.config.maxSyncGroups) {
       throw new Error('Maximum number of sync groups reached');
@@ -157,7 +158,7 @@ export class WindowLevelSync extends EventEmitter {
 
     log.info('Window/level sync group created', {
       component: 'WindowLevelSync',
-      metadata: { 
+      metadata: {
         groupId,
         name,
         viewportCount: viewportIds.length,
@@ -204,7 +205,7 @@ export class WindowLevelSync extends EventEmitter {
 
     if (!group.viewportIds.includes(viewportId)) {
       group.viewportIds.push(viewportId);
-      
+
       // Initialize viewport state if needed
       if (!this.viewportStates.has(viewportId)) {
         this.initializeViewportState(viewportId);
@@ -275,7 +276,7 @@ export class WindowLevelSync extends EventEmitter {
       triggerSync?: boolean;
       skipDebounce?: boolean;
       sourceGroup?: string;
-    } = {}
+    } = {},
   ): void {
     const currentState = this.viewportStates.get(viewportId);
     if (!currentState) {
@@ -320,16 +321,13 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Sync window/level from source viewport to group members (debounced)
    */
-  private debouncedSyncFromViewport(
-    sourceViewportId: string,
-    sourceGroupId?: string
-  ): void {
+  private debouncedSyncFromViewport(sourceViewportId: string, sourceGroupId?: string): void {
     // Find groups containing this viewport
     const relevantGroups = this.findGroupsForViewport(sourceViewportId, sourceGroupId);
 
     relevantGroups.forEach(group => {
       const timerId = `${group.id}-${sourceViewportId}`;
-      
+
       // Clear existing timer
       const existingTimer = this.debounceTimers.get(timerId);
       if (existingTimer) {
@@ -349,10 +347,7 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Sync window/level from source viewport to group members (immediate)
    */
-  private syncFromViewport(
-    sourceViewportId: string,
-    sourceGroupId?: string
-  ): void {
+  private syncFromViewport(sourceViewportId: string, sourceGroupId?: string): void {
     const sourceState = this.viewportStates.get(sourceViewportId);
     if (!sourceState) return;
 
@@ -385,11 +380,7 @@ export class WindowLevelSync extends EventEmitter {
           }
 
           // Calculate synchronized state
-          const syncedState = this.calculateSyncedState(
-            sourceState,
-            targetState,
-            group
-          );
+          const syncedState = this.calculateSyncedState(sourceState, targetState, group);
 
           if (syncedState) {
             // Update target viewport state (without triggering sync)
@@ -415,7 +406,6 @@ export class WindowLevelSync extends EventEmitter {
         groupCount: relevantGroups.length,
         operationId,
       });
-
     } finally {
       this.activeSyncOperations.delete(sourceViewportId);
     }
@@ -427,18 +417,18 @@ export class WindowLevelSync extends EventEmitter {
   private calculateSyncedState(
     sourceState: WindowLevelState,
     targetState: WindowLevelState,
-    group: WindowLevelSyncGroup
+    group: WindowLevelSyncGroup,
   ): Partial<WindowLevelState> | null {
     switch (group.syncMode) {
       case 'exact':
         return this.calculateExactSync(sourceState, targetState);
-      
+
       case 'relative':
         return this.calculateRelativeSync(sourceState, targetState, group);
-      
+
       case 'preset-only':
         return this.calculatePresetSync(sourceState, targetState);
-      
+
       default:
         return null;
     }
@@ -447,10 +437,7 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Exact synchronization - copy values directly
    */
-  private calculateExactSync(
-    sourceState: WindowLevelState,
-    targetState: WindowLevelState
-  ): Partial<WindowLevelState> {
+  private calculateExactSync(sourceState: WindowLevelState, _targetState: WindowLevelState): Partial<WindowLevelState> {
     return {
       windowWidth: sourceState.windowWidth,
       windowCenter: sourceState.windowCenter,
@@ -468,13 +455,10 @@ export class WindowLevelSync extends EventEmitter {
   private calculateRelativeSync(
     sourceState: WindowLevelState,
     targetState: WindowLevelState,
-    group: WindowLevelSyncGroup
+    group: WindowLevelSyncGroup,
   ): Partial<WindowLevelState> | null {
     // For relative sync, we need to normalize based on modality characteristics
-    const normalizationFactor = this.calculateNormalizationFactor(
-      sourceState.modality,
-      targetState.modality
-    );
+    const normalizationFactor = this.calculateNormalizationFactor(sourceState.modality, targetState.modality);
 
     if (normalizationFactor === null) {
       // Cannot normalize between these modalities
@@ -485,8 +469,9 @@ export class WindowLevelSync extends EventEmitter {
     const scaledCenter = sourceState.windowCenter * normalizationFactor;
 
     // Check tolerance
-    const widthDiff = Math.abs(scaledWidth - targetState.windowWidth) / targetState.windowWidth * 100;
-    const centerDiff = Math.abs(scaledCenter - targetState.windowCenter) / Math.abs(targetState.windowCenter || 1) * 100;
+    const widthDiff = (Math.abs(scaledWidth - targetState.windowWidth) / targetState.windowWidth) * 100;
+    const centerDiff =
+      (Math.abs(scaledCenter - targetState.windowCenter) / Math.abs(targetState.windowCenter || 1)) * 100;
 
     if (widthDiff > group.tolerance || centerDiff > group.tolerance) {
       return {
@@ -506,17 +491,14 @@ export class WindowLevelSync extends EventEmitter {
    */
   private calculatePresetSync(
     sourceState: WindowLevelState,
-    targetState: WindowLevelState
+    targetState: WindowLevelState,
   ): Partial<WindowLevelState> | null {
     if (!sourceState.isPreset || !sourceState.presetName) {
       return null; // Only sync preset changes
     }
 
     // Find matching preset for target modality
-    const targetPreset = this.findPresetForModality(
-      sourceState.presetName,
-      targetState.modality
-    );
+    const targetPreset = this.findPresetForModality(sourceState.presetName, targetState.modality);
 
     if (targetPreset) {
       return {
@@ -536,10 +518,7 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Find sync groups containing a viewport
    */
-  private findGroupsForViewport(
-    viewportId: string,
-    preferredGroupId?: string
-  ): WindowLevelSyncGroup[] {
+  private findGroupsForViewport(viewportId: string, preferredGroupId?: string): WindowLevelSyncGroup[] {
     const groups: WindowLevelSyncGroup[] = [];
 
     // If preferred group specified, use it first
@@ -564,10 +543,7 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Calculate normalization factor between modalities
    */
-  private calculateNormalizationFactor(
-    sourceModality: string,
-    targetModality: string
-  ): number | null {
+  private calculateNormalizationFactor(sourceModality: string, targetModality: string): number | null {
     // Same modality - no normalization needed
     if (sourceModality === targetModality) {
       return 1.0;
@@ -575,29 +551,30 @@ export class WindowLevelSync extends EventEmitter {
 
     // Define modality relationships and scaling factors
     const modalityScales: Record<string, Record<string, number>> = {
-      'CT': {
-        'MR': 0.5,  // CT to MR
-        'CR': 2.0,  // CT to CR
-        'DX': 2.0,  // CT to DX
+      CT: {
+        MR: 0.5, // CT to MR
+        CR: 2.0, // CT to CR
+        DX: 2.0, // CT to DX
       },
-      'MR': {
-        'CT': 2.0,  // MR to CT
-        'CR': 4.0,  // MR to CR
-        'DX': 4.0,  // MR to DX
+      MR: {
+        CT: 2.0, // MR to CT
+        CR: 4.0, // MR to CR
+        DX: 4.0, // MR to DX
       },
-      'CR': {
-        'CT': 0.5,  // CR to CT
-        'MR': 0.25, // CR to MR
-        'DX': 1.0,  // CR to DX
+      CR: {
+        CT: 0.5, // CR to CT
+        MR: 0.25, // CR to MR
+        DX: 1.0, // CR to DX
       },
-      'DX': {
-        'CT': 0.5,  // DX to CT
-        'MR': 0.25, // DX to MR
-        'CR': 1.0,  // DX to CR
+      DX: {
+        CT: 0.5, // DX to CT
+        MR: 0.25, // DX to MR
+        CR: 1.0, // DX to CR
       },
     };
 
-    return modalityScales[sourceModality]?.[targetModality] || null;
+    const scales = safePropertyAccess(modalityScales, sourceModality);
+    return scales ? safePropertyAccess(scales, targetModality) || null : null;
   }
 
   // ===== Preset Management =====
@@ -623,10 +600,11 @@ export class WindowLevelSync extends EventEmitter {
     }
 
     const modalityPresets = this.presets.get(preset.modality)!;
-    
+
     // Replace if preset with same name exists
     const existingIndex = modalityPresets.findIndex(p => p.name === preset.name);
     if (existingIndex > -1) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: existingIndex is validated array index from findIndex
       modalityPresets[existingIndex] = preset;
     } else {
       modalityPresets.push(preset);
@@ -641,10 +619,7 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Find preset for modality
    */
-  private findPresetForModality(
-    presetName: string,
-    modality: string
-  ): WindowLevelPreset | null {
+  private findPresetForModality(presetName: string, modality: string): WindowLevelPreset | null {
     const modalityPresets = this.presets.get(modality);
     if (!modalityPresets) return null;
 
@@ -661,17 +636,13 @@ export class WindowLevelSync extends EventEmitter {
   /**
    * Apply preset to viewport
    */
-  public applyPreset(
-    viewportId: string,
-    presetName: string,
-    modality?: string
-  ): boolean {
+  public applyPreset(viewportId: string, presetName: string, modality?: string): boolean {
     const viewport = this.viewportStates.get(viewportId);
     if (!viewport) return false;
 
     const targetModality = modality || viewport.modality;
     const preset = this.findPresetForModality(presetName, targetModality);
-    
+
     if (!preset) {
       log.warn('Preset not found', {
         component: 'WindowLevelSync',

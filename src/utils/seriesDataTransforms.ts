@@ -5,6 +5,7 @@
 
 import { DICOMStudy, DICOMSeries, SeriesManagementState } from '../types/dicom';
 import { log } from './logger';
+import { safePropertySet } from '../lib/utils';
 
 export interface SeriesFilterOptions {
   modality?: string;
@@ -68,10 +69,11 @@ export const filterSeries = (
   // Filter by search term (description, modality, study description)
   if (options.searchTerm) {
     const searchLower = options.searchTerm.toLowerCase();
-    filtered = filtered.filter(s =>
-      s.seriesDescription.toLowerCase().includes(searchLower) ||
-      s.modality.toLowerCase().includes(searchLower) ||
-      (s.studyDescription && s.studyDescription.toLowerCase().includes(searchLower)),
+    filtered = filtered.filter(
+      s =>
+        s.seriesDescription.toLowerCase().includes(searchLower) ||
+        s.modality.toLowerCase().includes(searchLower) ||
+        (s.studyDescription && s.studyDescription.toLowerCase().includes(searchLower)),
     );
   }
 
@@ -152,12 +154,25 @@ export const sortSeries = (
  * Group series by study
  */
 export const groupSeriesByStudy = (
-  series: (DICOMSeries & { studyInstanceUID: string; studyDescription?: string; patientName?: string; studyDate?: string })[],
+  series: (DICOMSeries & {
+    studyInstanceUID: string;
+    studyDescription?: string;
+    patientName?: string;
+    studyDate?: string;
+  })[],
   studies: DICOMStudy[],
-): Map<string, {
-  study: DICOMStudy;
-  series: (DICOMSeries & { studyInstanceUID: string; studyDescription?: string; patientName?: string; studyDate?: string })[];
-}> => {
+): Map<
+  string,
+  {
+    study: DICOMStudy;
+    series: (DICOMSeries & {
+      studyInstanceUID: string;
+      studyDescription?: string;
+      patientName?: string;
+      studyDate?: string;
+    })[];
+  }
+> => {
   const grouped = new Map();
 
   studies.forEach(study => {
@@ -227,7 +242,9 @@ export const calculateStudyStatistics = (studies: DICOMStudy[]): StudyStatistics
 /**
  * Find series conflicts (same series in multiple studies)
  */
-export const findSeriesConflicts = (studies: DICOMStudy[]): {
+export const findSeriesConflicts = (
+  studies: DICOMStudy[],
+): {
   conflictingSeries: string[];
   conflicts: Record<string, string[]>; // seriesUID -> studyUIDs
 } => {
@@ -249,7 +266,7 @@ export const findSeriesConflicts = (studies: DICOMStudy[]): {
 
   seriesStudyMap.forEach((studyUIDs, seriesUID) => {
     if (studyUIDs.length > 1) {
-      conflicts[seriesUID] = studyUIDs;
+      safePropertySet(conflicts, seriesUID, studyUIDs);
       conflictingSeries.push(seriesUID);
     }
   });
@@ -279,6 +296,7 @@ export const mergeDuplicateSeries = (studies: DICOMStudy[]): DICOMStudy[] => {
 
   // For each conflicting series, keep it only in the first study (by date or UID)
   conflicts.conflictingSeries.forEach(seriesUID => {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: seriesUID from validated conflict data
     const studyUIDs = conflicts.conflicts[seriesUID];
 
     // Sort studies by date to determine which one should keep the series
@@ -309,7 +327,9 @@ export const mergeDuplicateSeries = (studies: DICOMStudy[]): DICOMStudy[] => {
 /**
  * Validate series data integrity
  */
-export const validateSeriesData = (studies: DICOMStudy[]): {
+export const validateSeriesData = (
+  studies: DICOMStudy[],
+): {
   valid: boolean;
   errors: string[];
   warnings: string[];
@@ -342,7 +362,9 @@ export const validateSeriesData = (studies: DICOMStudy[]): {
       }
 
       if (series.imageIds.length !== series.numberOfInstances) {
-        warnings.push(`Series ${series.seriesInstanceUID} imageIds count (${series.imageIds.length}) doesn't match numberOfInstances (${series.numberOfInstances})`);
+        warnings.push(
+          `Series ${series.seriesInstanceUID} imageIds count (${series.imageIds.length}) doesn't match numberOfInstances (${series.numberOfInstances})`,
+        );
       }
     });
   });
@@ -391,20 +413,24 @@ export const createSeriesManagementState = (
  */
 export const exportSeriesData = (studies: DICOMStudy[], format: 'json' | 'csv' = 'json'): string => {
   if (format === 'csv') {
-    const rows = ['Study UID,Study Description,Patient Name,Study Date,Series UID,Series Description,Modality,Number of Images'];
+    const rows = [
+      'Study UID,Study Description,Patient Name,Study Date,Series UID,Series Description,Modality,Number of Images',
+    ];
 
     studies.forEach(study => {
       study.series.forEach(series => {
-        rows.push([
-          study.studyInstanceUID,
-          study.studyDescription || '',
-          study.patientName || '',
-          study.studyDate || '',
-          series.seriesInstanceUID,
-          series.seriesDescription,
-          series.modality,
-          series.numberOfInstances.toString(),
-        ].join(','));
+        rows.push(
+          [
+            study.studyInstanceUID,
+            study.studyDescription || '',
+            study.patientName || '',
+            study.studyDate || '',
+            series.seriesInstanceUID,
+            series.seriesDescription,
+            series.modality,
+            series.numberOfInstances.toString(),
+          ].join(','),
+        );
       });
     });
 

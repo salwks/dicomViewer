@@ -5,6 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
+import { safePropertyAccess, safePropertySet } from '../lib/utils';
 import {
   DICOMStudy,
   DICOMSeries,
@@ -28,11 +29,41 @@ export const DEFAULT_SERIES_MANAGEMENT_CONFIG: SeriesManagementConfig = {
   persistState: true,
   sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
   defaultColorScheme: [
-    { studyInstanceUID: '', primaryColor: '#3b82f6', secondaryColor: '#dbeafe', accentColor: '#1d4ed8', textColor: '#1e40af' }, // Blue
-    { studyInstanceUID: '', primaryColor: '#10b981', secondaryColor: '#d1fae5', accentColor: '#059669', textColor: '#047857' }, // Green
-    { studyInstanceUID: '', primaryColor: '#f59e0b', secondaryColor: '#fef3c7', accentColor: '#d97706', textColor: '#b45309' }, // Amber
-    { studyInstanceUID: '', primaryColor: '#ef4444', secondaryColor: '#fee2e2', accentColor: '#dc2626', textColor: '#b91c1c' }, // Red
-    { studyInstanceUID: '', primaryColor: '#8b5cf6', secondaryColor: '#ede9fe', accentColor: '#7c3aed', textColor: '#6d28d9' }, // Violet
+    {
+      studyInstanceUID: '',
+      primaryColor: '#3b82f6',
+      secondaryColor: '#dbeafe',
+      accentColor: '#1d4ed8',
+      textColor: '#1e40af',
+    }, // Blue
+    {
+      studyInstanceUID: '',
+      primaryColor: '#10b981',
+      secondaryColor: '#d1fae5',
+      accentColor: '#059669',
+      textColor: '#047857',
+    }, // Green
+    {
+      studyInstanceUID: '',
+      primaryColor: '#f59e0b',
+      secondaryColor: '#fef3c7',
+      accentColor: '#d97706',
+      textColor: '#b45309',
+    }, // Amber
+    {
+      studyInstanceUID: '',
+      primaryColor: '#ef4444',
+      secondaryColor: '#fee2e2',
+      accentColor: '#dc2626',
+      textColor: '#b91c1c',
+    }, // Red
+    {
+      studyInstanceUID: '',
+      primaryColor: '#8b5cf6',
+      secondaryColor: '#ede9fe',
+      accentColor: '#7c3aed',
+      textColor: '#6d28d9',
+    }, // Violet
   ],
 };
 
@@ -92,17 +123,18 @@ export class SeriesManagementService extends EventEmitter {
       }
 
       // Check if study already exists
-      const existingIndex = this.managementState.studies.findIndex(
-        s => s.studyInstanceUID === study.studyInstanceUID,
-      );
+      const existingIndex = this.managementState.studies.findIndex(s => s.studyInstanceUID === study.studyInstanceUID);
 
       if (existingIndex >= 0) {
         // Update existing study
-        this.managementState.studies[existingIndex] = {
-          ...this.managementState.studies[existingIndex],
-          ...study,
-          loadingState: 'loaded',
-        };
+        const existingStudy = safePropertyAccess(this.managementState.studies, existingIndex);
+        if (existingStudy) {
+          safePropertySet(this.managementState.studies, existingIndex, {
+            ...existingStudy,
+            ...study,
+            loadingState: 'loaded',
+          });
+        }
       } else {
         // Add new study
         const enhancedStudy: DICOMStudy = {
@@ -130,7 +162,6 @@ export class SeriesManagementService extends EventEmitter {
         component: 'SeriesManagementService',
         metadata: { studyUID: study.studyInstanceUID, totalStudies: this.managementState.studies.length },
       });
-
     } catch (error) {
       log.error('Failed to load study', {
         component: 'SeriesManagementService',
@@ -172,18 +203,20 @@ export class SeriesManagementService extends EventEmitter {
 
       return null;
     } catch (error) {
-      log.error('Failed to load series', {
-        component: 'SeriesManagementService',
-        metadata: { seriesUID: seriesInstanceUID },
-      }, error as Error);
+      log.error(
+        'Failed to load series',
+        {
+          component: 'SeriesManagementService',
+          metadata: { seriesUID: seriesInstanceUID },
+        },
+        error as Error,
+      );
       return null;
     }
   }
 
   public unloadStudy(studyInstanceUID: string): void {
-    const studyIndex = this.managementState.studies.findIndex(
-      s => s.studyInstanceUID === studyInstanceUID,
-    );
+    const studyIndex = this.managementState.studies.findIndex(s => s.studyInstanceUID === studyInstanceUID);
 
     if (studyIndex === -1) {
       log.warn('Attempted to unload non-existent study', {
@@ -201,13 +234,15 @@ export class SeriesManagementService extends EventEmitter {
 
     // Update active study if needed
     if (this.managementState.selectedStudy === studyInstanceUID) {
-      this.managementState.selectedStudy = this.managementState.studies.length > 0
-        ? this.managementState.studies[0].studyInstanceUID
-        : null;
+      this.managementState.selectedStudy =
+        this.managementState.studies.length > 0 ? this.managementState.studies[0].studyInstanceUID : null;
     }
 
     // Remove color mapping
-    delete this.managementState.colorMappings[studyInstanceUID];
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [studyInstanceUID]: _removed, ...remainingColorMappings } = this.managementState.colorMappings;
+    this.managementState.colorMappings = remainingColorMappings;
 
     this.updateSession();
     this.emit('studyUnloaded', removedStudy);
@@ -244,7 +279,7 @@ export class SeriesManagementService extends EventEmitter {
         studyInstanceUID: series.studyInstanceUID,
       };
 
-      this.managementState.viewportAssignments[viewportId] = seriesInstanceUID;
+      safePropertySet(this.managementState.viewportAssignments, viewportId, seriesInstanceUID);
 
       // Update session
       if (this.currentSession) {
@@ -260,7 +295,6 @@ export class SeriesManagementService extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
       log.error('Failed to assign series to viewport', {
         component: 'SeriesManagementService',
@@ -275,10 +309,13 @@ export class SeriesManagementService extends EventEmitter {
   }
 
   public clearViewportAssignment(viewportId: string): void {
-    const currentSeriesUID = this.managementState.viewportAssignments[viewportId];
+    const currentSeriesUID = safePropertyAccess(this.managementState.viewportAssignments, viewportId);
 
     if (currentSeriesUID) {
-      delete this.managementState.viewportAssignments[viewportId];
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [viewportId]: _removed, ...remainingAssignments } = this.managementState.viewportAssignments;
+      this.managementState.viewportAssignments = remainingAssignments;
 
       if (this.currentSession) {
         this.currentSession.viewportAssignments.delete(viewportId);
@@ -314,23 +351,28 @@ export class SeriesManagementService extends EventEmitter {
   // ===== Color Management =====
 
   private assignColorScheme(studyInstanceUID: string): void {
-    if (this.managementState.colorMappings[studyInstanceUID]) {
+    if (safePropertyAccess(this.managementState.colorMappings, studyInstanceUID)) {
       return; // Already has color assigned
     }
 
-    const colorScheme = this.config.defaultColorScheme[this.colorAssignmentIndex % this.config.defaultColorScheme.length];
-    this.managementState.colorMappings[studyInstanceUID] = colorScheme.primaryColor;
+    const colorScheme = safePropertyAccess(
+      this.config.defaultColorScheme,
+      this.colorAssignmentIndex % this.config.defaultColorScheme.length,
+    );
+    if (colorScheme) {
+      safePropertySet(this.managementState.colorMappings, studyInstanceUID, colorScheme.primaryColor);
+    }
 
     this.colorAssignmentIndex++;
 
     log.info('Color scheme assigned to study', {
       component: 'SeriesManagementService',
-      metadata: { studyInstanceUID, color: colorScheme.primaryColor },
+      metadata: { studyInstanceUID, color: colorScheme?.primaryColor },
     });
   }
 
   public setStudyColorScheme(studyInstanceUID: string, colorScheme: StudyColorScheme): void {
-    this.managementState.colorMappings[studyInstanceUID] = colorScheme.primaryColor;
+    safePropertySet(this.managementState.colorMappings, studyInstanceUID, colorScheme.primaryColor);
 
     this.emit('colorSchemeChanged', { studyInstanceUID, colorScheme });
     this.emit('stateChanged', this.managementState);
@@ -389,13 +431,13 @@ export class SeriesManagementService extends EventEmitter {
       study.series.map(series => ({
         ...series,
         studyInstanceUID: study.studyInstanceUID,
-        studyColor: this.managementState.colorMappings[study.studyInstanceUID],
+        studyColor: safePropertyAccess(this.managementState.colorMappings, study.studyInstanceUID),
       })),
     );
   }
 
   public getAssignedSeries(viewportId: string): (DICOMSeries & { studyInstanceUID: string }) | null {
-    const seriesUID = this.managementState.viewportAssignments[viewportId];
+    const seriesUID = safePropertyAccess(this.managementState.viewportAssignments, viewportId);
     return seriesUID ? this.findSeries(seriesUID) : null;
   }
 
@@ -479,17 +521,18 @@ export class SeriesManagementService extends EventEmitter {
     try {
       const stateToStore = {
         managementState: this.managementState,
-        session: this.currentSession ? {
-          ...this.currentSession,
-          viewportAssignments: Array.from(this.currentSession.viewportAssignments.entries()),
-          colorSchemes: Array.from(this.currentSession.colorSchemes.entries()),
-          loadedSeries: Array.from(this.currentSession.loadedSeries),
-        } : null,
+        session: this.currentSession
+          ? {
+            ...this.currentSession,
+            viewportAssignments: Array.from(this.currentSession.viewportAssignments.entries()),
+            colorSchemes: Array.from(this.currentSession.colorSchemes.entries()),
+            loadedSeries: Array.from(this.currentSession.loadedSeries),
+          }
+          : null,
         timestamp: new Date().toISOString(),
       };
 
       localStorage.setItem('seriesManagementState', JSON.stringify(stateToStore));
-
     } catch (error) {
       log.error('Failed to persist state', {
         component: 'SeriesManagementService',
@@ -533,7 +576,6 @@ export class SeriesManagementService extends EventEmitter {
         component: 'SeriesManagementService',
         metadata: { studyCount: this.managementState.studies.length },
       });
-
     } catch (error) {
       log.error('Failed to load persisted state', {
         component: 'SeriesManagementService',

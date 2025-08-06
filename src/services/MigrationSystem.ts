@@ -7,6 +7,7 @@
 import { EventEmitter } from 'events';
 import { secureStorage } from '../security/secureStorage';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 import { MigrationData } from '../types';
 
 export interface MigrationConfig {
@@ -111,10 +112,14 @@ export class MigrationSystem extends EventEmitter {
 
       return this.compareVersions(storedVersion, this.config.currentVersion) < 0;
     } catch (error) {
-      log.error('Failed to check migration status', {
-        component: 'MigrationSystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to check migration status',
+        {
+          component: 'MigrationSystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -123,7 +128,7 @@ export class MigrationSystem extends EventEmitter {
    * Create migration plan
    */
   public async createMigrationPlan(fromVersion?: string): Promise<MigrationPlan> {
-    const sourceVersion = fromVersion || await this.getStoredVersion();
+    const sourceVersion = fromVersion || (await this.getStoredVersion());
     const targetVersion = this.config.currentVersion;
 
     const applicableMigrations = this.findMigrationPath(sourceVersion, targetVersion);
@@ -189,7 +194,8 @@ export class MigrationSystem extends EventEmitter {
 
       // Execute migrations in order
       for (let i = 0; i < plan.migrations.length; i++) {
-        const migration = plan.migrations[i];
+        const migration = safePropertyAccess(plan.migrations, i);
+        if (!migration) continue;
 
         try {
           this.emit('migration-step-started', migration, i + 1, plan.totalSteps);
@@ -243,23 +249,26 @@ export class MigrationSystem extends EventEmitter {
       });
 
       return result;
-
     } catch (error) {
       result.errors.push((error as Error).message);
       result.duration = Date.now() - startTime;
 
       this.emit('migration-failed', result, error as Error);
 
-      log.error('Migration failed', {
-        component: 'MigrationSystem',
-        metadata: {
-          fromVersion,
-          toVersion,
-          migrationsAttempted: result.migrationsApplied.length,
-          duration: result.duration,
-          error: (error as Error).message,
+      log.error(
+        'Migration failed',
+        {
+          component: 'MigrationSystem',
+          metadata: {
+            fromVersion,
+            toVersion,
+            migrationsAttempted: result.migrationsApplied.length,
+            duration: result.duration,
+            error: (error as Error).message,
+          },
         },
-      }, error as Error);
+        error as Error,
+      );
 
       return result;
     }
@@ -300,10 +309,14 @@ export class MigrationSystem extends EventEmitter {
     } catch (error) {
       this.emit('rollback-failed', backupId, error as Error);
 
-      log.error('Migration rollback failed', {
-        component: 'MigrationSystem',
-        metadata: { backupId, error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Migration rollback failed',
+        {
+          component: 'MigrationSystem',
+          metadata: { backupId, error: (error as Error).message },
+        },
+        error as Error,
+      );
 
       return false;
     }
@@ -317,6 +330,86 @@ export class MigrationSystem extends EventEmitter {
   }
 
   private registerBuiltInMigrations(): void {
+    // ViewerContext State Migration - Mode-based to Layout-based
+    this.registerMigration({
+      id: 'viewer-context-layout-migration-v1',
+      fromVersion: '1.0.0',
+      toVersion: '1.1.0',
+      description: 'Migrate ViewerContext from mode-based to layout-based architecture',
+      priority: 'high',
+      migrate: async (data: any) => {
+        // Import migration utility
+        const { ViewerStateMigration } = await import('./ViewerStateMigration');
+
+        if (data.viewerState || data.viewerContext) {
+          const legacyState = data.viewerState || data.viewerContext;
+          const migrationResult = ViewerStateMigration.migrate(legacyState);
+
+          if (migrationResult.success && migrationResult.migratedState) {
+            return {
+              ...data,
+              viewerState: migrationResult.migratedState,
+              // Keep migration metadata for troubleshooting
+              migrationMetadata: {
+                migrationId: 'viewer-context-layout-migration-v1',
+                migrationTime: migrationResult.migrationTime,
+                preservedFields: migrationResult.preservedFields,
+                droppedFields: migrationResult.droppedFields,
+                warnings: migrationResult.warnings,
+                migratedAt: new Date().toISOString(),
+              },
+              // Remove old state
+              viewerContext: undefined,
+            };
+          } else {
+            throw new Error(`ViewerState migration failed: ${migrationResult.errors.join(', ')}`);
+          }
+        }
+        return data;
+      },
+      validate: async (data: any) => {
+        // Validate that the new layout-based structure exists and is valid
+        if (!data.viewerState) {
+          return false;
+        }
+
+        const viewerState = data.viewerState;
+
+        // Check for required layout-based fields
+        if (!viewerState.layout || typeof viewerState.layout !== 'object') {
+          return false;
+        }
+
+        if (!viewerState.layout.rows || !viewerState.layout.cols) {
+          return false;
+        }
+
+        if (!Array.isArray(viewerState.viewports)) {
+          return false;
+        }
+
+        // Ensure no legacy mode field exists
+        if (viewerState.mode !== undefined) {
+          return false;
+        }
+
+        return true;
+      },
+      rollback: async (data: any) => {
+        // For rollback, we could restore from backup or use reverse migration
+        // This is a simplified approach - in production, you'd want more sophisticated rollback
+        if (data.migrationMetadata?.backupData) {
+          return {
+            ...data,
+            viewerState: undefined,
+            viewerContext: data.migrationMetadata.backupData,
+            migrationMetadata: undefined,
+          };
+        }
+        throw new Error('Cannot rollback ViewerState migration: no backup data available');
+      },
+    });
+
     // Example migration from v0.9.x to v1.0.0
     this.registerMigration({
       id: 'viewport-state-restructure-v1',
@@ -336,10 +429,12 @@ export class MigrationSystem extends EventEmitter {
               lastUpdate: Date.now(),
             },
             // Rename old fields
-            windowLevel: state.windowWidth ? {
-              width: state.windowWidth,
-              center: state.windowCenter || 0,
-            } : undefined,
+            windowLevel: state.windowWidth
+              ? {
+                width: state.windowWidth,
+                center: state.windowCenter || 0,
+              }
+              : undefined,
           }));
 
           return { ...data, viewportStates: migratedStates };
@@ -417,7 +512,8 @@ export class MigrationSystem extends EventEmitter {
         timestamp: Date.now(),
       };
 
-      migration.migrate(migrationData)
+      migration
+        .migrate(migrationData)
         .then(() => {
           clearTimeout(timer);
 
@@ -432,7 +528,7 @@ export class MigrationSystem extends EventEmitter {
 
           resolve();
         })
-        .catch((error) => {
+        .catch(error => {
           clearTimeout(timer);
           reject(error);
         });
@@ -456,10 +552,14 @@ export class MigrationSystem extends EventEmitter {
       }
       return true;
     } catch (error) {
-      log.error('Migration validation error', {
-        component: 'MigrationSystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Migration validation error',
+        {
+          component: 'MigrationSystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -502,8 +602,10 @@ export class MigrationSystem extends EventEmitter {
 
     // Simple approach: find all migrations that apply to the version range
     for (const migration of this.migrations.values()) {
-      if (this.compareVersions(migration.fromVersion, fromVersion) >= 0 &&
-          this.compareVersions(migration.toVersion, toVersion) <= 0) {
+      if (
+        this.compareVersions(migration.fromVersion, fromVersion) >= 0 &&
+        this.compareVersions(migration.toVersion, toVersion) <= 0
+      ) {
         migrations.push(migration);
       }
     }
@@ -519,7 +621,9 @@ export class MigrationSystem extends EventEmitter {
     const v2Parts = version2.split('.').map(Number);
 
     for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is controlled loop index within version parts array bounds
       const v1Part = v1Parts[i] || 0;
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is controlled loop index within version parts array bounds
       const v2Part = v2Parts[i] || 0;
 
       if (v1Part < v2Part) return -1;
@@ -552,9 +656,10 @@ export class MigrationSystem extends EventEmitter {
       completedMigrations: this.migrationHistory.length,
       currentVersion: this.config.currentVersion,
       availableBackups: 0, // Would count available backup files
-      lastMigrationDate: this.migrationHistory.length > 0
-        ? new Date(this.migrationHistory[this.migrationHistory.length - 1].appliedAt)
-        : undefined,
+      lastMigrationDate:
+        this.migrationHistory.length > 0
+          ? new Date(this.migrationHistory[this.migrationHistory.length - 1].appliedAt)
+          : undefined,
       migrationHistory: this.migrationHistory.map(m => ({
         fromVersion: m.fromVersion,
         toVersion: m.toVersion,
@@ -568,7 +673,7 @@ export class MigrationSystem extends EventEmitter {
    * Cleanup old backups and migration data
    */
   public async cleanup(olderThanDays: number = 30): Promise<void> {
-    const cutoffTime = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
 
     try {
       // Clean up old backup files from secure storage
@@ -591,17 +696,21 @@ export class MigrationSystem extends EventEmitter {
             }
           }
         } catch (error) {
-          log.warn('Failed to process backup for cleanup', {
-            component: 'MigrationSystem',
-            metadata: { key },
-          }, error as Error);
+          log.warn(
+            'Failed to process backup for cleanup',
+            {
+              component: 'MigrationSystem',
+              metadata: { key },
+            },
+            error as Error,
+          );
         }
       }
 
       // Clean up temporary migration files
       if (typeof localStorage !== 'undefined') {
-        const tempMigrationKeys = Object.keys(localStorage).filter(key =>
-          key.startsWith('migration_temp_') || key.startsWith('backup_temp_'),
+        const tempMigrationKeys = Object.keys(localStorage).filter(
+          key => key.startsWith('migration_temp_') || key.startsWith('backup_temp_'),
         );
 
         tempMigrationKeys.forEach(key => {
@@ -609,10 +718,14 @@ export class MigrationSystem extends EventEmitter {
             localStorage.removeItem(key);
             cleanedCount++;
           } catch (error) {
-            log.warn('Failed to remove temporary migration data', {
-              component: 'MigrationSystem',
-              metadata: { key },
-            }, error as Error);
+            log.warn(
+              'Failed to remove temporary migration data',
+              {
+                component: 'MigrationSystem',
+                metadata: { key },
+              },
+              error as Error,
+            );
           }
         });
       }
@@ -621,27 +734,32 @@ export class MigrationSystem extends EventEmitter {
         component: 'MigrationSystem',
         metadata: { olderThanDays, cutoffTime, cleanedCount },
       });
-
     } catch (error) {
-      log.error('Migration system cleanup failed', {
-        component: 'MigrationSystem',
-        metadata: { olderThanDays },
-      }, error as Error);
+      log.error(
+        'Migration system cleanup failed',
+        {
+          component: 'MigrationSystem',
+          metadata: { olderThanDays },
+        },
+        error as Error,
+      );
     }
   }
 
   // Helper methods for capturing application state
   private async captureViewportStates(): Promise<any[]> {
     // In a real implementation, this would capture actual viewport states
-    return [{
-      id: 'viewport-1',
-      type: 'stack',
-      seriesInstanceUID: 'mock-series',
-      imageIndex: 0,
-      windowLevel: { window: 400, level: 40 },
-      zoom: 1.0,
-      pan: { x: 0, y: 0 },
-    }];
+    return [
+      {
+        id: 'viewport-1',
+        type: 'stack',
+        seriesInstanceUID: 'mock-series',
+        imageIndex: 0,
+        windowLevel: { window: 400, level: 40 },
+        zoom: 1.0,
+        pan: { x: 0, y: 0 },
+      },
+    ];
   }
 
   private async captureAnnotations(): Promise<any[]> {

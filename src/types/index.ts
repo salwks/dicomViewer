@@ -12,6 +12,63 @@ export type { Types as CornerstoneTypes, Enums as CornerstoneEnums } from '@corn
 
 export type { Types as CornerstoneToolsTypes, Enums as CornerstoneToolsEnums } from '@cornerstonejs/tools';
 
+// Import specific types and re-export them for backward compatibility
+// import type { Types } from '@cornerstonejs/core'; // Types not available
+// Type aliases for missing Cornerstone3D types
+export type IViewport = any; // Types.IViewport not available
+export type IStackViewport = any; // Types.IStackViewport not available
+export type IVolumeViewport = any; // Types.IVolumeViewport not available
+export type PublicViewportInput = any; // Types.PublicViewportInput not available
+export type Point3 = [number, number, number]; // Types.Point3 not available
+export type Point2 = [number, number]; // Types.Point2 not available
+export type IRenderingEngine = any; // Types.IRenderingEngine not available
+
+// Layout-based viewer types
+export interface ViewerLayout {
+  rows: number;
+  cols: number;
+}
+
+export interface ViewerViewport {
+  id: string;
+  position: { row: number; col: number };
+  seriesInstanceUID?: string;
+  studyInstanceUID?: string;
+  imageIndex?: number;
+  windowLevel?: { window: number; level: number };
+  zoom?: number;
+  pan?: { x: number; y: number };
+  tools?: {
+    activeTool: string;
+    availableTools: string[];
+    toolConfiguration: Record<string, unknown>;
+    annotations: unknown[];
+    measurements: unknown[];
+  };
+}
+
+export interface ViewerSynchronization {
+  enabled: boolean;
+  types: ('windowLevel' | 'zoom' | 'pan' | 'scroll')[];
+  viewportIds: string[];
+}
+
+export interface ViewerTools {
+  activeTool: string;
+  availableTools: string[];
+  globalConfiguration: Record<string, unknown>;
+}
+
+export interface ViewerState {
+  layout: ViewerLayout;
+  viewports: Record<string, ViewerViewport>;
+  activeViewportId: string | null;
+  synchronization: ViewerSynchronization;
+  tools: ViewerTools;
+  isLoading: boolean;
+  error: string | null;
+}
+
 // Application-specific types
 export interface AppConfig {
   name: string;

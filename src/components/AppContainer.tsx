@@ -1,11 +1,15 @@
 /**
  * App Container Component
  * Pure component that handles file input and mode-based viewer rendering
+ * Built with shadcn/ui components
  */
 
 import React from 'react';
 import { UnifiedViewer, AnalysisViewer } from './viewers';
 import IntegratedSystemTest from './IntegratedSystemTest';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { cn } from '../lib/utils';
 
 interface AppContainerProps {
   // Current mode
@@ -44,15 +48,15 @@ export const AppContainer: React.FC<AppContainerProps> = ({
   handleToolSelect,
 }) => {
   return (
-    <div>
-      {/* Hidden file input */}
+    <div className={cn('min-h-screen bg-background')}>
+      {/* Hidden file input - using shadcn/ui screen reader utility */}
       <input
         ref={fileInputRef}
         type='file'
         accept='.dcm,.dicom'
         multiple
         onChange={handleFileLoad}
-        className="sr-only"
+        className={cn('sr-only')}
       />
 
       {/* Mode-based viewer rendering */}
@@ -80,18 +84,17 @@ export const AppContainer: React.FC<AppContainerProps> = ({
       )}
 
       {currentMode === 'system-test' && (
-        <div className="container mx-auto p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">System Integration Test</h1>
-            <button 
-              onClick={() => setCurrentMode('viewer')}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
+        <Card className={cn('mx-auto max-w-7xl m-6')}>
+          <CardHeader className={cn('flex flex-row items-center justify-between')}>
+            <CardTitle className={cn('text-2xl font-bold')}>System Integration Test</CardTitle>
+            <Button onClick={() => setCurrentMode('viewer')} variant='default'>
               Back to Viewer
-            </button>
-          </div>
-          <IntegratedSystemTest />
-        </div>
+            </Button>
+          </CardHeader>
+          <CardContent className={cn('space-y-6')}>
+            <IntegratedSystemTest />
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -15,7 +15,14 @@
     "utils": "@/lib/utils",
     "ui": "@/components/ui",
     "lib": "@/lib",
-    "hooks": "@/hooks"
+    "hooks": "@/hooks",
+    "services": "@/services",
+    "types": "@/types"
   },
-  "iconLibrary": "lucide"
+  "iconLibrary": "lucide",
+  "registration": {
+    "imports": {
+      "ui": "@/components/ui"
+    }
+  }
 }

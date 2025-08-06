@@ -19,6 +19,7 @@ export interface LogContext {
   userId?: string;
   sessionId?: string;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export interface LogEntry {
@@ -52,7 +53,7 @@ class Logger {
   /**
    * Debug level logging - development only
    */
-  debug(message: string, context?: LogContext): void {
+  debug(message: string, context?: any): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
       this.log(LogLevel.DEBUG, message, context);
     }
@@ -61,7 +62,7 @@ class Logger {
   /**
    * Info level logging - general information
    */
-  info(message: string, context?: LogContext): void {
+  info(message: string, context?: any): void {
     if (this.shouldLog(LogLevel.INFO)) {
       this.log(LogLevel.INFO, message, context);
     }
@@ -70,7 +71,7 @@ class Logger {
   /**
    * Warning level logging - potential issues
    */
-  warn(message: string, context?: LogContext, error?: Error): void {
+  warn(message: string, context?: any, error?: Error): void {
     if (this.shouldLog(LogLevel.WARN)) {
       this.log(LogLevel.WARN, message, context, error);
     }
@@ -79,7 +80,7 @@ class Logger {
   /**
    * Error level logging - recoverable errors
    */
-  error(message: string, context?: LogContext, error?: Error): void {
+  error(message: string, context?: any, error?: Error): void {
     if (this.shouldLog(LogLevel.ERROR)) {
       this.log(LogLevel.ERROR, message, context, error);
     }
@@ -88,7 +89,7 @@ class Logger {
   /**
    * Fatal level logging - critical system errors
    */
-  fatal(message: string, context?: LogContext, error?: Error): void {
+  fatal(message: string, context?: any, error?: Error): void {
     if (this.shouldLog(LogLevel.FATAL)) {
       this.log(LogLevel.FATAL, message, context, error);
     }
@@ -97,23 +98,14 @@ class Logger {
   /**
    * Medical operation logging with structured context
    */
-  medical(
-    message: string,
-    context: LogContext & {
-      operation: string;
-      imageId?: string;
-      studyInstanceUID?: string;
-      seriesInstanceUID?: string;
-      sopInstanceUID?: string;
-    },
-  ): void {
+  medical(message: string, context: any): void {
     this.info(`[MEDICAL] ${message}`, context);
   }
 
   /**
    * Performance logging for monitoring
    */
-  performance(message: string, duration: number, context?: LogContext): void {
+  performance(message: string, duration: number, context?: any): void {
     this.info(`[PERF] ${message} (${duration.toFixed(2)}ms)`, {
       ...context,
       metadata: { ...context?.metadata, duration },
@@ -123,21 +115,21 @@ class Logger {
   /**
    * Security-related logging
    */
-  security(message: string, context?: LogContext, error?: Error): void {
+  security(message: string, context?: any, error?: Error): void {
     this.warn(`[SECURITY] ${message}`, context, error);
   }
 
   /**
    * User interaction logging
    */
-  interaction(message: string, context?: LogContext): void {
+  interaction(message: string, context?: any): void {
     this.debug(`[UI] ${message}`, context);
   }
 
   /**
    * Core logging method
    */
-  private log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+  private log(level: LogLevel, message: string, context?: any, error?: Error): void {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -218,7 +210,6 @@ class Logger {
    */
   private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
     switch (level) {
-
       case LogLevel.DEBUG:
         // eslint-disable-next-line no-console
         return console.debug;
@@ -294,16 +285,15 @@ if (process.env.NODE_ENV === 'development') {
 
 // Export convenience functions for easier migration
 export const log = {
-  debug: (message: string, context?: LogContext) => logger.debug(message, context),
-  info: (message: string, context?: LogContext) => logger.info(message, context),
-  warn: (message: string, context?: LogContext, error?: Error) => logger.warn(message, context, error),
-  error: (message: string, context?: LogContext, error?: Error) => logger.error(message, context, error),
-  fatal: (message: string, context?: LogContext, error?: Error) => logger.fatal(message, context, error),
-  medical: (message: string, context: LogContext & { operation: string }) => logger.medical(message, context),
-  performance: (message: string, duration: number, context?: LogContext) =>
-    logger.performance(message, duration, context),
-  security: (message: string, context?: LogContext, error?: Error) => logger.security(message, context, error),
-  interaction: (message: string, context?: LogContext) => logger.interaction(message, context),
+  debug: (message: string, context?: any) => logger.debug(message, context),
+  info: (message: string, context?: any) => logger.info(message, context),
+  warn: (message: string, context?: any, error?: Error) => logger.warn(message, context, error),
+  error: (message: string, context?: any, error?: Error) => logger.error(message, context, error),
+  fatal: (message: string, context?: any, error?: Error) => logger.fatal(message, context, error),
+  medical: (message: string, context: any) => logger.medical(message, context),
+  performance: (message: string, duration: number, context?: any) => logger.performance(message, duration, context),
+  security: (message: string, context?: any, error?: Error) => logger.security(message, context, error),
+  interaction: (message: string, context?: any) => logger.interaction(message, context),
 };
 
 export default logger;

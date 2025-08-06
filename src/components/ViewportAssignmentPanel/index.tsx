@@ -7,7 +7,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { cn } from '../../lib/utils';
+import { cn, safePropertyAccess } from '../../lib/utils';
 import { ViewportDropZone } from '../DragDropSystem';
 import { viewportAssignmentManager, ViewportAssignmentState } from '../../services/ViewportAssignmentManager';
 import { seriesManagementService } from '../../services/SeriesManagementService';
@@ -135,13 +135,13 @@ export const ViewportAssignmentPanel: React.FC<ViewportAssignmentPanelProps> = (
   const getStudyColor = (studyInstanceUID: string | null): string => {
     if (!studyInstanceUID) return '#6b7280';
     const state = seriesManagementService.getState();
-    return state.colorMappings[studyInstanceUID] || '#6b7280';
+    return safePropertyAccess(state.colorMappings, studyInstanceUID) || '#6b7280';
   };
 
   const renderViewportCard = (viewportId: string) => {
-    const assignment = assignments[viewportId];
+    const assignment = safePropertyAccess(assignments, viewportId);
     const isActive = activeViewport === viewportId || assignment?.isActive;
-    const isLoadingSeries = showLoadingIndicators && (isLoading[viewportId] || assignment?.isLoading);
+    const isLoadingSeries = showLoadingIndicators && (safePropertyAccess(isLoading, viewportId) || assignment?.isLoading);
     const hasAssignment = Boolean(assignment?.seriesInstanceUID);
     const studyColor = getStudyColor(assignment?.studyInstanceUID || null);
 

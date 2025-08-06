@@ -7,6 +7,7 @@
 import { EventEmitter } from 'events';
 import { viewportStateManager } from './viewportStateManager';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 // Memory usage tracking interface
 export interface MemoryUsage {
@@ -21,21 +22,21 @@ export interface MemoryUsage {
 
 // Resource cleanup priority levels
 export enum CleanupPriority {
-  LOW = 0,      // Clean when memory usage > 50%
-  MEDIUM = 1,   // Clean when memory usage > 70%
-  HIGH = 2,     // Clean when memory usage > 85%
+  LOW = 0, // Clean when memory usage > 50%
+  MEDIUM = 1, // Clean when memory usage > 70%
+  HIGH = 2, // Clean when memory usage > 85%
   CRITICAL = 3, // Clean when memory usage > 95%
 }
 
 // Memory management configuration
 export interface MemoryConfig {
-  maxTotalMemory: number;        // Maximum total memory in bytes
-  maxViewportMemory: number;     // Maximum per-viewport memory in bytes
-  cleanupThresholds: number[];   // Cleanup thresholds for each priority level
-  textureTimeout: number;        // Texture cache timeout in ms
-  bufferTimeout: number;         // Buffer cache timeout in ms
-  enableAggressive: boolean;     // Enable aggressive memory cleanup
-  retentionTime: number;         // How long to retain inactive resources
+  maxTotalMemory: number; // Maximum total memory in bytes
+  maxViewportMemory: number; // Maximum per-viewport memory in bytes
+  cleanupThresholds: number[]; // Cleanup thresholds for each priority level
+  textureTimeout: number; // Texture cache timeout in ms
+  bufferTimeout: number; // Buffer cache timeout in ms
+  enableAggressive: boolean; // Enable aggressive memory cleanup
+  retentionTime: number; // How long to retain inactive resources
 }
 
 // Resource tracking interface
@@ -68,12 +69,12 @@ export interface MemoryStats {
 // Default memory configuration
 const DEFAULT_MEMORY_CONFIG: MemoryConfig = {
   maxTotalMemory: 4 * 1024 * 1024 * 1024, // 4GB
-  maxViewportMemory: 512 * 1024 * 1024,   // 512MB per viewport
+  maxViewportMemory: 512 * 1024 * 1024, // 512MB per viewport
   cleanupThresholds: [0.5, 0.7, 0.85, 0.95],
-  textureTimeout: 5 * 60 * 1000,          // 5 minutes
-  bufferTimeout: 10 * 60 * 1000,          // 10 minutes
+  textureTimeout: 5 * 60 * 1000, // 5 minutes
+  bufferTimeout: 10 * 60 * 1000, // 10 minutes
   enableAggressive: false,
-  retentionTime: 2 * 60 * 1000,           // 2 minutes
+  retentionTime: 2 * 60 * 1000, // 2 minutes
 };
 
 // Memory manager events
@@ -135,8 +136,7 @@ export class MemoryManager extends EventEmitter {
    * Get current memory usage
    */
   getMemoryUsage(): MemoryUsage {
-    const totalUsed = Array.from(this.resources.values())
-      .reduce((sum, resource) => sum + resource.size, 0);
+    const totalUsed = Array.from(this.resources.values()).reduce((sum, resource) => sum + resource.size, 0);
 
     const viewportAllocations = new Map<string, number>();
     this.resources.forEach(resource => {
@@ -340,7 +340,7 @@ export class MemoryManager extends EventEmitter {
     log.info('Memory cleanup completed', {
       component: 'MemoryManager',
       metadata: {
-        priority: CleanupPriority[priority],
+        priority: safePropertyAccess(CleanupPriority as any, priority),
         bytesFreed,
         resourcesFreed: resourcesToClean.length,
       },
@@ -355,9 +355,7 @@ export class MemoryManager extends EventEmitter {
   getStats(): MemoryStats {
     // Update average viewport memory
     const viewportCount = viewportStateManager.getViewportCount();
-    this.stats.averageViewportMemory = viewportCount > 0
-      ? this.stats.currentUsage / viewportCount
-      : 0;
+    this.stats.averageViewportMemory = viewportCount > 0 ? this.stats.currentUsage / viewportCount : 0;
 
     return { ...this.stats };
   }
@@ -382,8 +380,7 @@ export class MemoryManager extends EventEmitter {
       suggestions.push('Cache memory is large - consider reducing cache retention time');
     }
 
-    const inactiveResources = Array.from(this.resources.values())
-      .filter(r => !r.isActive).length;
+    const inactiveResources = Array.from(this.resources.values()).filter(r => !r.isActive).length;
 
     if (inactiveResources > this.resources.size * 0.4) {
       suggestions.push(`${inactiveResources} inactive resources can be cleaned up`);
@@ -401,6 +398,7 @@ export class MemoryManager extends EventEmitter {
 
     // Check against each threshold
     for (let i = this.config.cleanupThresholds.length - 1; i >= 0; i--) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is controlled loop index within cleanupThresholds array bounds
       const threshold = this.config.cleanupThresholds[i];
 
       if (memoryRatio > threshold) {
@@ -439,11 +437,7 @@ export class MemoryManager extends EventEmitter {
   /**
    * Determine if resource should be cleaned up
    */
-  private shouldCleanupResource(
-    resource: ResourceTracker,
-    priority: CleanupPriority,
-    currentTime: number,
-  ): boolean {
+  private shouldCleanupResource(resource: ResourceTracker, priority: CleanupPriority, currentTime: number): boolean {
     // Never cleanup active resources unless critical
     if (resource.isActive && priority < CleanupPriority.CRITICAL) {
       return false;

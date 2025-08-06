@@ -6,6 +6,7 @@
  */
 
 import { RenderingEngineConfig } from '../types/dicom';
+import { log } from '../utils/logger';
 
 export const CORNERSTONE_CONFIG = {
   // Rendering Engine Settings
@@ -29,7 +30,7 @@ export const CORNERSTONE_CONFIG = {
       // xhr.setRequestHeader('Authorization', 'Bearer token');
     },
     errorInterceptor: (error: Error) => {
-      console.error('DICOM Image Loader Error:', error);
+      log.error('DICOM Image Loader Error:', error);
       // Custom error handling logic
     },
   },

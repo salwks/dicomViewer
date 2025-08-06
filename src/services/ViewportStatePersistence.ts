@@ -151,9 +151,13 @@ export class ViewportStatePersistence extends EventEmitter {
 
     // Load active session if exists
     this.loadActiveSession().catch(error => {
-      log.error('Failed to load active session', {
-        component: 'ViewportStatePersistence',
-      }, error as Error);
+      log.error(
+        'Failed to load active session',
+        {
+          component: 'ViewportStatePersistence',
+        },
+        error as Error,
+      );
     });
   }
 
@@ -169,12 +173,7 @@ export class ViewportStatePersistence extends EventEmitter {
       tags?: string[];
     } = {},
   ): Promise<ViewportSnapshot> {
-    const {
-      description,
-      strategy = this.config.defaultStrategy,
-      settings = {},
-      tags = [],
-    } = options;
+    const { description, strategy = this.config.defaultStrategy, settings = {}, tags = [] } = options;
 
     try {
       // Filter states based on settings
@@ -209,25 +208,22 @@ export class ViewportStatePersistence extends EventEmitter {
 
       // Serialize and save
       const serializedData = await this.serializeSnapshot(snapshot);
+      // eslint-disable-next-line security/detect-object-injection -- Safe: strategy is type-constrained to 'session' | 'local' | 'cloud'
       const storageStrategy = this.config.strategies[strategy];
 
       if (!storageStrategy) {
         throw new Error(`Storage strategy not available: ${strategy}`);
       }
 
-      await storageStrategy.save(
-        `snapshot-${snapshot.id}`,
-        serializedData,
-        {
-          encrypt: this.config.encryption.enabled,
-          compress: this.config.compression.enabled,
-          tags,
-          metadata: {
-            snapshotName: name,
-            createdAt: snapshot.metadata.createdAt,
-          },
+      await storageStrategy.save(`snapshot-${snapshot.id}`, serializedData, {
+        encrypt: this.config.encryption.enabled,
+        compress: this.config.compression.enabled,
+        tags,
+        metadata: {
+          snapshotName: name,
+          createdAt: snapshot.metadata.createdAt,
         },
-      );
+      });
 
       // Add to current session if exists
       if (this.currentSession) {
@@ -255,13 +251,11 @@ export class ViewportStatePersistence extends EventEmitter {
     }
   }
 
-  public async loadSnapshot(
-    snapshotId: string,
-    strategy?: 'session' | 'local' | 'cloud',
-  ): Promise<ViewportSnapshot> {
+  public async loadSnapshot(snapshotId: string, strategy?: 'session' | 'local' | 'cloud'): Promise<ViewportSnapshot> {
     const useStrategy = strategy ?? this.config.defaultStrategy;
 
     try {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: useStrategy is type-constrained to 'session' | 'local' | 'cloud'
       const storageStrategy = this.config.strategies[useStrategy];
       if (!storageStrategy) {
         throw new Error(`Storage strategy not available: ${useStrategy}`);
@@ -302,13 +296,11 @@ export class ViewportStatePersistence extends EventEmitter {
     }
   }
 
-  public async deleteSnapshot(
-    snapshotId: string,
-    strategy?: 'session' | 'local' | 'cloud',
-  ): Promise<boolean> {
+  public async deleteSnapshot(snapshotId: string, strategy?: 'session' | 'local' | 'cloud'): Promise<boolean> {
     const useStrategy = strategy ?? this.config.defaultStrategy;
 
     try {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: useStrategy is type-constrained to 'session' | 'local' | 'cloud'
       const storageStrategy = this.config.strategies[useStrategy];
       if (!storageStrategy) {
         throw new Error(`Storage strategy not available: ${useStrategy}`);
@@ -342,12 +334,11 @@ export class ViewportStatePersistence extends EventEmitter {
     }
   }
 
-  public async listSnapshots(
-    strategy?: 'session' | 'local' | 'cloud',
-  ): Promise<ViewportSnapshot[]> {
+  public async listSnapshots(strategy?: 'session' | 'local' | 'cloud'): Promise<ViewportSnapshot[]> {
     const useStrategy = strategy ?? this.config.defaultStrategy;
 
     try {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: useStrategy is type-constrained to 'session' | 'local' | 'cloud'
       const storageStrategy = this.config.strategies[useStrategy];
       if (!storageStrategy) {
         throw new Error(`Storage strategy not available: ${useStrategy}`);
@@ -366,17 +357,19 @@ export class ViewportStatePersistence extends EventEmitter {
             snapshots.push(snapshot);
           }
         } catch (error) {
-          log.warn('Failed to load snapshot during listing', {
-            component: 'ViewportStatePersistence',
-            metadata: { key },
-          }, error as Error);
+          log.warn(
+            'Failed to load snapshot during listing',
+            {
+              component: 'ViewportStatePersistence',
+              metadata: { key },
+            },
+            error as Error,
+          );
         }
       }
 
       // Sort by creation date (newest first)
-      snapshots.sort((a, b) =>
-        new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime(),
-      );
+      snapshots.sort((a, b) => new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime());
 
       return snapshots;
     } catch (error) {
@@ -446,20 +439,16 @@ export class ViewportStatePersistence extends EventEmitter {
   public async performAutoSave(states: Record<string, ViewportState>): Promise<ViewportSnapshot> {
     this.autoSaveCounter++;
 
-    const snapshot = await this.saveSnapshot(
-      `AutoSave-${this.autoSaveCounter}`,
-      states,
-      {
-        description: `Automatic save at ${new Date().toLocaleString()}`,
-        tags: ['auto-save'],
-        settings: {
-          includeTools: true,
-          includeAnnotations: false, // Skip annotations for auto-save
-          includeMeasurements: false, // Skip measurements for auto-save
-          includeLayout: true,
-        },
+    const snapshot = await this.saveSnapshot(`AutoSave-${this.autoSaveCounter}`, states, {
+      description: `Automatic save at ${new Date().toLocaleString()}`,
+      tags: ['auto-save'],
+      settings: {
+        includeTools: true,
+        includeAnnotations: false, // Skip annotations for auto-save
+        includeMeasurements: false, // Skip measurements for auto-save
+        includeLayout: true,
       },
-    );
+    });
 
     // Cleanup old auto-saves
     await this.cleanupAutoSaves();
@@ -498,9 +487,13 @@ export class ViewportStatePersistence extends EventEmitter {
         });
       }
     } catch (error) {
-      log.error('Auto-save cleanup failed', {
-        component: 'ViewportStatePersistence',
-      }, error as Error);
+      log.error(
+        'Auto-save cleanup failed',
+        {
+          component: 'ViewportStatePersistence',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -539,6 +532,7 @@ export class ViewportStatePersistence extends EventEmitter {
         };
       }
 
+      // eslint-disable-next-line security/detect-object-injection -- Safe: id is viewport identifier from Object.entries
       filtered[id] = filteredState;
     });
 
@@ -559,7 +553,7 @@ export class ViewportStatePersistence extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < data.length; i++) {
       const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash |= 0; // Convert to 32-bit integer
     }
     return hash.toString(16);
@@ -607,9 +601,13 @@ export class ViewportStatePersistence extends EventEmitter {
         });
       }
     } catch (error) {
-      log.warn('No active session found', {
-        component: 'ViewportStatePersistence',
-      }, error as Error);
+      log.warn(
+        'No active session found',
+        {
+          component: 'ViewportStatePersistence',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -628,10 +626,14 @@ export class ViewportStatePersistence extends EventEmitter {
           sessions.push(session);
         }
       } catch (error) {
-        log.warn('Failed to load session during listing', {
-          component: 'ViewportStatePersistence',
-          metadata: { key },
-        }, error as Error);
+        log.warn(
+          'Failed to load session during listing',
+          {
+            component: 'ViewportStatePersistence',
+            metadata: { key },
+          },
+          error as Error,
+        );
       }
     }
 

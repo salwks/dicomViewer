@@ -10,7 +10,8 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '../../lib/utils';
-import { ViewportLayout } from '../ViewportGrid';
+// Local type definition
+type ViewportLayout = '1x1' | '1x2' | '2x1' | '2x2' | '1x3' | '3x1' | '2x3' | '3x2';
 
 export interface Study {
   studyUID: string;

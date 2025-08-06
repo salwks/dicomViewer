@@ -13,6 +13,7 @@ import { SeriesBrowser } from '../SeriesBrowser';
 import { ToolPanel } from '../ToolPanel';
 import { DicomViewer } from '../DicomViewer';
 import { DragDropProvider } from '../DragDropSystem';
+import { safePropertyAccess } from '../../lib/utils';
 
 interface UnifiedViewerProps {
   // Mode management
@@ -66,7 +67,8 @@ export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({
     if (seriesData.length === 0 || selectedSeries < 0 || selectedSeries >= seriesData.length) {
       return undefined;
     }
-    return seriesData[selectedSeries]?.seriesInstanceUID;
+    const selectedSeriesData = safePropertyAccess(seriesData, selectedSeries);
+    return selectedSeriesData?.seriesInstanceUID;
   }, [seriesData, selectedSeries]);
 
   return (

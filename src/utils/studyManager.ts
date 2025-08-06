@@ -104,7 +104,8 @@ export class StudyManager {
     const wordCounts = new Map<string, number>();
 
     descriptions.forEach(desc => {
-      const words = desc.toLowerCase()
+      const words = desc
+        .toLowerCase()
         .split(/\s+/)
         .filter(word => word.length > 2) // Filter out short words
         .filter(word => !/^\d+$/.test(word)); // Filter out numbers
@@ -152,11 +153,14 @@ export class StudyManager {
   /**
    * Filter studies by criteria
    */
-  static filterStudies(studies: Study[], criteria: {
-    patientName?: string;
-    modality?: string;
-    dateRange?: { start: Date; end: Date };
-  }): Study[] {
+  static filterStudies(
+    studies: Study[],
+    criteria: {
+      patientName?: string;
+      modality?: string;
+      dateRange?: { start: Date; end: Date };
+    },
+  ): Study[] {
     return studies.filter(study => {
       if (criteria.patientName && !study.patientName.toLowerCase().includes(criteria.patientName.toLowerCase())) {
         return false;

@@ -45,11 +45,31 @@ export class SimpleDicomLoader {
   }
 
   /**
-   * Parse DICOM file to extract metadata
+   * Check if file is likely a DICOM file
+   */
+  private isDicomFile(file: File): boolean {
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    const dicomExtensions = ['.dcm', '.dicom', '.dic'];
+    const hasValidExtension = dicomExtensions.some(ext => fileName.endsWith(ext));
+
+    // Check MIME type
+    const hasValidMimeType = file.type === 'application/dicom' || file.type === '';
+
+    // Allow files without extension if they have no MIME type (common for DICOM)
+    const noExtension = !fileName.includes('.');
+
+    return hasValidExtension || hasValidMimeType || noExtension;
+  }
+
+  /**
+   * Parse DICOM file to extract metadata (optimized)
    */
   private async parseDicomMetadata(file: File): Promise<DicomMetadata> {
-    const arrayBuffer = await file.arrayBuffer();
-    const byteArray = new Uint8Array(arrayBuffer);
+    // For large files, only read the header portion first (faster)
+    const HEADER_SIZE = Math.min(file.size, 65536); // Read up to 64KB for header
+    const headerBuffer = await file.slice(0, HEADER_SIZE).arrayBuffer();
+    const byteArray = new Uint8Array(headerBuffer);
 
     try {
       const dataSet = dicomParser.parseDicom(byteArray);
@@ -68,6 +88,52 @@ export class SimpleDicomLoader {
 
       // Check for multi-frame DICOM (NumberOfFrames tag)
       const numberOfFrames = parseInt(dataSet.string('x00280008') || '1');
+
+      // Validate essential DICOM image pixel module tags
+      const rows = dataSet.uint16('x00280010'); // Rows
+      const columns = dataSet.uint16('x00280011'); // Columns
+      const samplesPerPixel = dataSet.uint16('x00280002'); // Samples per Pixel
+      const bitsAllocated = dataSet.uint16('x00280100'); // Bits Allocated
+      const bitsStored = dataSet.uint16('x00280101'); // Bits Stored
+      const pixelRepresentation = dataSet.uint16('x00280103'); // Pixel Representation
+
+      // Check if essential pixel data tags are present
+      if (!rows || !columns) {
+        throw new Error(`Invalid DICOM file: Missing image dimensions (rows: ${rows}, columns: ${columns})`);
+      }
+
+      if (samplesPerPixel === undefined || samplesPerPixel < 1) {
+        log.warn('Missing or invalid samples per pixel, assuming 1', {
+          component: 'SimpleDicomLoader',
+          metadata: { fileName: file.name, samplesPerPixel },
+        });
+      }
+
+      if (!bitsAllocated) {
+        throw new Error(`Invalid DICOM file: Missing bits allocated for ${file.name}`);
+      }
+
+      // Check if pixel data exists (lightweight check)
+      const pixelDataElement = dataSet.elements.x7fe00010;
+      if (!pixelDataElement && HEADER_SIZE >= file.size) {
+        // Only throw error if we read the entire file and still no pixel data
+        throw new Error(`Invalid DICOM file: No pixel data found in ${file.name}`);
+      }
+
+      log.info('DICOM pixel module validation passed', {
+        component: 'SimpleDicomLoader',
+        metadata: {
+          fileName: file.name,
+          fileSize: file.size,
+          headerSize: HEADER_SIZE,
+          dimensions: `${columns}x${rows}`,
+          samplesPerPixel: samplesPerPixel || 1,
+          bitsAllocated,
+          bitsStored,
+          pixelRepresentation,
+          pixelDataSize: pixelDataElement?.length || 'not-checked',
+        },
+      });
 
       return {
         seriesInstanceUID,
@@ -107,87 +173,139 @@ export class SimpleDicomLoader {
   }
 
   /**
-   * Load DICOM files and create blob URLs
+   * Load DICOM files and create blob URLs (optimized for performance)
    */
   public async loadFiles(files: File[]): Promise<SimpleDicomFile[]> {
     this.loadedFiles = [];
+    const startTime = Date.now();
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file) continue;
-      try {
-        // Parse DICOM metadata first
-        const metadata = await this.parseDicomMetadata(file);
+    log.info('Starting DICOM files loading', {
+      component: 'SimpleDicomLoader',
+      metadata: { fileCount: files.length },
+    });
 
-        // Create blob URL for the file
-        const blob = new Blob([file], { type: 'application/dicom' });
-        const blobUrl = URL.createObjectURL(blob);
+    // Filter valid DICOM files first
+    const validFiles = files.filter(file => {
+      if (!file) return false;
+      if (!this.isDicomFile(file)) {
+        log.warn('Skipping non-DICOM file', {
+          component: 'SimpleDicomLoader',
+          metadata: { fileName: file.name, fileType: file.type, fileSize: file.size },
+        });
+        return false;
+      }
+      return true;
+    });
 
-        // Handle multi-frame DICOM files
-        const numberOfFrames = metadata.numberOfFrames || 1;
+    if (validFiles.length === 0) {
+      log.warn('No valid DICOM files found');
+      return [];
+    }
 
-        if (numberOfFrames > 1) {
-          // Multi-frame DICOM: create multiple image IDs for each frame
-          for (let frameIndex = 0; frameIndex < numberOfFrames; frameIndex++) {
-            const frameImageId = `wadouri:${blobUrl}?frame=${frameIndex}`;
+    // Process files in parallel with limited concurrency
+    const BATCH_SIZE = 5; // Process 5 files at a time to avoid overwhelming
+    const results: SimpleDicomFile[] = [];
 
-            const frameMetadata = {
-              ...metadata,
-              imageNumber: (metadata.imageNumber || 1) + frameIndex,
-              frameIndex,
-            };
+    for (let i = 0; i < validFiles.length; i += BATCH_SIZE) {
+      const batch = validFiles.slice(i, i + BATCH_SIZE);
+      const batchPromises = batch.map(async (file, batchIndex) => {
+        const globalIndex = i + batchIndex;
 
-            const dicomFile: SimpleDicomFile = {
-              file,
-              imageId: frameImageId,
-              metadata: frameMetadata,
-            };
-
-            this.loadedFiles.push(dicomFile);
-          }
-
-          log.info('Multi-frame DICOM file loaded', {
-            component: 'SimpleDicomLoader',
-            metadata: {
-              fileName: file.name,
-              frameCount: numberOfFrames,
-              seriesUID: metadata.seriesInstanceUID,
-              modality: metadata.modality,
-            },
-          });
-        } else {
-          // Single-frame DICOM: create one image ID
-          const imageId = `wadouri:${blobUrl}`;
-
-          const dicomFile: SimpleDicomFile = {
-            file,
-            imageId,
-            metadata,
-          };
-
-          this.loadedFiles.push(dicomFile);
-
-          log.info('Single-frame DICOM file loaded', {
-            component: 'SimpleDicomLoader',
-            metadata: {
-              fileName: file.name,
-              imageId,
-              seriesUID: metadata.seriesInstanceUID,
-              modality: metadata.modality,
-            },
-          });
-        }
-      } catch (error) {
-        log.error(
-          'Failed to load DICOM file',
-          {
+        try {
+          log.info(`Processing DICOM file ${globalIndex + 1}/${validFiles.length}`, {
             component: 'SimpleDicomLoader',
             metadata: { fileName: file.name },
-          },
-          error as Error,
-        );
+          });
+
+          // Parse DICOM metadata (this is the heaviest operation)
+          const metadata = await this.parseDicomMetadata(file);
+
+          // Create blob URL efficiently
+          const blob = new Blob([file], { type: 'application/dicom' });
+          const blobUrl = URL.createObjectURL(blob);
+
+          // Handle multi-frame DICOM files
+          const numberOfFrames = metadata.numberOfFrames || 1;
+          const frameFiles: SimpleDicomFile[] = [];
+
+          if (numberOfFrames > 1) {
+            // Multi-frame DICOM: create multiple image IDs for each frame
+            for (let frameIndex = 0; frameIndex < numberOfFrames; frameIndex++) {
+              const frameImageId = `wadouri:${blobUrl}?frame=${frameIndex}`;
+
+              const frameMetadata = {
+                ...metadata,
+                imageNumber: (metadata.imageNumber || 1) + frameIndex,
+                frameIndex,
+              };
+
+              frameFiles.push({
+                file,
+                imageId: frameImageId,
+                metadata: frameMetadata,
+              });
+            }
+
+            log.info('Multi-frame DICOM processed', {
+              component: 'SimpleDicomLoader',
+              metadata: {
+                fileName: file.name,
+                frameCount: numberOfFrames,
+                seriesUID: metadata.seriesInstanceUID,
+              },
+            });
+          } else {
+            // Single-frame DICOM: create one image ID
+            const imageId = `wadouri:${blobUrl}`;
+
+            frameFiles.push({
+              file,
+              imageId,
+              metadata,
+            });
+          }
+
+          return frameFiles;
+        } catch (error) {
+          log.error(
+            `Failed to load DICOM file ${globalIndex + 1}/${validFiles.length}`,
+            {
+              component: 'SimpleDicomLoader',
+              metadata: { fileName: file.name },
+            },
+            error as Error,
+          );
+          return [];
+        }
+      });
+
+      // Wait for current batch to complete
+      const batchResults = await Promise.all(batchPromises);
+
+      // Flatten and add to results
+      for (const fileResults of batchResults) {
+        results.push(...fileResults);
       }
+
+      // Log progress
+      log.info(`Completed batch ${Math.ceil((i + BATCH_SIZE) / BATCH_SIZE)}/${Math.ceil(validFiles.length / BATCH_SIZE)}`, {
+        component: 'SimpleDicomLoader',
+        metadata: { processedFiles: Math.min(i + BATCH_SIZE, validFiles.length), totalFiles: validFiles.length },
+      });
     }
+
+    this.loadedFiles = results;
+    const totalTime = Date.now() - startTime;
+
+    log.info('DICOM files loading completed', {
+      component: 'SimpleDicomLoader',
+      metadata: {
+        totalFiles: validFiles.length,
+        loadedFrames: results.length,
+        processingTime: `${totalTime}ms`,
+        averageTimePerFile: `${Math.round(totalTime / validFiles.length)}ms`,
+      },
+    });
 
     return this.loadedFiles;
   }
@@ -282,7 +400,8 @@ export class SimpleDicomLoader {
         patientName: metadata.patientName,
         studyDate: metadata.studyDate,
         imageIds: sortedFiles.map(f => f.imageId),
-        thumbnail: await this.generateThumbnailForSeries(sortedFiles[0]),
+        thumbnail: this.getFallbackThumbnailForFile(sortedFiles[0]), // Use fast fallback initially
+        // Note: this.generateThumbnailForSeries(sortedFiles[0]) available for future use
       };
     });
 
@@ -311,8 +430,9 @@ export class SimpleDicomLoader {
   /**
    * Generate thumbnail for a specific series file
    * Direct DICOM pixel extraction for thumbnails
+   * Currently unused - thumbnails use fallback for performance
    */
-  private async generateThumbnailForSeries(file: SimpleDicomFile): Promise<string> {
+  public async generateThumbnailForSeries(file: SimpleDicomFile): Promise<string> {
     try {
       log.info('Generating DICOM thumbnail using direct pixel extraction', {
         component: 'SimpleDicomLoader',

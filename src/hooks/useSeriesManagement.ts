@@ -9,14 +9,9 @@ import {
   SeriesManagementConfig,
   seriesManagementService as defaultService,
 } from '../services/SeriesManagementService';
-import {
-  DICOMStudy,
-  DICOMSeries,
-  SeriesManagementState,
-  SeriesAssignment,
-  StudyColorScheme,
-} from '../types/dicom';
+import { DICOMStudy, DICOMSeries, SeriesManagementState, SeriesAssignment, StudyColorScheme } from '../types/dicom';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 interface UseSeriesManagementOptions {
   service?: SeriesManagementService;
@@ -227,9 +222,12 @@ export const useSeriesManagement = (options: UseSeriesManagementOptions = {}): U
     serviceRef.current.setStudyColorScheme(studyInstanceUID, colorScheme);
   }, []);
 
-  const getStudyColor = useCallback((studyInstanceUID: string): string | undefined => {
-    return state.colorMappings[studyInstanceUID];
-  }, [state.colorMappings]);
+  const getStudyColor = useCallback(
+    (studyInstanceUID: string): string | undefined => {
+      return safePropertyAccess(state.colorMappings, studyInstanceUID);
+    },
+    [state.colorMappings],
+  );
 
   // Session Management
   const clearSession = useCallback(() => {
@@ -277,19 +275,17 @@ export const useSeriesManagement = (options: UseSeriesManagementOptions = {}): U
 
 // Hook for simplified viewport assignment
 export const useViewportAssignment = (viewportId: string, options: UseSeriesManagementOptions = {}) => {
-  const {
-    state,
-    assignSeriesToViewport,
-    clearViewportAssignment,
-    getAssignedSeries,
-  } = useSeriesManagement(options);
+  const { state, assignSeriesToViewport, clearViewportAssignment, getAssignedSeries } = useSeriesManagement(options);
 
   const assignedSeries = getAssignedSeries(viewportId);
   const isAssigned = Boolean(assignedSeries);
 
-  const assignSeries = useCallback((seriesInstanceUID: string) => {
-    return assignSeriesToViewport(seriesInstanceUID, viewportId);
-  }, [assignSeriesToViewport, viewportId]);
+  const assignSeries = useCallback(
+    (seriesInstanceUID: string) => {
+      return assignSeriesToViewport(seriesInstanceUID, viewportId);
+    },
+    [assignSeriesToViewport, viewportId],
+  );
 
   const clearAssignment = useCallback(() => {
     clearViewportAssignment(viewportId);

@@ -18,14 +18,9 @@ import {
 } from '../types/viewportState';
 import { secureStorage } from '../security/secureStorage';
 import { log } from '../utils/logger';
+import { safePropertyAccess, safePropertySet } from '../lib/utils';
 
-// Safe property access helper
-function safePropertyAccess<T extends object, K extends keyof T>(obj: T, key: K): T[K] | undefined {
-  if (Object.prototype.hasOwnProperty.call(obj, key)) {
-    return obj[key];
-  }
-  return undefined;
-}
+// Using safePropertyAccess from lib/utils
 
 // State change event types
 export interface ViewportStateManagerEvents {
@@ -45,10 +40,7 @@ export class ViewportStateManager extends EventEmitter {
   private saveTimeoutId: NodeJS.Timeout | null = null;
   private readonly SAVE_DEBOUNCE_MS = 1000; // 1 second debounce
 
-  constructor(
-    validator?: ViewportStateValidator,
-    persistenceConfig?: Partial<StatePersistenceConfig>,
-  ) {
+  constructor(validator?: ViewportStateValidator, persistenceConfig?: Partial<StatePersistenceConfig>) {
     super();
     this.validator = validator || new DefaultViewportStateValidator();
     this.persistenceConfig = { ...DEFAULT_PERSISTENCE_CONFIG, ...persistenceConfig };
@@ -138,7 +130,9 @@ export class ViewportStateManager extends EventEmitter {
     const defaultState = createDefaultViewportState(viewportId, type);
 
     // Apply initial state if provided
-    const finalState = initialState ? this.mergeStates(defaultState, initialState as Partial<ViewportState>) : defaultState;
+    const finalState = initialState
+      ? this.mergeStates(defaultState, initialState as Partial<ViewportState>)
+      : defaultState;
 
     // Validate the new state
     const validation = this.validator.validateState(finalState);
@@ -385,7 +379,7 @@ export class ViewportStateManager extends EventEmitter {
   exportStates(): Record<string, ViewportState> {
     const states: Record<string, ViewportState> = {};
     this.viewports.forEach((state, id) => {
-      states[id] = { ...state };
+      safePropertySet(states, id, { ...state });
     });
     return states;
   }
@@ -417,10 +411,14 @@ export class ViewportStateManager extends EventEmitter {
         this.viewports.set(viewportId, state);
         importedCount++;
       } catch (error) {
-        log.error('Failed to import viewport state', {
-          component: 'ViewportStateManager',
-          metadata: { viewportId },
-        }, error as Error);
+        log.error(
+          'Failed to import viewport state',
+          {
+            component: 'ViewportStateManager',
+            metadata: { viewportId },
+          },
+          error as Error,
+        );
         errorCount++;
       }
     });
@@ -437,10 +435,7 @@ export class ViewportStateManager extends EventEmitter {
   /**
    * Merge states safely
    */
-  private mergeStates(
-    currentState: ViewportState,
-    updates: Partial<ViewportState>,
-  ): ViewportState {
+  private mergeStates(currentState: ViewportState, updates: Partial<ViewportState>): ViewportState {
     const newState = { ...currentState };
 
     // Safely merge each top-level property
@@ -453,16 +448,16 @@ export class ViewportStateManager extends EventEmitter {
           // Deep merge for objects
           const currentValue = safePropertyAccess(currentState, updateKey);
           if (currentValue && typeof currentValue === 'object') {
-            newState[updateKey] = {
+            safePropertySet(newState, updateKey, {
               ...currentValue,
               ...updateValue,
-            } as any;
+            } as any);
           } else {
-            newState[updateKey] = updateValue as any;
+            safePropertySet(newState, updateKey, updateValue as any);
           }
         } else {
           // Direct assignment for primitives and arrays
-          newState[updateKey] = updateValue as any;
+          safePropertySet(newState, updateKey, updateValue as any);
         }
       }
     });
@@ -473,15 +468,12 @@ export class ViewportStateManager extends EventEmitter {
   /**
    * Get changed fields between states
    */
-  private getChangedFields(
-    previousState: ViewportState,
-    newState: ViewportState,
-  ): (keyof ViewportState)[] {
+  private getChangedFields(previousState: ViewportState, newState: ViewportState): (keyof ViewportState)[] {
     const changedFields: (keyof ViewportState)[] = [];
 
     const allKeys = new Set([
-      ...Object.keys(previousState) as (keyof ViewportState)[],
-      ...Object.keys(newState) as (keyof ViewportState)[],
+      ...(Object.keys(previousState) as (keyof ViewportState)[]),
+      ...(Object.keys(newState) as (keyof ViewportState)[]),
     ]);
 
     allKeys.forEach(key => {
@@ -511,9 +503,13 @@ export class ViewportStateManager extends EventEmitter {
     // Schedule new save
     this.saveTimeoutId = setTimeout(() => {
       this.saveToStorage().catch(error => {
-        log.error('Failed to save viewport states', {
-          component: 'ViewportStateManager',
-        }, error as Error);
+        log.error(
+          'Failed to save viewport states',
+          {
+            component: 'ViewportStateManager',
+          },
+          error as Error,
+        );
         this.emit('persistence-error', error as Error, 'save');
       });
     }, this.SAVE_DEBOUNCE_MS);
@@ -530,18 +526,15 @@ export class ViewportStateManager extends EventEmitter {
       // Check size limits
       const sizeInBytes = new Blob([serializedStates]).size;
       if (sizeInBytes > this.persistenceConfig.maxStorageSize) {
-        throw new Error(`State size (${sizeInBytes} bytes) exceeds limit (${this.persistenceConfig.maxStorageSize} bytes)`);
+        throw new Error(
+          `State size (${sizeInBytes} bytes) exceeds limit (${this.persistenceConfig.maxStorageSize} bytes)`,
+        );
       }
 
-      await secureStorage.store(
-        this.persistenceConfig.storageKey,
-        serializedStates,
-        'viewport-states',
-        {
-          encrypt: this.persistenceConfig.encryptionEnabled,
-          compress: this.persistenceConfig.compressionEnabled,
-        },
-      );
+      await secureStorage.store(this.persistenceConfig.storageKey, serializedStates, 'viewport-states', {
+        encrypt: this.persistenceConfig.encryptionEnabled,
+        compress: this.persistenceConfig.compressionEnabled,
+      });
 
       log.info('Viewport states saved to storage', {
         component: 'ViewportStateManager',
@@ -552,9 +545,13 @@ export class ViewportStateManager extends EventEmitter {
         },
       });
     } catch (error) {
-      log.error('Failed to save viewport states to storage', {
-        component: 'ViewportStateManager',
-      }, error as Error);
+      log.error(
+        'Failed to save viewport states to storage',
+        {
+          component: 'ViewportStateManager',
+        },
+        error as Error,
+      );
       throw error;
     }
   }
@@ -576,9 +573,13 @@ export class ViewportStateManager extends EventEmitter {
         });
       }
     } catch (error) {
-      log.error('Failed to load viewport states from storage', {
-        component: 'ViewportStateManager',
-      }, error as Error);
+      log.error(
+        'Failed to load viewport states from storage',
+        {
+          component: 'ViewportStateManager',
+        },
+        error as Error,
+      );
       throw error;
     }
   }
@@ -708,13 +709,17 @@ class DefaultViewportStateValidator implements ViewportStateValidator {
 
     // Ensure camera values are finite
     if (sanitized.camera) {
-      sanitized.camera.position = sanitized.camera.position.map(val =>
-        isFinite(val) ? val : 0,
-      ) as [number, number, number];
+      sanitized.camera.position = sanitized.camera.position.map(val => (isFinite(val) ? val : 0)) as [
+        number,
+        number,
+        number,
+      ];
 
-      sanitized.camera.focalPoint = sanitized.camera.focalPoint.map(val =>
-        isFinite(val) ? val : 0,
-      ) as [number, number, number];
+      sanitized.camera.focalPoint = sanitized.camera.focalPoint.map(val => (isFinite(val) ? val : 0)) as [
+        number,
+        number,
+        number,
+      ];
     }
 
     // Ensure zoom is positive

@@ -6,6 +6,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 export interface KeyboardShortcut {
   id: string;
@@ -205,7 +206,7 @@ export class KeyboardShortcutSystem extends EventEmitter {
     const normalizedKeys = keys.map(key => this.normalizeKey(key)).sort();
     const shortcutKeys = [...shortcut.keys].sort();
 
-    return normalizedKeys.every((key, index) => key === shortcutKeys[index]);
+    return normalizedKeys.every((key, index) => key === safePropertyAccess(shortcutKeys, index));
   }
 
   /**
@@ -417,18 +418,19 @@ export class KeyboardShortcutSystem extends EventEmitter {
 
     // Handle special key mappings
     const keyMap: Record<string, string> = {
-      'control': 'ctrl',
-      'command': 'ctrl',
-      'cmd': 'ctrl',
-      'option': 'alt',
-      'return': 'enter',
+      control: 'ctrl',
+      command: 'ctrl',
+      cmd: 'ctrl',
+      option: 'alt',
+      return: 'enter',
       ' ': 'space',
-      'arrowup': 'up',
-      'arrowdown': 'down',
-      'arrowleft': 'left',
-      'arrowright': 'right',
+      arrowup: 'up',
+      arrowdown: 'down',
+      arrowleft: 'left',
+      arrowright: 'right',
     };
 
+    // eslint-disable-next-line security/detect-object-injection -- Safe: key is a validated keyboard event key string
     return keyMap[key] || key;
   }
 
@@ -454,7 +456,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Navigate to next image in series',
       keys: ['arrowright'],
       category: 'navigation',
-      action: () => { this.emit('navigate-next-image'); },
+      action: () => {
+        this.emit('navigate-next-image');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -466,7 +470,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Navigate to previous image in series',
       keys: ['arrowleft'],
       category: 'navigation',
-      action: () => { this.emit('navigate-previous-image'); },
+      action: () => {
+        this.emit('navigate-previous-image');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -478,7 +484,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Navigate to first image in series',
       keys: ['home'],
       category: 'navigation',
-      action: () => { this.emit('navigate-first-image'); },
+      action: () => {
+        this.emit('navigate-first-image');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -490,7 +498,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Navigate to last image in series',
       keys: ['end'],
       category: 'navigation',
-      action: () => { this.emit('navigate-last-image'); },
+      action: () => {
+        this.emit('navigate-last-image');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -503,7 +513,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Activate pan tool',
       keys: ['p'],
       category: 'tools',
-      action: () => { this.emit('tool-selected', 'pan'); },
+      action: () => {
+        this.emit('tool-selected', 'pan');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -515,7 +527,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Activate zoom tool',
       keys: ['z'],
       category: 'tools',
-      action: () => { this.emit('tool-selected', 'zoom'); },
+      action: () => {
+        this.emit('tool-selected', 'zoom');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -527,7 +541,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Activate window/level tool',
       keys: ['w'],
       category: 'tools',
-      action: () => { this.emit('tool-selected', 'windowLevel'); },
+      action: () => {
+        this.emit('tool-selected', 'windowLevel');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -539,7 +555,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Activate length measurement tool',
       keys: ['l'],
       category: 'tools',
-      action: () => { this.emit('tool-selected', 'length'); },
+      action: () => {
+        this.emit('tool-selected', 'length');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -552,7 +570,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Switch to 1x1 layout',
       keys: ['1'],
       category: 'layout',
-      action: () => { this.emit('layout-changed', '1x1'); },
+      action: () => {
+        this.emit('layout-changed', '1x1');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -564,7 +584,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Switch to 1x2 layout',
       keys: ['2'],
       category: 'layout',
-      action: () => { this.emit('layout-changed', '1x2'); },
+      action: () => {
+        this.emit('layout-changed', '1x2');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -576,7 +598,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Switch to 2x2 layout',
       keys: ['4'],
       category: 'layout',
-      action: () => { this.emit('layout-changed', '2x2'); },
+      action: () => {
+        this.emit('layout-changed', '2x2');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -601,7 +625,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Reset viewport to default view',
       keys: ['r'],
       category: 'system',
-      action: () => { this.emit('reset-view'); },
+      action: () => {
+        this.emit('reset-view');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -613,7 +639,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Fit image to window',
       keys: ['f'],
       category: 'system',
-      action: () => { this.emit('fit-to-window'); },
+      action: () => {
+        this.emit('fit-to-window');
+      },
       enabled: true,
       global: false,
       preventDefault: true,
@@ -626,7 +654,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Save current state',
       keys: ['ctrl', 's'],
       category: 'file',
-      action: () => { this.emit('save'); },
+      action: () => {
+        this.emit('save');
+      },
       enabled: true,
       global: true,
       preventDefault: true,
@@ -638,7 +668,9 @@ export class KeyboardShortcutSystem extends EventEmitter {
       description: 'Export current view',
       keys: ['ctrl', 'e'],
       category: 'file',
-      action: () => { this.emit('export'); },
+      action: () => {
+        this.emit('export');
+      },
       enabled: true,
       global: true,
       preventDefault: true,

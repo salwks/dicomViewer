@@ -5,8 +5,10 @@
  * Built with shadcn/ui components
  */
 
-export { default as ClickHandler } from './ClickHandler';
-export { default as EventBindingSystem } from './EventBindingSystem';
+import ClickHandler from './ClickHandler';
+import EventBindingSystem from './EventBindingSystem';
+
+export { ClickHandler, EventBindingSystem };
 
 export type {
   ClickEventData,

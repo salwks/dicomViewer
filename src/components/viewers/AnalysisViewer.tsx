@@ -136,7 +136,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({
             <CardHeader className='pb-2'>
               <CardTitle className='text-lg'>AI-Enhanced DICOM Viewer</CardTitle>
             </CardHeader>
-            <CardContent className='h-full flex items-center justify-center bg-muted/10'>
+            <CardContent className='h-full flex items-center justify-center'>
               <div className='text-center space-y-4'>
                 <div className='text-6xl'>🧠</div>
                 <h3 className='text-xl font-semibold'>AI Analysis Ready</h3>

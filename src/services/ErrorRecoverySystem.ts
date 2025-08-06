@@ -7,12 +7,7 @@
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
 import { secureStorage } from '../security/secureStorage';
-import {
-  ViewportStateBackup,
-  ToolStateBackup,
-  UserPreferencesBackup,
-  SessionDataBackup,
-} from '../types';
+import { ViewportStateBackup, ToolStateBackup, UserPreferencesBackup, SessionDataBackup } from '../types';
 
 export interface ErrorRecoveryConfig {
   maxRetryAttempts: number;
@@ -192,10 +187,14 @@ export class ErrorRecoverySystem extends EventEmitter {
 
       return stateId;
     } catch (error) {
-      log.error('Failed to create state backup', {
-        component: 'ErrorRecoverySystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to create state backup',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
       return '';
     }
   }
@@ -299,15 +298,21 @@ export class ErrorRecoverySystem extends EventEmitter {
       error => error.timestamp > Date.now() - 3600000, // Last hour
     );
 
-    const errorsByType = recentErrors.reduce((acc, error) => {
-      acc[error.errorType] = (acc[error.errorType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorsByType = recentErrors.reduce(
+      (acc, error) => {
+        acc[error.errorType] = (acc[error.errorType] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const errorsBySeverity = recentErrors.reduce((acc, error) => {
-      acc[error.severity] = (acc[error.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorsBySeverity = recentErrors.reduce(
+      (acc, error) => {
+        acc[error.severity] = (acc[error.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       totalErrors: this.errorHistory.length,
@@ -384,7 +389,6 @@ export class ErrorRecoverySystem extends EventEmitter {
 
       this.emit('recovery-failed', errorContext, result);
       return result;
-
     } finally {
       this.isRecovering = false;
     }
@@ -411,8 +415,8 @@ export class ErrorRecoverySystem extends EventEmitter {
       description: 'Retry network operations with exponential backoff',
       errorTypes: ['network'],
       priority: 10,
-      canRecover: (error) => error.retryCount < error.maxRetries,
-      recover: async (error) => {
+      canRecover: error => error.retryCount < error.maxRetries,
+      recover: async error => {
         const delay = Math.min(1000 * Math.pow(2, error.retryCount), 10000);
         await new Promise(resolve => setTimeout(resolve, delay));
 
@@ -437,7 +441,7 @@ export class ErrorRecoverySystem extends EventEmitter {
       errorTypes: ['memory'],
       priority: 9,
       canRecover: () => true,
-      recover: async (_error) => {
+      recover: async _error => {
         // Trigger garbage collection and cleanup
         await this.performMemoryCleanup();
 
@@ -460,7 +464,7 @@ export class ErrorRecoverySystem extends EventEmitter {
       errorTypes: ['data', 'rendering', 'unknown'],
       priority: 8,
       canRecover: () => this.systemStates.length > 0,
-      recover: async (_error) => {
+      recover: async _error => {
         const restored = await this.restoreSystemState();
 
         return {
@@ -503,9 +507,7 @@ export class ErrorRecoverySystem extends EventEmitter {
     const now = Date.now();
 
     // Count errors in the last minute
-    const recentErrors = this.errorHistory.filter(
-      error => error.timestamp > now - 60000,
-    );
+    const recentErrors = this.errorHistory.filter(error => error.timestamp > now - 60000);
 
     this.errorCount = recentErrors.length;
   }
@@ -552,12 +554,15 @@ export class ErrorRecoverySystem extends EventEmitter {
         component: 'ErrorRecoverySystem',
         metadata: { duration: 100 },
       });
-
     } catch (error) {
-      log.error('Memory cleanup failed', {
-        component: 'ErrorRecoverySystem',
-        metadata: { action: 'memory-cleanup' },
-      }, error as Error);
+      log.error(
+        'Memory cleanup failed',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { action: 'memory-cleanup' },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -630,10 +635,10 @@ export class ErrorRecoverySystem extends EventEmitter {
         theme: 'dark',
       },
       keyboardShortcuts: {
-        'pan': 'p',
-        'zoom': 'z',
-        'windowLevel': 'w',
-        'reset': 'r',
+        pan: 'p',
+        zoom: 'z',
+        windowLevel: 'w',
+        reset: 'r',
       },
     };
 
@@ -685,10 +690,14 @@ export class ErrorRecoverySystem extends EventEmitter {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (error) {
-      log.error('Failed to restore viewport states', {
-        component: 'ErrorRecoverySystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to restore viewport states',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -713,10 +722,14 @@ export class ErrorRecoverySystem extends EventEmitter {
       // Mock implementation - would interface with tool state manager
       await new Promise(resolve => setTimeout(resolve, 50));
     } catch (error) {
-      log.error('Failed to restore tool states', {
-        component: 'ErrorRecoverySystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to restore tool states',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -734,10 +747,14 @@ export class ErrorRecoverySystem extends EventEmitter {
       // In a real implementation, this would update user settings storage
       await new Promise(resolve => setTimeout(resolve, 50));
     } catch (error) {
-      log.error('Failed to restore user preferences', {
-        component: 'ErrorRecoverySystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to restore user preferences',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -756,10 +773,14 @@ export class ErrorRecoverySystem extends EventEmitter {
       // In a real implementation, this would restore session state
       await new Promise(resolve => setTimeout(resolve, 50));
     } catch (error) {
-      log.error('Failed to restore session data', {
-        component: 'ErrorRecoverySystem',
-        metadata: { error: (error as Error).message },
-      }, error as Error);
+      log.error(
+        'Failed to restore session data',
+        {
+          component: 'ErrorRecoverySystem',
+          metadata: { error: (error as Error).message },
+        },
+        error as Error,
+      );
     }
   }
 

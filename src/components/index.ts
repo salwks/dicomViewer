@@ -7,16 +7,19 @@
 // ===== Core Viewer Components =====
 import { DicomViewer } from './DicomViewer';
 export { DicomViewer };
+export { Canvas2DViewport } from './Canvas2DViewport';
 
 // ===== Stack Components =====
 import { StackScrollIndicator } from './StackScrollIndicator';
 export { StackScrollIndicator };
 
 // ===== Viewport Grid System =====
-export { ViewportGrid, type ViewportLayout, type ViewportState, type ViewportGridRef } from './ViewportGrid';
+export { ViewportGrid } from './ViewportGrid';
+export type { ViewportLayout, ViewportState, ViewportGridProps } from './ViewportGrid/index';
 export { EnhancedViewportGrid } from './ViewportGrid/enhanced';
 export { LayoutSelector } from './LayoutSelector';
-export { SynchronizationControls, type SynchronizationSettings } from './SynchronizationControls';
+export { SynchronizationControls } from './SynchronizationControls';
+export type { SynchronizationSettings } from './SynchronizationControls/index';
 export { ViewportManager, type ViewportManagerRef } from './ViewportManager';
 
 // ===== Enhanced Series Management =====
@@ -31,8 +34,6 @@ export { DragDropProvider, useDragDrop, DraggableSeries, ViewportDropZone } from
 
 // ===== Cross-Reference Lines System =====
 export { CrossReferenceLines } from './CrossReferenceLines';
-export type { CrossReferencePoint, CrossReferenceLine, CrossReferenceLinesProps } from './CrossReferenceLines';
-export { calculateCrossReferencePoint, DEFAULT_LINE_CONFIGS } from './CrossReferenceLines';
 
 // ===== UI Components =====
 export { Progress } from './ui/progress';
@@ -59,14 +60,25 @@ export {
 import { ErrorBoundary } from './ErrorBoundary';
 export { ErrorBoundary };
 
-// ===== Viewer Components =====
-export * from './viewers';
+// ===== New Unified Viewer Architecture =====
+export { UnifiedViewer } from './UnifiedViewer';
+export { ViewportGridManager } from './ViewportGridManager';
+export { HeaderNavigation } from './HeaderNavigation';
+export { SidePanelSystem } from './SidePanelSystem';
+export { ComparisonModeManager } from './ComparisonModeManager';
+
+// ===== Legacy Viewer Components =====
+export { AnalysisViewer } from './viewers/AnalysisViewer';
+export { BasicViewer } from './viewers/BasicViewer';
 
 // ===== Settings Management =====
 export { SyncSettingsManager } from './SyncSettingsManager';
 
 // ===== Performance Monitoring =====
 export { PerformanceMonitorDashboard } from './PerformanceMonitorDashboard';
+
+// ===== Integration Testing =====
+export { IntegrationTestPanel } from './IntegrationTestPanel';
 
 // ===== Comparison Features =====
 export { ComparisonModeToggle } from './ComparisonModeToggle';
@@ -75,6 +87,14 @@ export { StudyMetadataPanel } from './StudyMetadataPanel';
 
 // ===== App Container =====
 export { AppContainer } from './AppContainer';
+
+// ===== Selection API Integration =====
+export { SelectionAPIIntegration } from './SelectionAPIIntegration';
+export { SelectionAPIDemo } from './examples/SelectionAPIDemo';
+
+// ===== Security Dashboard =====
+export { AuditDashboard } from './AuditDashboard';
+export { SecurityDashboard } from './SecurityDashboard';
 
 // ===== Essential viewer components bundle =====
 export const essentialViewerBundle = {

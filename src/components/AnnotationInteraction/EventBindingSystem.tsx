@@ -61,7 +61,7 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
   const [eventBindings, setEventBindings] = useState<EventBinding[]>([]);
   const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
   const [selectedAnnotations, setSelectedAnnotations] = useState<string[]>([]);
-  const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
+  const [hoveredAnnotation] = useState<string | null>(null);
   const [clickHandlerOptions, setClickHandlerOptions] = useState<ClickHandlerOptions>({
     enableSingleClick: true,
     enableDoubleClick: true,
@@ -111,7 +111,7 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
         id: 'click-select',
         eventType: 'click',
         handler: (event: ClickEventData) => {
-          logEvent('click', event.annotationId, event.annotation.type, {
+          logEvent('click', event.annotationId, event.annotation.metadata?.toolName || 'unknown', {
             coordinates: event.coordinates,
             modifiers: event.modifiers,
           });
@@ -125,7 +125,7 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
         id: 'double-click-edit',
         eventType: 'doubleClick',
         handler: (event: ClickEventData) => {
-          logEvent('doubleClick', event.annotationId, event.annotation.type, {
+          logEvent('doubleClick', event.annotationId, event.annotation.metadata?.toolName || 'unknown', {
             action: 'edit',
           });
           onAnnotationEvent?.('doubleClick', event);
@@ -138,7 +138,7 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
         id: 'right-click-menu',
         eventType: 'rightClick',
         handler: (event: ClickEventData) => {
-          logEvent('rightClick', event.annotationId, event.annotation.type, {
+          logEvent('rightClick', event.annotationId, event.annotation.metadata?.toolName || 'unknown', {
             action: 'context-menu',
           });
           onAnnotationEvent?.('rightClick', event);
@@ -190,17 +190,6 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
     onAnnotationEvent?.('selection-change', { selectedIds, viewportId });
   }, [logEvent, onAnnotationEvent, viewportId]);
 
-  // Handle hover events (simulated for demo)
-  const simulateHoverEvent = useCallback((annotationId: string | null) => {
-    setHoveredAnnotation(annotationId);
-    if (annotationId) {
-      const annotation = annotations.find(a => a.id === annotationId);
-      if (annotation) {
-        logEvent('hover', annotationId, annotation.type, { action: 'enter' });
-        onAnnotationEvent?.('hover', { annotationId, annotation, viewportId });
-      }
-    }
-  }, [annotations, logEvent, onAnnotationEvent, viewportId]);
 
   // Toggle event binding
   const toggleEventBinding = useCallback((bindingId: string) => {
@@ -241,17 +230,17 @@ export const EventBindingSystem: React.FC<EventBindingSystemProps> = ({
     });
   };
 
-  // Get event type color
+  // Get event type color - 보안: Object Injection 방지를 위해 Map 사용
   const getEventTypeColor = (eventType: string) => {
-    const colors: Record<string, string> = {
-      click: 'text-blue-500',
-      doubleClick: 'text-purple-500',
-      rightClick: 'text-orange-500',
-      hover: 'text-green-500',
-      'selection-change': 'text-cyan-500',
-      'binding-toggle': 'text-gray-500',
-    };
-    return colors[eventType] || 'text-gray-400';
+    const colors = new Map([
+      ['click', 'text-blue-500'],
+      ['doubleClick', 'text-purple-500'],
+      ['rightClick', 'text-orange-500'],
+      ['hover', 'text-green-500'],
+      ['selection-change', 'text-cyan-500'],
+      ['binding-toggle', 'text-gray-500'],
+    ]);
+    return colors.get(eventType) || 'text-gray-400';
   };
 
   return (

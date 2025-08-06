@@ -107,10 +107,9 @@ export const useStudyManagement = (): StudyManagementHook => {
   }, [state.studies]);
 
   const totalImageCount = useMemo(() => {
-    return state.studies.reduce((count, study) =>
-      count + study.series.reduce((seriesCount, series) =>
-        seriesCount + series.numberOfInstances, 0,
-      ), 0,
+    return state.studies.reduce(
+      (count, study) => count + study.series.reduce((seriesCount, series) => seriesCount + series.numberOfInstances, 0),
+      0,
     );
   }, [state.studies]);
 
@@ -128,9 +127,10 @@ export const useStudyManagement = (): StudyManagementHook => {
       ...prev,
       studies: studiesWithColors,
       // Reset selections if studies changed completely
-      selectedStudyId: studiesWithColors.length > 0 && !studiesWithColors.find(s => s.studyInstanceUID === prev.selectedStudyId)
-        ? studiesWithColors[0].studyInstanceUID
-        : prev.selectedStudyId,
+      selectedStudyId:
+        studiesWithColors.length > 0 && !studiesWithColors.find(s => s.studyInstanceUID === prev.selectedStudyId)
+          ? studiesWithColors[0].studyInstanceUID
+          : prev.selectedStudyId,
     }));
 
     log.info('Studies updated', {
@@ -191,9 +191,13 @@ export const useStudyManagement = (): StudyManagementHook => {
       ...prev,
       studies: prev.studies.filter(study => study.studyInstanceUID !== studyInstanceUID),
       selectedStudyId: prev.selectedStudyId === studyInstanceUID ? null : prev.selectedStudyId,
-      selectedSeriesId: prev.selectedSeriesId &&
-        prev.studies.find(s => s.studyInstanceUID === studyInstanceUID)?.series
-          .some(series => series.seriesInstanceUID === prev.selectedSeriesId) ? null : prev.selectedSeriesId,
+      selectedSeriesId:
+        prev.selectedSeriesId &&
+        prev.studies
+          .find(s => s.studyInstanceUID === studyInstanceUID)
+          ?.series.some(series => series.seriesInstanceUID === prev.selectedSeriesId)
+          ? null
+          : prev.selectedSeriesId,
     }));
 
     log.info('Study removed', {
@@ -206,9 +210,7 @@ export const useStudyManagement = (): StudyManagementHook => {
     setState(prev => ({
       ...prev,
       studies: prev.studies.map(study =>
-        study.studyInstanceUID === studyInstanceUID
-          ? { ...study, ...updates }
-          : study,
+        study.studyInstanceUID === studyInstanceUID ? { ...study, ...updates } : study,
       ),
     }));
 
@@ -241,22 +243,31 @@ export const useStudyManagement = (): StudyManagementHook => {
   }, []);
 
   // Utility functions
-  const getStudyById = useCallback((studyInstanceUID: string): DICOMStudy | null => {
-    return state.studies.find(study => study.studyInstanceUID === studyInstanceUID) || null;
-  }, [state.studies]);
+  const getStudyById = useCallback(
+    (studyInstanceUID: string): DICOMStudy | null => {
+      return state.studies.find(study => study.studyInstanceUID === studyInstanceUID) || null;
+    },
+    [state.studies],
+  );
 
-  const getSeriesById = useCallback((seriesInstanceUID: string): DICOMSeries | null => {
-    for (const study of state.studies) {
-      const series = study.series.find(s => s.seriesInstanceUID === seriesInstanceUID);
-      if (series) return series;
-    }
-    return null;
-  }, [state.studies]);
+  const getSeriesById = useCallback(
+    (seriesInstanceUID: string): DICOMSeries | null => {
+      for (const study of state.studies) {
+        const series = study.series.find(s => s.seriesInstanceUID === seriesInstanceUID);
+        if (series) return series;
+      }
+      return null;
+    },
+    [state.studies],
+  );
 
-  const getSeriesByStudy = useCallback((studyInstanceUID: string): DICOMSeries[] => {
-    const study = state.studies.find(s => s.studyInstanceUID === studyInstanceUID);
-    return study?.series || [];
-  }, [state.studies]);
+  const getSeriesByStudy = useCallback(
+    (studyInstanceUID: string): DICOMSeries[] => {
+      const study = state.studies.find(s => s.studyInstanceUID === studyInstanceUID);
+      return study?.series || [];
+    },
+    [state.studies],
+  );
 
   // Transform legacy series data to study structure
   const transformLegacySeriesData = useCallback((legacySeriesData: any[]): DICOMStudy[] => {

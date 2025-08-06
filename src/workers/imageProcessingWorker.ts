@@ -180,7 +180,7 @@ class ImageProcessingWorker {
    */
   private async decompressImage(
     data: ArrayBuffer | Uint8Array | Uint16Array,
-    _options: DecompressionOptions = { compressionType: 'jpeg' },
+    _options: DecompressionOptions = { compressionType: 'jpeg' }
   ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     // Simulate decompression processing
     await this.simulateProcessing(50, 200);
@@ -204,7 +204,7 @@ class ImageProcessingWorker {
    */
   private async transformImage(
     data: ArrayBuffer | Uint8Array | Uint16Array,
-    options: TransformOptions = {},
+    options: TransformOptions = {}
   ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     const { transform = 'none' } = options;
 
@@ -247,7 +247,7 @@ class ImageProcessingWorker {
    */
   private async filterImage(
     data: ArrayBuffer | Uint8Array | Uint16Array,
-    options: FilterOptions = { filterType: 'sharpen' },
+    options: FilterOptions = { filterType: 'sharpen' }
   ): Promise<{ data: Uint8Array | Uint16Array; width: number; height: number }> {
     const { filter = 'none', strength = 1.0 } = options;
 
@@ -285,7 +285,7 @@ class ImageProcessingWorker {
    */
   private async analyzeImage(
     data: ArrayBuffer | Uint8Array | Uint16Array,
-    _options: AnalysisOptions = { includeHistogram: true, includeStatistics: true },
+    _options: AnalysisOptions = { includeHistogram: true, includeStatistics: true }
   ): Promise<{ statistics: { min: number; max: number; mean: number; std: number }; histogram: number[] }> {
     await this.simulateProcessing(60, 250);
 
@@ -314,7 +314,7 @@ class ImageProcessingWorker {
    */
   private async segmentImage(
     data: ArrayBuffer | Uint8Array | Uint16Array,
-    options: SegmentationOptions = { algorithm: 'threshold', threshold: 128 },
+    options: SegmentationOptions = { algorithm: 'threshold', threshold: 128 }
   ): Promise<{ segments: Uint8Array; width: number; height: number }> {
     const { method = 'threshold', threshold = 100 } = options;
 

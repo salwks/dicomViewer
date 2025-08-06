@@ -5,6 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 import {
   SyncType,
   SynchronizationSettings,
@@ -12,6 +13,24 @@ import {
   ViewportSyncState,
   CrossReferenceSettings,
 } from '../types/dicom';
+import {
+  MatrixTransformSync,
+  type ViewportTransform,
+  type MatrixTransformConfig,
+  DEFAULT_MATRIX_TRANSFORM_CONFIG,
+} from './MatrixTransformSync';
+
+export interface ViewportReference {
+  viewportId: string;
+  renderingEngineId: string;
+}
+
+export interface SyncConfig {
+  camera: boolean;
+  voi: boolean;
+  scroll: boolean;
+  crossReference: boolean;
+}
 
 export const DEFAULT_SYNCHRONIZATION_SETTINGS: SynchronizationSettings = {
   windowLevel: false,
@@ -37,6 +56,7 @@ export interface ViewportSynchronizerConfig {
   syncDebounceMs: number;
   enableCrossReference: boolean;
   strictModeValidation: boolean;
+  matrixTransform?: Partial<MatrixTransformConfig>;
 }
 
 export const DEFAULT_SYNCHRONIZER_CONFIG: ViewportSynchronizerConfig = {
@@ -54,6 +74,7 @@ export class ViewportSynchronizer extends EventEmitter {
   private syncGroups: Map<string, Set<string>>; // group -> viewport IDs
   private syncTimeouts: Map<string, NodeJS.Timeout>;
   private lastSyncEvents: Map<string, SynchronizationEvent>;
+  private matrixTransformSync: MatrixTransformSync;
 
   constructor(
     config: Partial<ViewportSynchronizerConfig> = {},
@@ -70,6 +91,12 @@ export class ViewportSynchronizer extends EventEmitter {
     this.syncGroups = new Map();
     this.syncTimeouts = new Map();
     this.lastSyncEvents = new Map();
+
+    // Initialize matrix transform synchronization
+    this.matrixTransformSync = new MatrixTransformSync({
+      ...DEFAULT_MATRIX_TRANSFORM_CONFIG,
+      ...this.config.matrixTransform,
+    });
 
     this.initializeSynchronizer();
   }
@@ -90,10 +117,7 @@ export class ViewportSynchronizer extends EventEmitter {
 
   // ===== Viewport Management =====
 
-  public addViewport(
-    viewportId: string,
-    initialState: Partial<ViewportSyncState> = {},
-  ): void {
+  public addViewport(viewportId: string, initialState: Partial<ViewportSyncState> = {}): void {
     if (this.viewports.has(viewportId)) {
       log.warn('Viewport already exists', {
         component: 'ViewportSynchronizer',
@@ -326,7 +350,7 @@ export class ViewportSynchronizer extends EventEmitter {
   // ===== Core Synchronization =====
 
   public synchronize(type: SyncType, sourceViewportId: string, data: Record<string, unknown>): void {
-    if (!this.settings[type]) {
+    if (!safePropertyAccess(this.settings, type)) {
       return; // Sync type is disabled
     }
 
@@ -558,6 +582,53 @@ export class ViewportSynchronizer extends EventEmitter {
     });
   }
 
+  // ===== Matrix Transform Synchronization =====
+
+  public updateViewportTransform(transform: ViewportTransform): void {
+    // Update the matrix transform sync service
+    this.matrixTransformSync.updateViewportTransform(transform);
+
+    // Update local viewport state if it exists
+    const viewport = this.viewports.get(transform.viewportId);
+    if (viewport) {
+      viewport.zoom = transform.transform.scale;
+      viewport.pan = [transform.transform.translate.x, transform.transform.translate.y];
+      this.viewports.set(transform.viewportId, viewport);
+    }
+
+    this.emit('viewportTransformUpdated', transform);
+  }
+
+  public getViewportTransform(viewportId: string): ViewportTransform | null {
+    return this.matrixTransformSync.getViewportTransform(viewportId);
+  }
+
+  public setMatrixSyncEnabled(enabled: boolean): void {
+    this.matrixTransformSync.setSyncEnabled(enabled);
+
+    log.info('Matrix transform sync toggled', {
+      component: 'ViewportSynchronizer',
+      metadata: { enabled },
+    });
+  }
+
+  public isMatrixSyncEnabled(): boolean {
+    return this.matrixTransformSync.isSyncEnabled();
+  }
+
+  public updateMatrixTransformConfig(config: Partial<MatrixTransformConfig>): void {
+    this.matrixTransformSync.updateConfig(config);
+
+    log.info('Matrix transform config updated', {
+      component: 'ViewportSynchronizer',
+      metadata: config,
+    });
+  }
+
+  public getMatrixTransformConfig(): any {
+    return this.matrixTransformSync.getConfig();
+  }
+
   // ===== Cleanup =====
 
   public destroy(): void {
@@ -566,6 +637,9 @@ export class ViewportSynchronizer extends EventEmitter {
       clearTimeout(timeout);
     }
     this.syncTimeouts.clear();
+
+    // Dispose matrix transform sync
+    this.matrixTransformSync.dispose();
 
     // Clear all data
     this.viewports.clear();

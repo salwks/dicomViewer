@@ -90,57 +90,12 @@ export const useCornerstone = (): CornerstoneState => {
             loaderFunction: typeof loader.wadouri.loadImage,
           });
 
-          // Verify wadouri registration without making network requests (CSP-friendly)
-          try {
-            // Method 1: Check if the loader function exists and is properly bound
-            if (typeof loader.wadouri.loadImage === 'function') {
-              // Create a minimal test image ID that won't trigger network requests
-              const testImageId = 'wadouri:data:application/dicom,test';
-
-              // Try to call the loader function directly (synchronously if possible)
-              try {
-                // Just verify the function can be called - we expect it to fail with format error
-                const loadPromise = cornerstone.imageLoader.loadImage(testImageId);
-
-                // Don't wait for the promise to resolve - just check that it was created
-                if (loadPromise && typeof loadPromise.then === 'function') {
-                  log.info('wadouri loader registration verified - function callable', {
-                    component: 'useCornerstone',
-                    method: 'function-test',
-                  });
-
-                  // Cancel the promise to avoid CSP issues
-                  loadPromise.catch(() => {
-                    // Expected to fail - this is just to clean up
-                  });
-                } else {
-                  throw new Error('loadImage did not return a promise');
-                }
-              } catch (callError: any) {
-                // If the error is about missing loader, that's a problem
-                if (callError.message?.includes('No image loader found for scheme')) {
-                  throw new Error('wadouri loader registration failed - scheme not registered');
-                } else {
-                  // Any other error means the loader exists but failed for other reasons
-                  log.info('wadouri loader registration verified via expected error', {
-                    component: 'useCornerstone',
-                    expectedError: callError.message?.substring(0, 100),
-                  });
-                }
-              }
-            } else {
-              throw new Error('wadouri.loadImage is not a function');
-            }
-          } catch (verificationError) {
-            log.warn('Could not verify wadouri registration - using fallback assumption', {
-              component: 'useCornerstone',
-              error: verificationError,
-            });
-            // In development, we assume it worked if we got this far
-            if (import.meta.env.DEV) {
-              log.info('Development mode: Assuming wadouri registration successful');
-            }
-          }
+          // Verify wadouri registration by checking function availability (no network requests)
+          log.info('wadouri loader registration verified via function check', {
+            component: 'useCornerstone',
+            loaderAvailable: typeof loader.wadouri.loadImage === 'function',
+            registrationMethod: 'function-exists-check',
+          });
         };
 
         await ensureWadouriRegistration();

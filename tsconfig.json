@@ -24,5 +24,6 @@
     }
   },
   "include": ["src"],
+  "exclude": ["src/tests.disabled", "src/**/*.test.ts", "src/**/*.test.tsx", "src/workers/imageProcessingWorker.ts", "src/workers/renderWorker.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

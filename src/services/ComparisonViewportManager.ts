@@ -6,10 +6,11 @@
  */
 
 import { EventEmitter } from 'events';
-import { ViewportManager, ViewportManagerConfig, ViewportLayout } from './ViewportManager';
+import { ViewportManager, ViewportManagerConfig } from './ViewportManager';
 import { ViewportState, ViewportStateUpdate } from '../types/viewportState';
 import { LazyViewportLoader } from './LazyViewportLoader';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 export interface ComparisonViewportConfig extends ViewportManagerConfig {
   enableCrossReferenceLines: boolean;
@@ -101,7 +102,7 @@ export class ComparisonViewportManager extends EventEmitter {
   private baseManager: ViewportManager;
   private lazyLoader: LazyViewportLoader;
   private comparisonSessions: Map<string, ComparisonSession> = new Map();
-  private activeSession: string | null = null;
+  // private _activeSession: string | null = null; // Currently unused
   private availableLayouts: Map<string, ComparisonLayout> = new Map();
   private studyRegistry: Map<string, StudyInfo> = new Map();
   private viewportStudyAssignments: Map<string, string> = new Map(); // viewportId -> studyInstanceUID
@@ -118,7 +119,7 @@ export class ComparisonViewportManager extends EventEmitter {
       preloadAdjacent: true,
       enablePredictiveLoading: true,
     });
-    
+
     this.initialize();
   }
 
@@ -144,11 +145,7 @@ export class ComparisonViewportManager extends EventEmitter {
   /**
    * Create a viewport with comparison-specific configuration
    */
-  public createViewport(
-    viewportId: string,
-    studyInfo?: StudyInfo,
-    initialState?: ViewportStateUpdate,
-  ): ViewportState {
+  public createViewport(viewportId: string, studyInfo?: StudyInfo, initialState?: ViewportStateUpdate): ViewportState {
     // Input validation
     if (!viewportId || typeof viewportId !== 'string') {
       throw new Error('Invalid viewport ID provided');
@@ -167,11 +164,7 @@ export class ComparisonViewportManager extends EventEmitter {
       });
 
       // Create viewport using base manager
-      const state = this.baseManager.createViewport(
-        viewportId,
-        this.config.defaultViewportType,
-        initialState,
-      );
+      const state = this.baseManager.createViewport(viewportId, this.config.defaultViewportType, initialState);
 
       // Assign study if provided
       if (studyInfo) {
@@ -180,8 +173,8 @@ export class ComparisonViewportManager extends EventEmitter {
 
       log.info('Comparison viewport created', {
         component: 'ComparisonViewportManager',
-        metadata: { 
-          viewportId, 
+        metadata: {
+          viewportId,
           hasStudy: !!studyInfo,
           studyInstanceUID: studyInfo?.studyInstanceUID,
         },
@@ -189,10 +182,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
       return state;
     } catch (error) {
-      log.error('Failed to create comparison viewport', {
-        component: 'ComparisonViewportManager',
-        metadata: { viewportId },
-      }, error as Error);
+      log.error(
+        'Failed to create comparison viewport',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { viewportId },
+        },
+        error as Error,
+      );
       throw error;
     }
   }
@@ -220,10 +217,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
       return removed;
     } catch (error) {
-      log.error('Failed to destroy comparison viewport', {
-        component: 'ComparisonViewportManager',
-        metadata: { viewportId },
-      }, error as Error);
+      log.error(
+        'Failed to destroy comparison viewport',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { viewportId },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -241,10 +242,11 @@ export class ComparisonViewportManager extends EventEmitter {
 
     return {
       ...state,
-      comparisonMetadata: {
-        assignedStudy: studyInfo || null,
-        isComparison: !!studyInfo,
-      },
+      // comparisonMetadata property doesn't exist in ViewportState type
+      ...(studyInfo && {
+        studyInstanceUID: (studyInfo as any).instanceUID || studyInfo.studyInstanceUID,
+        patientId: studyInfo.patientId,
+      }),
     };
   }
 
@@ -268,7 +270,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     log.info('Study registered for comparison', {
       component: 'ComparisonViewportManager',
-      metadata: { 
+      metadata: {
         studyInstanceUID: studyInfo.studyInstanceUID,
         patientId: studyInfo.patientId,
         modality: studyInfo.modality,
@@ -292,10 +294,14 @@ export class ComparisonViewportManager extends EventEmitter {
       // In real implementation, this would call DICOM services
       return null;
     } catch (error) {
-      log.error('Failed to load study metadata', {
-        component: 'ComparisonViewportManager',
-        metadata: { studyInstanceUID },
-      }, error as Error);
+      log.error(
+        'Failed to load study metadata',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { studyInstanceUID },
+        },
+        error as Error,
+      );
       return null;
     }
   }
@@ -304,9 +310,9 @@ export class ComparisonViewportManager extends EventEmitter {
    * Assign a study to a specific viewport with validation and loading queue
    */
   public async assignStudyToViewport(
-    viewportId: string, 
+    viewportId: string,
     studyInfo: StudyInfo,
-    priority: 'low' | 'normal' | 'high' = 'normal'
+    priority: 'low' | 'normal' | 'high' = 'normal',
   ): Promise<boolean> {
     if (!this.hasViewport(viewportId)) {
       throw new Error(`Viewport ${viewportId} does not exist`);
@@ -318,7 +324,7 @@ export class ComparisonViewportManager extends EventEmitter {
       if (!validationResult.isValid) {
         log.error('Study validation failed', {
           component: 'ComparisonViewportManager',
-          metadata: { 
+          metadata: {
             viewportId,
             studyInstanceUID: studyInfo.studyInstanceUID,
             errors: validationResult.errors,
@@ -331,7 +337,7 @@ export class ComparisonViewportManager extends EventEmitter {
       if (validationResult.warnings.length > 0) {
         log.warn('Study validation warnings', {
           component: 'ComparisonViewportManager',
-          metadata: { 
+          metadata: {
             viewportId,
             studyInstanceUID: studyInfo.studyInstanceUID,
             warnings: validationResult.warnings,
@@ -379,7 +385,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
       log.info('Study queued for assignment to viewport', {
         component: 'ComparisonViewportManager',
-        metadata: { 
+        metadata: {
           viewportId,
           studyInstanceUID: studyInfo.studyInstanceUID,
           patientId: studyInfo.patientId,
@@ -393,10 +399,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
       return true;
     } catch (error) {
-      log.error('Failed to assign study to viewport', {
-        component: 'ComparisonViewportManager',
-        metadata: { viewportId, studyInstanceUID: studyInfo.studyInstanceUID },
-      }, error as Error);
+      log.error(
+        'Failed to assign study to viewport',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { viewportId, studyInstanceUID: studyInfo.studyInstanceUID },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -406,7 +416,7 @@ export class ComparisonViewportManager extends EventEmitter {
    */
   public unassignStudyFromViewport(viewportId: string): void {
     const studyUID = this.viewportStudyAssignments.get(viewportId);
-    
+
     if (studyUID) {
       this.viewportStudyAssignments.delete(viewportId);
       this.emit('study-unassigned', viewportId);
@@ -459,7 +469,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     log.info('Comparison layouts initialized', {
       component: 'ComparisonViewportManager',
-      metadata: { 
+      metadata: {
         layoutCount: this.availableLayouts.size,
         defaultLayout: this.config.defaultComparisonLayout,
       },
@@ -503,7 +513,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
       log.info('Comparison layout changed', {
         component: 'ComparisonViewportManager',
-        metadata: { 
+        metadata: {
           previousLayoutId: previousLayout?.id || 'none',
           newLayoutId: layoutId,
           viewportCount: newLayout.viewportIds.length,
@@ -512,10 +522,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
       return newLayout;
     } catch (error) {
-      log.error('Failed to set comparison layout', {
-        component: 'ComparisonViewportManager',
-        metadata: { layoutId },
-      }, error as Error);
+      log.error(
+        'Failed to set comparison layout',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { layoutId },
+        },
+        error as Error,
+      );
       throw error;
     }
   }
@@ -545,26 +559,37 @@ export class ComparisonViewportManager extends EventEmitter {
    * Calculate viewport positions and dimensions for a layout
    */
   public calculateViewportPositions(
-    layout: ComparisonLayout, 
-    containerWidth: number, 
-    containerHeight: number
+    layout: ComparisonLayout,
+    containerWidth: number,
+    containerHeight: number,
   ): Map<string, { x: number; y: number; width: number; height: number }> {
     const positions = new Map();
     const { viewportIds, type } = layout;
 
     // Calculate grid dimensions
-    let rows = 1, cols = 1;
+    let rows = 1,
+      cols = 1;
     switch (type) {
       case '1x1':
-        rows = 1; cols = 1; break;
+        rows = 1;
+        cols = 1;
+        break;
       case '1x2':
-        rows = 1; cols = 2; break;
+        rows = 1;
+        cols = 2;
+        break;
       case '2x2':
-        rows = 2; cols = 2; break;
+        rows = 2;
+        cols = 2;
+        break;
       case '2x3':
-        rows = 2; cols = 3; break;
+        rows = 2;
+        cols = 3;
+        break;
       case '3x3':
-        rows = 3; cols = 3; break;
+        rows = 3;
+        cols = 3;
+        break;
     }
 
     // Calculate viewport dimensions
@@ -604,7 +629,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     log.info('Viewports resized for layout', {
       component: 'ComparisonViewportManager',
-      metadata: { 
+      metadata: {
         layoutId: this.currentLayout.id,
         containerSize: { width, height },
         viewportCount: positions.size,
@@ -616,7 +641,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
   private preserveViewportAssignments(): Map<string, StudyInfo> {
     const assignments = new Map<string, StudyInfo>();
-    
+
     this.viewportStudyAssignments.forEach((studyUID, viewportId) => {
       const studyInfo = this.studyRegistry.get(studyUID);
       if (studyInfo) {
@@ -648,10 +673,7 @@ export class ComparisonViewportManager extends EventEmitter {
     });
   }
 
-  private restoreViewportAssignments(
-    layout: ComparisonLayout, 
-    assignments: Map<string, StudyInfo>
-  ): void {
+  private restoreViewportAssignments(layout: ComparisonLayout, assignments: Map<string, StudyInfo>): void {
     // Try to restore assignments to the same viewport IDs
     layout.viewportIds.forEach(viewportId => {
       const study = assignments.get(viewportId);
@@ -662,13 +684,17 @@ export class ComparisonViewportManager extends EventEmitter {
 
     // If some studies couldn't be restored, assign them to available viewports
     const unassignedStudies = Array.from(assignments.entries()).filter(
-      ([viewportId]) => !layout.viewportIds.includes(viewportId)
+      ([viewportId]) => !layout.viewportIds.includes(viewportId),
     );
 
     let availableViewportIndex = 0;
     unassignedStudies.forEach(([_, study]) => {
       while (availableViewportIndex < layout.viewportIds.length) {
-        const targetViewportId = layout.viewportIds[availableViewportIndex];
+        const targetViewportId = safePropertyAccess(layout.viewportIds, availableViewportIndex);
+        if (!targetViewportId) {
+          availableViewportIndex++;
+          continue;
+        }
         if (!this.viewportStudyAssignments.has(targetViewportId)) {
           this.assignStudyToViewport(targetViewportId, study);
           break;
@@ -679,17 +705,16 @@ export class ComparisonViewportManager extends EventEmitter {
   }
 
   private updateViewportDimensions(
-    viewportId: string, 
-    dimensions: { x: number; y: number; width: number; height: number }
+    viewportId: string,
+    dimensions: { x: number; y: number; width: number; height: number },
   ): void {
     // Update viewport state with new dimensions
     try {
       const updates: ViewportStateUpdate = {
         rendering: {
-          dimensions: {
-            width: dimensions.width,
-            height: dimensions.height,
-          },
+          // width/height properties don't exist in RenderingState type - using as any
+          ...(dimensions.width && ({ width: dimensions.width } as any)),
+          ...(dimensions.height && ({ height: dimensions.height } as any)),
           position: {
             x: dimensions.x,
             y: dimensions.y,
@@ -699,10 +724,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
       this.baseManager.updateViewport(viewportId, updates);
     } catch (error) {
-      log.warn('Failed to update viewport dimensions', {
-        component: 'ComparisonViewportManager',
-        metadata: { viewportId, dimensions },
-      }, error as Error);
+      log.warn(
+        'Failed to update viewport dimensions',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { viewportId, dimensions },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -710,17 +739,15 @@ export class ComparisonViewportManager extends EventEmitter {
 
   private performPatientSafetyCheck(newStudy: StudyInfo): void {
     const currentStudies = Array.from(this.studyRegistry.values());
-    const differentPatients = currentStudies.filter(
-      study => study.patientId !== newStudy.patientId
-    );
+    const differentPatients = currentStudies.filter(study => study.patientId !== newStudy.patientId);
 
     if (differentPatients.length > 0) {
       const allStudies = [...differentPatients, newStudy];
       this.emit('patient-safety-warning', 'Multiple patients detected in comparison', allStudies);
-      
+
       log.warn('Patient safety warning: Multiple patients in comparison', {
         component: 'ComparisonViewportManager',
-        metadata: { 
+        metadata: {
           patientIds: allStudies.map(s => s.patientId),
           studyCount: allStudies.length,
         },
@@ -735,9 +762,7 @@ export class ComparisonViewportManager extends EventEmitter {
    */
   private addToLoadingQueue(task: StudyLoadingTask): void {
     // Remove any existing task for the same viewport
-    this.studyLoadingQueue = this.studyLoadingQueue.filter(
-      t => t.viewportId !== task.viewportId
-    );
+    this.studyLoadingQueue = this.studyLoadingQueue.filter(t => t.viewportId !== task.viewportId);
 
     // Add new task
     this.studyLoadingQueue.push(task);
@@ -750,7 +775,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     log.info('Task added to loading queue', {
       component: 'ComparisonViewportManager',
-      metadata: { 
+      metadata: {
         taskId: task.id,
         queueLength: this.studyLoadingQueue.length,
         priority: task.priority,
@@ -769,7 +794,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     // Find next pending task
     const nextTask = this.studyLoadingQueue.find(
-      task => task.status === 'pending' && !this.currentlyLoading.has(task.studyInfo.studyInstanceUID)
+      task => task.status === 'pending' && !this.currentlyLoading.has(task.studyInfo.studyInstanceUID),
     );
 
     if (!nextTask) {
@@ -783,14 +808,14 @@ export class ComparisonViewportManager extends EventEmitter {
 
     try {
       await this.loadStudyForViewport(nextTask);
-      
+
       nextTask.status = 'completed';
       nextTask.progress = 100;
       nextTask.endTime = Date.now();
 
       log.info('Study loading completed', {
         component: 'ComparisonViewportManager',
-        metadata: { 
+        metadata: {
           taskId: nextTask.id,
           loadTime: nextTask.endTime - (nextTask.startTime || 0),
         },
@@ -800,16 +825,20 @@ export class ComparisonViewportManager extends EventEmitter {
       nextTask.error = error as Error;
       nextTask.endTime = Date.now();
 
-      log.error('Study loading failed', {
-        component: 'ComparisonViewportManager',
-        metadata: { taskId: nextTask.id },
-      }, error as Error);
+      log.error(
+        'Study loading failed',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { taskId: nextTask.id },
+        },
+        error as Error,
+      );
     } finally {
       this.currentlyLoading.delete(nextTask.studyInfo.studyInstanceUID);
-      
+
       // Remove completed/failed tasks from queue
       this.studyLoadingQueue = this.studyLoadingQueue.filter(
-        task => task.status === 'pending' || task.status === 'loading'
+        task => task.status === 'pending' || task.status === 'loading',
       );
 
       // Process next task if available
@@ -827,7 +856,7 @@ export class ComparisonViewportManager extends EventEmitter {
     const activated = await this.lazyLoader.activateViewport(
       task.viewportId,
       undefined, // DOM element would be provided here
-      task.priority === 'high' // immediate flag for high priority
+      task.priority === 'high', // immediate flag for high priority
     );
 
     if (!activated) {
@@ -843,7 +872,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
     log.info('Loading study for viewport', {
       component: 'ComparisonViewportManager',
-      metadata: { 
+      metadata: {
         taskId: task.id,
         viewportId: task.viewportId,
         studyInstanceUID: task.studyInfo.studyInstanceUID,
@@ -915,7 +944,7 @@ export class ComparisonViewportManager extends EventEmitter {
     queueLength: number;
     currentlyLoading: number;
     completedToday: number;
-  } {
+    } {
     return {
       queueLength: this.studyLoadingQueue.length,
       currentlyLoading: this.currentlyLoading.size,
@@ -944,7 +973,7 @@ export class ComparisonViewportManager extends EventEmitter {
 
   public getStudyAssignments(): Map<string, StudyInfo> {
     const assignments = new Map<string, StudyInfo>();
-    
+
     this.viewportStudyAssignments.forEach((studyUID, viewportId) => {
       const studyInfo = this.studyRegistry.get(studyUID);
       if (studyInfo) {
@@ -966,7 +995,7 @@ export class ComparisonViewportManager extends EventEmitter {
       used: number;
       viewports: Map<string, number>;
     };
-  } {
+    } {
     return {
       activeViewports: this.lazyLoader.getActiveViewports(),
       loadingQueue: this.lazyLoader.getLoadingQueue(),
@@ -999,24 +1028,28 @@ export class ComparisonViewportManager extends EventEmitter {
 
   private setupEventForwarding(): void {
     // Forward relevant events from base manager
-    this.baseManager.on('viewport-created', (viewportId, state) => {
+    this.baseManager.on('viewport-created', (_viewportId, _state) => {
       // ComparisonViewportManager handles this internally
     });
 
-    this.baseManager.on('viewport-removed', (viewportId) => {
+    this.baseManager.on('viewport-removed', viewportId => {
       // Clean up comparison-specific data
       this.unassignStudyFromViewport(viewportId);
     });
 
-    this.baseManager.on('viewport-updated', (viewportId, state) => {
+    this.baseManager.on('viewport-updated', (_viewportId, _state) => {
       // Forward to comparison-specific handlers if needed
     });
 
     this.baseManager.on('manager-error', (error, operation) => {
-      log.error('Base ViewportManager error', {
-        component: 'ComparisonViewportManager',
-        metadata: { operation },
-      }, error);
+      log.error(
+        'Base ViewportManager error',
+        {
+          component: 'ComparisonViewportManager',
+          metadata: { operation },
+        },
+        error,
+      );
     });
   }
 
@@ -1028,8 +1061,8 @@ export class ComparisonViewportManager extends EventEmitter {
     this.availableLayouts.clear();
     this.studyRegistry.clear();
     this.viewportStudyAssignments.clear();
-    
-    this.activeSession = null;
+
+    // this._activeSession = null; // Currently unused
 
     // Dispose lazy loader
     this.lazyLoader.dispose();

@@ -408,23 +408,27 @@ class MedicalAuthentication {
 
     // Simulate realistic authentication delay
     return new Promise(resolve => {
-      setTimeout(() => {
-        // Enhanced demo validation with realistic rules
-        const validUsers = [
-          { username: 'admin', password: 'Admin123!', org: 'MED01' },
-          { username: 'radiologist', password: 'Radio123!', org: 'MED01' },
-          { username: 'technician', password: 'Tech123!', org: 'MED01' },
-          { username: 'viewer', password: 'View123!', org: 'MED01' },
-        ];
+      setTimeout(
+        () => {
+          // Enhanced demo validation with realistic rules
+          const validUsers = [
+            { username: 'admin', password: 'Admin123!', org: 'MED01' },
+            { username: 'radiologist', password: 'Radio123!', org: 'MED01' },
+            { username: 'technician', password: 'Tech123!', org: 'MED01' },
+            { username: 'viewer', password: 'View123!', org: 'MED01' },
+          ];
 
-        const user = validUsers.find(u =>
-          u.username === credentials.username &&
-          u.password === credentials.password &&
-          (!credentials.organizationId || u.org === credentials.organizationId),
-        );
+          const user = validUsers.find(
+            u =>
+              u.username === credentials.username &&
+              u.password === credentials.password &&
+              (!credentials.organizationId || u.org === credentials.organizationId),
+          );
 
-        resolve(!!user);
-      }, 200 + Math.random() * 300); // 200-500ms realistic delay
+          resolve(!!user);
+        },
+        200 + Math.random() * 300,
+      ); // 200-500ms realistic delay
     });
   }
 
@@ -435,25 +439,46 @@ class MedicalAuthentication {
     // Role-based permission mapping
     const rolePermissions = {
       admin: [
-        'view_images', 'create_annotations', 'edit_annotations', 'delete_annotations',
-        'export_data', 'view_measurements', 'create_measurements', 'edit_measurements',
-        'manage_users', 'manage_studies', 'system_settings', 'audit_logs',
-        'backup_restore', 'quality_control',
+        'view_images',
+        'create_annotations',
+        'edit_annotations',
+        'delete_annotations',
+        'export_data',
+        'view_measurements',
+        'create_measurements',
+        'edit_measurements',
+        'manage_users',
+        'manage_studies',
+        'system_settings',
+        'audit_logs',
+        'backup_restore',
+        'quality_control',
       ],
       radiologist: [
-        'view_images', 'create_annotations', 'edit_annotations', 'delete_annotations',
-        'export_data', 'view_measurements', 'create_measurements', 'edit_measurements',
-        'create_reports', 'edit_reports', 'approve_reports', 'view_patient_data',
+        'view_images',
+        'create_annotations',
+        'edit_annotations',
+        'delete_annotations',
+        'export_data',
+        'view_measurements',
+        'create_measurements',
+        'edit_measurements',
+        'create_reports',
+        'edit_reports',
+        'approve_reports',
+        'view_patient_data',
       ],
       technician: [
-        'view_images', 'create_annotations', 'edit_annotations',
-        'view_measurements', 'create_measurements', 'export_data',
-        'quality_control', 'basic_settings',
-      ],
-      viewer: [
-        'view_images', 'view_measurements', 'view_annotations',
+        'view_images',
+        'create_annotations',
+        'edit_annotations',
+        'view_measurements',
+        'create_measurements',
         'export_data',
+        'quality_control',
+        'basic_settings',
       ],
+      viewer: ['view_images', 'view_measurements', 'view_annotations', 'export_data'],
     };
 
     // Extract username from userId for demo

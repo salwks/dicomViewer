@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 import { ViewportState } from '../types/viewportState';
-import { QualityLevel } from './viewportOptimizer';
+import { QualityLevel } from './viewport-optimizer';
 import { log } from '../utils/logger';
 
 export interface RenderFrame {
@@ -261,23 +261,22 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
           queuedFrames: this.renderQueue.length,
         },
       });
-
     } catch (error) {
-      log.error('Failed to optimize rendering', {
-        component: 'EnhancedRenderingOptimizer',
-        metadata: { activeViewportId },
-      }, error as Error);
+      log.error(
+        'Failed to optimize rendering',
+        {
+          component: 'EnhancedRenderingOptimizer',
+          metadata: { activeViewportId },
+        },
+        error as Error,
+      );
     }
   }
 
   /**
    * Queue a render frame for a viewport
    */
-  public queueRenderFrame(
-    viewportId: string,
-    frameData: RenderFrame['frameData'],
-    priority: number = 5,
-  ): string {
+  public queueRenderFrame(viewportId: string, frameData: RenderFrame['frameData'], priority: number = 5): string {
     const frameId = this.generateFrameId();
 
     const frame: RenderFrame = {
@@ -526,7 +525,10 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
       if (lastRenderTime > downgradeThreshold) {
         // Rendering is too slow, downgrade quality
         this.adjustQuality(viewportId, 'downgrade');
-      } else if (averageRenderTime < upgradeThreshold && renderState.frameRate.actual > renderState.frameRate.target * 0.9) {
+      } else if (
+        averageRenderTime < upgradeThreshold &&
+        renderState.frameRate.actual > renderState.frameRate.target * 0.9
+      ) {
         // Rendering is fast and frame rate is good, upgrade quality
         this.adjustQuality(viewportId, 'upgrade');
       }
@@ -608,16 +610,18 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
       this.updateRenderMetrics(frame.viewportId, renderTime, true);
 
       this.emit('frame-rendered', frame.viewportId, frame, renderTime);
-
     } catch (error) {
-      log.error('Frame rendering failed', {
-        component: 'EnhancedRenderingOptimizer',
-        metadata: { frameId: frame.id, viewportId: frame.viewportId },
-      }, error as Error);
+      log.error(
+        'Frame rendering failed',
+        {
+          component: 'EnhancedRenderingOptimizer',
+          metadata: { frameId: frame.id, viewportId: frame.viewportId },
+        },
+        error as Error,
+      );
 
       this.updateRenderMetrics(frame.viewportId, Date.now() - startTime, false);
       this.emit('frame-dropped', frame.viewportId, frame, 'render-error');
-
     } finally {
       this.processingFrames.delete(frame.id);
     }
@@ -706,7 +710,6 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
 
       // Reset drop count on successful frame
       renderState.frameRate.dropCount = 0;
-
     } else {
       renderState.renderMetrics.framesDropped++;
       renderState.frameRate.dropCount++;
@@ -874,13 +877,15 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
       }
 
       // Check render time warning
-      if (averageRenderTime > 100) { // > 100ms is very slow
+      if (averageRenderTime > 100) {
+        // > 100ms is very slow
         this.emit('performance-warning', viewportId, 'slow-rendering', averageRenderTime);
       }
 
       // Check drop rate warning
       const dropRate = framesRendered > 0 ? framesDropped / (framesRendered + framesDropped) : 0;
-      if (dropRate > 0.1) { // > 10% drop rate
+      if (dropRate > 0.1) {
+        // > 10% drop rate
         this.emit('performance-warning', viewportId, 'high-drop-rate', dropRate);
       }
     });
@@ -895,7 +900,9 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
 
         try {
           // Try to create Web Worker
-          const workerBlob = new Blob([`
+          const workerBlob = new Blob(
+            [
+              `
             // Simple inline render worker
             let isInitialized = false;
             let renderingFrames = new Set();
@@ -946,16 +953,23 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
                 });
               }
             };
-          `], { type: 'application/javascript' });
+          `,
+            ],
+            { type: 'application/javascript' },
+          );
 
           worker = new Worker(URL.createObjectURL(workerBlob));
 
           worker.onmessage = this.workerMessageHandler;
-          worker.onerror = (error) => {
-            log.error('Render worker error', {
-              component: 'EnhancedRenderingOptimizer',
-              metadata: { workerId: i },
-            }, error as any);
+          worker.onerror = error => {
+            log.error(
+              'Render worker error',
+              {
+                component: 'EnhancedRenderingOptimizer',
+                metadata: { workerId: i },
+              },
+              error as any,
+            );
           };
 
           // Initialize the worker
@@ -963,7 +977,6 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
             type: 'init',
             config: { workerId: i, renderingConfig: this.config },
           });
-
         } catch (workerError) {
           // Fallback to inline processing if Worker creation fails
           log.warn('Web Worker not available, using fallback', {
@@ -994,10 +1007,14 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
 
         this.renderWorkers.push(worker);
       } catch (error) {
-        log.warn('Failed to create render worker', {
-          component: 'EnhancedRenderingOptimizer',
-          metadata: { workerIndex: i },
-        }, error as Error);
+        log.warn(
+          'Failed to create render worker',
+          {
+            component: 'EnhancedRenderingOptimizer',
+            metadata: { workerIndex: i },
+          },
+          error as Error,
+        );
       }
     }
 
@@ -1021,7 +1038,6 @@ export class EnhancedRenderingOptimizer extends EventEmitter {
   // ===== Cleanup =====
 
   public dispose(): void {
-
     if (this.renderScheduler) {
       clearInterval(this.renderScheduler);
       this.renderScheduler = null;

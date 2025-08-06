@@ -259,7 +259,9 @@ export class ViewportPerformanceMonitor extends EventEmitter {
     proposed: 'low' | 'medium' | 'high' | 'critical',
   ): 'low' | 'medium' | 'high' | 'critical' {
     const severityLevels = { low: 1, medium: 2, high: 3, critical: 4 };
+    // eslint-disable-next-line security/detect-object-injection -- Safe: current is validated severity level string
     const currentLevel = severityLevels[current];
+    // eslint-disable-next-line security/detect-object-injection -- Safe: proposed is validated severity level string
     const proposedLevel = severityLevels[proposed];
 
     if (proposedLevel > currentLevel) {

@@ -8,8 +8,11 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { cn } from '../../lib/utils';
+import { useViewportTools, useActiveViewport } from '../../context/ViewerContext';
+import { log } from '../../utils/logger';
+import { ToolType, ToolCategory, getToolNameFromType, getToolTypeFromName } from '../../types/tools';
 
-import { ToolType, ToolCategory } from './constants';
+import './constants'; // Import for side effects (backward compatibility)
 // Constants moved to ./constants.ts for React fast refresh compatibility
 
 interface Tool {
@@ -239,12 +242,22 @@ const categoryNames: Record<ToolCategory, string> = {
 };
 
 export const ToolPanel: React.FC<ToolPanelProps> = ({
-  activeTool,
-  onToolSelect,
+  activeTool: propActiveTool,
+  onToolSelect: propOnToolSelect,
   disabledTools = [],
   className = '',
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<ToolCategory | null>(ToolCategory.MEASUREMENT);
+  const activeViewport = useActiveViewport();
+
+  // Use new tool state management system if viewport is available
+  const viewportTools = useViewportTools(activeViewport?.id || 'main-viewport');
+
+
+  // Determine active tool - use viewport tool state if available, fallback to prop
+  const currentActiveTool = activeViewport
+    ? getToolTypeFromName(viewportTools.activeTool)
+    : propActiveTool;
 
   const handleCategoryToggle = useCallback((category: ToolCategory) => {
     setExpandedCategory(prev => (prev === category ? null : category));
@@ -252,11 +265,34 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
 
   const handleToolSelect = useCallback(
     (toolId: ToolType) => {
-      if (onToolSelect && !disabledTools.includes(toolId)) {
-        onToolSelect(toolId);
+      if (disabledTools.includes(toolId)) {
+        return;
+      }
+
+      try {
+        if (activeViewport) {
+          // Use new tool state management system
+          const toolName = getToolNameFromType(toolId);
+          if (toolName) {
+            viewportTools.setActiveTool(toolName);
+
+            log.info('Tool selected via ToolPanel', {
+              component: 'ToolPanel',
+              metadata: { toolId, toolName, viewportId: activeViewport.id },
+            });
+          }
+        } else if (propOnToolSelect) {
+          // Fallback to prop-based tool selection
+          propOnToolSelect(toolId);
+        }
+      } catch (error) {
+        log.error('Failed to select tool', {
+          component: 'ToolPanel',
+          metadata: { toolId },
+        }, error as Error);
       }
     },
-    [onToolSelect, disabledTools],
+    [activeViewport, viewportTools, propOnToolSelect, disabledTools],
   );
 
   // Keyboard shortcut handler
@@ -333,7 +369,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
               <CardContent className="p-4 pt-0">
                 <div className="grid gap-2">
                   {categoryTools.map(tool => {
-                    const isActive = activeTool === tool.id;
+                    const isActive = currentActiveTool === tool.id;
                     const isDisabled = disabledTools.includes(tool.id);
 
                     return (

@@ -332,11 +332,14 @@ export class SynchronizationOptimizer extends EventEmitter {
           queueLength: this.metrics.queueLength,
         },
       });
-
     } catch (error) {
-      log.error('Failed to optimize synchronization', {
-        component: 'SynchronizationOptimizer',
-      }, error as Error);
+      log.error(
+        'Failed to optimize synchronization',
+        {
+          component: 'SynchronizationOptimizer',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -353,9 +356,8 @@ export class SynchronizationOptimizer extends EventEmitter {
 
     // Check for duplicate operations
     const recentOperations = this.getRecentOperations(100); // Last 100ms
-    const duplicates = recentOperations.filter(op =>
-      op.type === operation.type &&
-      op.sourceViewportId === operation.sourceViewportId,
+    const duplicates = recentOperations.filter(
+      op => op.type === operation.type && op.sourceViewportId === operation.sourceViewportId,
     );
 
     return duplicates.length > 2; // Optimize if many duplicates
@@ -442,8 +444,8 @@ export class SynchronizationOptimizer extends EventEmitter {
     }
 
     // Reduce priority for redundant operations
-    const recentSimilar = this.getRecentOperations(50).filter(op =>
-      op.type === operation.type && op.sourceViewportId === operation.sourceViewportId,
+    const recentSimilar = this.getRecentOperations(50).filter(
+      op => op.type === operation.type && op.sourceViewportId === operation.sourceViewportId,
     );
 
     if (recentSimilar.length > 3) {
@@ -462,8 +464,11 @@ export class SynchronizationOptimizer extends EventEmitter {
 
     if (activeTargets.length !== operation.targetViewportIds.length) {
       operation.targetViewportIds = activeTargets;
-      this.emit('optimization-applied', OptimizationStrategy.SELECTIVE_SYNC,
-        operation.targetViewportIds.length - activeTargets.length);
+      this.emit(
+        'optimization-applied',
+        OptimizationStrategy.SELECTIVE_SYNC,
+        operation.targetViewportIds.length - activeTargets.length,
+      );
     }
   }
 
@@ -471,7 +476,7 @@ export class SynchronizationOptimizer extends EventEmitter {
     this.batchTimer = null;
     const startTime = Date.now();
 
-    for (const [_batchKey, operations] of this.pendingBatches) {
+    for (const [, operations] of this.pendingBatches) {
       if (operations.length === 0) continue;
 
       // Merge operations of the same type
@@ -539,9 +544,13 @@ export class SynchronizationOptimizer extends EventEmitter {
           }
         }
       } catch (error) {
-        log.error('Operation processing error', {
-          component: 'SynchronizationOptimizer',
-        }, error as Error);
+        log.error(
+          'Operation processing error',
+          {
+            component: 'SynchronizationOptimizer',
+          },
+          error as Error,
+        );
       }
 
       // Schedule next processing cycle
@@ -576,7 +585,6 @@ export class SynchronizationOptimizer extends EventEmitter {
       this.updateMetrics(task, duration, true);
 
       this.emit('operation-completed', task, duration);
-
     } catch (error) {
       const duration = Date.now() - startTime;
       task.lastError = (error as Error).message;
@@ -605,20 +613,22 @@ export class SynchronizationOptimizer extends EventEmitter {
     await new Promise(resolve => setTimeout(resolve, delay));
 
     // Simulate occasional failures for testing
-    if (Math.random() < 0.05) { // 5% failure rate
+    if (Math.random() < 0.05) {
+      // 5% failure rate
       throw new Error(`Sync failed for ${operation.type} to ${_targetViewportId}`);
     }
   }
 
   private getOperationComplexity(type: SyncOperation['type']): number {
     const complexityMap = {
-      'pan': 5,
-      'zoom': 8,
+      pan: 5,
+      zoom: 8,
       'window-level': 3,
-      'scroll': 10,
-      'crosshair': 2,
-      'orientation': 15,
+      scroll: 10,
+      crosshair: 2,
+      orientation: 15,
     };
+    // eslint-disable-next-line security/detect-object-injection -- Safe: type is validated SynchronizationType enum value
     return complexityMap[type] || 5;
   }
 
@@ -628,12 +638,10 @@ export class SynchronizationOptimizer extends EventEmitter {
 
       // Update average latency
       const total = this.metrics.completedOperations;
-      this.metrics.averageLatency =
-        (this.metrics.averageLatency * (total - 1) + duration) / total;
+      this.metrics.averageLatency = (this.metrics.averageLatency * (total - 1) + duration) / total;
 
       // Update peak latency
       this.metrics.peakLatency = Math.max(this.metrics.peakLatency, duration);
-
     } else {
       this.metrics.failedOperations++;
     }
@@ -654,9 +662,7 @@ export class SynchronizationOptimizer extends EventEmitter {
 
     this.syncGroups.forEach((group, _groupId) => {
       // Filter out inactive viewports
-      const activeViewportsInGroup = group.viewportIds.filter(id =>
-        activeViewportIds.has(id),
-      );
+      const activeViewportsInGroup = group.viewportIds.filter(id => activeViewportIds.has(id));
 
       if (activeViewportsInGroup.length !== group.viewportIds.length) {
         group.viewportIds = activeViewportsInGroup;
@@ -684,10 +690,11 @@ export class SynchronizationOptimizer extends EventEmitter {
 
   private adaptConfiguration(): void {
     // Adapt based on throughput and error rate
-    const errorRate = this.metrics.totalOperations > 0 ?
-      this.metrics.failedOperations / this.metrics.totalOperations : 0;
+    const errorRate =
+      this.metrics.totalOperations > 0 ? this.metrics.failedOperations / this.metrics.totalOperations : 0;
 
-    if (errorRate > 0.1) { // More than 10% error rate
+    if (errorRate > 0.1) {
+      // More than 10% error rate
       // Reduce concurrent operations
       this.config.maxConcurrentOperations = Math.max(2, this.config.maxConcurrentOperations - 1);
       this.config.operationTimeoutMs = Math.min(200, this.config.operationTimeoutMs + 20);
@@ -730,10 +737,9 @@ export class SynchronizationOptimizer extends EventEmitter {
   }
 
   private async waitForOperation(operationId: string): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const checkCompletion = () => {
-        const task = Array.from(this.activeTasks.values())
-          .find(t => t.operation.id === operationId);
+        const task = Array.from(this.activeTasks.values()).find(t => t.operation.id === operationId);
 
         if (!task) {
           resolve(true); // Operation completed

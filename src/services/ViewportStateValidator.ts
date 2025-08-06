@@ -230,8 +230,7 @@ export class ViewportStateValidator extends EventEmitter {
     const issues: ValidationIssue[] = [];
 
     // Sort rules by priority (highest first)
-    const sortedRules = Array.from(this.validationRules.values())
-      .sort((a, b) => b.priority - a.priority);
+    const sortedRules = Array.from(this.validationRules.values()).sort((a, b) => b.priority - a.priority);
 
     // Run each validation rule
     for (const rule of sortedRules) {
@@ -251,10 +250,14 @@ export class ViewportStateValidator extends EventEmitter {
           });
         }
       } catch (error) {
-        log.error('Validation rule execution failed', {
-          component: 'ViewportStateValidator',
-          metadata: { ruleId: rule.id, ruleName: rule.name },
-        }, error as Error);
+        log.error(
+          'Validation rule execution failed',
+          {
+            component: 'ViewportStateValidator',
+            metadata: { ruleId: rule.id, ruleName: rule.name },
+          },
+          error as Error,
+        );
 
         issues.push({
           ruleId: rule.id,
@@ -286,7 +289,11 @@ export class ViewportStateValidator extends EventEmitter {
 
   // ===== Auto-Fix and Recovery =====
 
-  public async autoFixState(viewportId: string, state: ViewportState, issues?: ValidationIssue[]): Promise<ViewportState | null> {
+  public async autoFixState(
+    viewportId: string,
+    state: ViewportState,
+    issues?: ValidationIssue[],
+  ): Promise<ViewportState | null> {
     const issuesToFix = issues || (await this.validateState(viewportId, state)).fixableIssues;
 
     if (issuesToFix.length === 0) {
@@ -319,17 +326,25 @@ export class ViewportStateValidator extends EventEmitter {
           });
         }
       } catch (error) {
-        log.error('Auto-fix failed', {
-          component: 'ViewportStateValidator',
-          metadata: { viewportId, ruleId: issue.ruleId },
-        }, error as Error);
+        log.error(
+          'Auto-fix failed',
+          {
+            component: 'ViewportStateValidator',
+            metadata: { viewportId, ruleId: issue.ruleId },
+          },
+          error as Error,
+        );
       }
     }
 
     return fixesApplied > 0 ? fixedState : null;
   }
 
-  private async attemptRecovery(viewportId: string, corruptedState: ViewportState, validationResult: ValidationResult): Promise<void> {
+  private async attemptRecovery(
+    viewportId: string,
+    corruptedState: ViewportState,
+    validationResult: ValidationResult,
+  ): Promise<void> {
     this.emit('recovery-started', viewportId, validationResult.criticalIssues);
 
     try {
@@ -364,10 +379,14 @@ export class ViewportStateValidator extends EventEmitter {
               break;
             }
           } catch (error) {
-            log.error('Recovery strategy failed', {
-              component: 'ViewportStateValidator',
-              metadata: { viewportId, strategyName: strategy.name },
-            }, error as Error);
+            log.error(
+              'Recovery strategy failed',
+              {
+                component: 'ViewportStateValidator',
+                metadata: { viewportId, strategyName: strategy.name },
+              },
+              error as Error,
+            );
           }
         }
       }
@@ -393,7 +412,6 @@ export class ViewportStateValidator extends EventEmitter {
       } else {
         throw new Error('Recovery strategies failed to resolve critical issues');
       }
-
     } catch (error) {
       this.emit('recovery-failed', viewportId, error as Error);
       throw error;
@@ -402,7 +420,11 @@ export class ViewportStateValidator extends EventEmitter {
 
   // ===== Backup Management =====
 
-  public async createBackup(viewportId: string, state: ViewportState, reason: StateBackup['reason'] = 'manual'): Promise<StateBackup> {
+  public async createBackup(
+    viewportId: string,
+    state: ViewportState,
+    reason: StateBackup['reason'] = 'manual',
+  ): Promise<StateBackup> {
     if (!this.config.enableBackups) {
       throw new Error('Backups are disabled');
     }
@@ -424,7 +446,7 @@ export class ViewportStateValidator extends EventEmitter {
       const validation = await this.performValidation(state);
       backup.metadata.validationResult = validation;
       backup.metadata.isCorrupted = validation.criticalIssues.length > 0;
-    } catch (error) {
+    } catch {
       backup.metadata.isCorrupted = true;
     }
 
@@ -499,9 +521,7 @@ export class ViewportStateValidator extends EventEmitter {
     const now = Date.now();
     const retentionCutoff = now - this.config.backupRetention;
 
-    const activeBackups = viewportBackups.filter(backup =>
-      new Date(backup.timestamp).getTime() > retentionCutoff,
-    );
+    const activeBackups = viewportBackups.filter(backup => new Date(backup.timestamp).getTime() > retentionCutoff);
 
     // Keep only max number of backups
     if (activeBackups.length > this.config.maxBackups) {
@@ -522,7 +542,7 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Viewport must have a valid ID',
         category: 'critical',
         priority: 100,
-        validator: (state) => ({
+        validator: state => ({
           isValid: !!state.id && typeof state.id === 'string' && state.id.trim().length > 0,
           message: 'Viewport ID is required and must be a non-empty string',
           canAutoFix: false,
@@ -534,12 +554,12 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Viewport type must be valid',
         category: 'critical',
         priority: 90,
-        validator: (state) => ({
+        validator: state => ({
           isValid: ['stack', 'volume', 'multiplanar'].includes(state.type),
           message: 'Viewport type must be stack, volume, or multiplanar',
           canAutoFix: true,
         }),
-        autoFix: (state) => ({
+        autoFix: state => ({
           ...state,
           type: 'stack',
         }),
@@ -550,16 +570,16 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Camera position values must be finite numbers',
         category: 'critical',
         priority: 80,
-        validator: (state) => ({
+        validator: state => ({
           isValid: state.camera?.position?.every(val => isFinite(val)) || false,
           message: 'Camera position values must be finite numbers',
           canAutoFix: true,
         }),
-        autoFix: (state) => ({
+        autoFix: state => ({
           ...state,
           camera: {
             ...state.camera,
-            position: state.camera.position.map(val => isFinite(val) ? val : 0) as [number, number, number],
+            position: state.camera.position.map(val => (isFinite(val) ? val : 0)) as [number, number, number],
           },
         }),
       },
@@ -569,12 +589,12 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Window width must be positive',
         category: 'critical',
         priority: 70,
-        validator: (state) => ({
+        validator: state => ({
           isValid: !state.windowLevel || state.windowLevel.width > 0,
           message: 'Window width must be positive',
           canAutoFix: true,
         }),
-        autoFix: (state) => ({
+        autoFix: state => ({
           ...state,
           windowLevel: {
             ...state.windowLevel,
@@ -588,12 +608,12 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Zoom value must be positive',
         category: 'warning',
         priority: 60,
-        validator: (state) => ({
+        validator: state => ({
           isValid: !state.transform || state.transform.zoom > 0,
           message: 'Zoom value must be positive',
           canAutoFix: true,
         }),
-        autoFix: (state) => ({
+        autoFix: state => ({
           ...state,
           transform: {
             ...state.transform,
@@ -613,7 +633,7 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Reset viewport to default state',
         priority: 10,
         canApply: () => true,
-        apply: (state) => ({
+        apply: state => ({
           ...state,
           camera: {
             position: [0, 0, -1000],
@@ -637,14 +657,16 @@ export class ViewportStateValidator extends EventEmitter {
         description: 'Fix invalid numeric values',
         priority: 80,
         canApply: (_state, issue) => issue.ruleId.includes('finite') || issue.ruleId.includes('positive'),
-        apply: (state) => {
+        apply: state => {
           const fixed = { ...state };
 
           // Fix camera positions
           if (fixed.camera?.position) {
-            fixed.camera.position = fixed.camera.position.map(val =>
-              isFinite(val) ? val : 0,
-            ) as [number, number, number];
+            fixed.camera.position = fixed.camera.position.map(val => (isFinite(val) ? val : 0)) as [
+              number,
+              number,
+              number,
+            ];
           }
 
           // Fix window level
@@ -681,10 +703,14 @@ export class ViewportStateValidator extends EventEmitter {
       const data = JSON.stringify(backup);
       await secureStorage.store(key, data, 'state-backup');
     } catch (error) {
-      log.error('Failed to persist backup', {
-        component: 'ViewportStateValidator',
-        metadata: { backupId: backup.id, viewportId: backup.viewportId },
-      }, error as Error);
+      log.error(
+        'Failed to persist backup',
+        {
+          component: 'ViewportStateValidator',
+          metadata: { backupId: backup.id, viewportId: backup.viewportId },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -721,17 +747,22 @@ export class ViewportStateValidator extends EventEmitter {
             }
           }
         } catch (error) {
-          log.warn('Failed to load individual backup', {
-            component: 'ViewportStateValidator',
-            metadata: { key },
-          }, error as Error);
+          log.warn(
+            'Failed to load individual backup',
+            {
+              component: 'ViewportStateValidator',
+              metadata: { key },
+            },
+            error as Error,
+          );
         }
       }
 
       // Limit memory usage by keeping only recent backups
       if (this.backupHistory.size > this.config.maxBackups) {
-        const sortedBackups = Array.from(this.backupHistory.entries())
-          .sort(([, a], [, b]) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const sortedBackups = Array.from(this.backupHistory.entries()).sort(
+          ([, a], [, b]) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
 
         // Keep only the most recent backups
         this.backupHistory.clear();
@@ -745,9 +776,13 @@ export class ViewportStateValidator extends EventEmitter {
         metadata: { loadedCount, totalInMemory: this.backupHistory.size },
       });
     } catch (error) {
-      log.error('Failed to load persisted backups', {
-        component: 'ViewportStateValidator',
-      }, error as Error);
+      log.error(
+        'Failed to load persisted backups',
+        {
+          component: 'ViewportStateValidator',
+        },
+        error as Error,
+      );
     }
   }
 

@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
-import { AnnotationCompat } from '../../types/annotation-compat';
+import { AnnotationCompat, AnnotationCompatLayer } from '../../types/annotation-compat';
 import { log } from '../../utils/logger';
 
 export interface HighlightStyle {
@@ -72,7 +72,7 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
   disabled = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const highlightStateRef = useRef<Map<string, {
     startTime: number;
     animation: 'fade-in' | 'fade-out' | 'pulse' | 'none';
@@ -132,7 +132,7 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
   // Render single highlight
   const renderHighlight = useCallback((
     ctx: CanvasRenderingContext2D,
-    annotation: AnnotationCompat,
+    _annotation: AnnotationCompat,
     bounds: { x: number; y: number; width: number; height: number },
     highlightState: { opacity: number; animation: string },
   ) => {
@@ -293,7 +293,8 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
 
     // Find clicked annotation
     for (const annotation of annotations) {
-      if (!selectedAnnotationIds.has(annotation.id)) continue;
+      const annotationId = AnnotationCompatLayer.getAnnotationId(annotation);
+      if (!annotationId || !selectedAnnotationIds.has(annotationId)) continue;
 
       const bounds = getAnnotationBounds(annotation);
       if (!bounds) continue;
@@ -304,7 +305,7 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
         y >= bounds.y &&
         y <= bounds.y + bounds.height
       ) {
-        onHighlightClick(annotation.id, event);
+        onHighlightClick(annotationId, event);
         break;
       }
     }
@@ -323,7 +324,8 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
 
     // Find hovered annotation
     for (const annotation of annotations) {
-      if (!selectedAnnotationIds.has(annotation.id)) continue;
+      const annotationId = AnnotationCompatLayer.getAnnotationId(annotation);
+      if (!annotationId || !selectedAnnotationIds.has(annotationId)) continue;
 
       const bounds = getAnnotationBounds(annotation);
       if (!bounds) continue;
@@ -334,7 +336,7 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
         y >= bounds.y &&
         y <= bounds.y + bounds.height
       ) {
-        onHighlightHover(annotation.id, event);
+        onHighlightHover(annotationId, event);
         break;
       }
     }
@@ -361,11 +363,12 @@ export const HighlightRenderer: React.FC<HighlightRendererProps> = ({
 
   // Clean up on unmount
   useEffect(() => {
+    const currentHighlightState = highlightStateRef.current;
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      highlightStateRef.current.clear();
+      currentHighlightState.clear();
     };
   }, []);
 

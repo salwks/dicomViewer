@@ -139,10 +139,7 @@ export class ViewportManager extends EventEmitter {
     }
   }
 
-  public updateViewport(
-    viewportId: string,
-    updates: ViewportStateUpdate,
-  ): ViewportState {
+  public updateViewport(viewportId: string, updates: ViewportStateUpdate): ViewportState {
     const startTime = Date.now();
 
     try {
@@ -382,13 +379,7 @@ export class ViewportManager extends EventEmitter {
     });
   }
 
-  private handleSynchronizerStateUpdate({
-    viewportId,
-    state,
-  }: {
-    viewportId: string;
-    state: ViewportSyncState;
-  }): void {
+  private handleSynchronizerStateUpdate({ viewportId, state }: { viewportId: string; state: ViewportSyncState }): void {
     this.emit('viewport-synchronized', viewportId, state);
   }
 
@@ -413,9 +404,7 @@ export class ViewportManager extends EventEmitter {
     const syncStates = viewportSynchronizer.getAllViewportStates();
 
     const updateTimes = this.performanceMetrics.get('update') || [];
-    const averageUpdateTime = updateTimes.length > 0
-      ? updateTimes.reduce((a, b) => a + b, 0) / updateTimes.length
-      : 0;
+    const averageUpdateTime = updateTimes.length > 0 ? updateTimes.reduce((a, b) => a + b, 0) / updateTimes.length : 0;
 
     // Rough memory estimation
     const memoryUsageBytes = allViewports.size * 1024; // Rough estimate per viewport
@@ -432,9 +421,12 @@ export class ViewportManager extends EventEmitter {
   // ===== Auto Cleanup =====
 
   private setupAutoCleanup(): void {
-    this.cleanupIntervalId = setInterval(() => {
-      this.performCleanup();
-    }, 5 * 60 * 1000); // Every 5 minutes
+    this.cleanupIntervalId = setInterval(
+      () => {
+        this.performCleanup();
+      },
+      5 * 60 * 1000,
+    ); // Every 5 minutes
   }
 
   private performCleanup(): void {
@@ -489,10 +481,14 @@ export class ViewportManager extends EventEmitter {
       try {
         this.resetViewport(viewportId);
       } catch (error) {
-        log.error('Failed to reset viewport', {
-          component: 'ViewportManager',
-          metadata: { viewportId },
-        }, error as Error);
+        log.error(
+          'Failed to reset viewport',
+          {
+            component: 'ViewportManager',
+            metadata: { viewportId },
+          },
+          error as Error,
+        );
       }
     });
   }

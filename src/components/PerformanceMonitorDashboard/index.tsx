@@ -65,7 +65,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
     try {
       const stats = performanceMonitoringSystem.getPerformanceStatistics();
       const optimizationStats = viewportOptimizer.getOptimizationStats();
-      
+
       setPerformanceData({
         isMonitoring: stats.isMonitoring,
         snapshotCount: stats.snapshotCount,
@@ -104,7 +104,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
         performanceMonitoringSystem.startMonitoring();
         setMonitoringEnabled(true);
       }
-      
+
       // Refresh data after toggle
       setTimeout(() => {
         fetchPerformanceData();
@@ -124,7 +124,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
     try {
       const report = viewportOptimizer.generatePerformanceReport();
       setPerformanceData(prev => ({ ...prev, currentReport: report }));
-      
+
       log.info('Performance report generated from dashboard', {
         component: 'PerformanceMonitorDashboard',
         metadata: { reportId: report.id },
@@ -141,7 +141,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
   const forceOptimization = useCallback(() => {
     try {
       viewportOptimizer.optimizeViewports();
-      
+
       log.info('Manual optimization triggered from dashboard', {
         component: 'PerformanceMonitorDashboard',
       });
@@ -214,17 +214,17 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
   // Calculate overall performance score
   const getPerformanceScore = () => {
     if (!performanceData.lastSnapshot) return 100;
-    
+
     const snapshot = performanceData.lastSnapshot;
     let score = 100;
-    
+
     // Deduct points for FPS issues
     if (snapshot.metrics?.rendering?.frameRate?.current < 30) {
       score -= 30;
     } else if (snapshot.metrics?.rendering?.frameRate?.current < 45) {
       score -= 15;
     }
-    
+
     // Deduct points for memory usage
     const memoryUsage = snapshot.metrics?.memory?.usage;
     if (memoryUsage) {
@@ -235,7 +235,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
         score -= 10;
       }
     }
-    
+
     return Math.max(0, score);
   };
 
@@ -247,16 +247,16 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
             <div className="flex items-center gap-2">
               <div className={cn(
                 'w-3 h-3 rounded-full',
-                performanceData.isMonitoring ? 'bg-green-500' : 'bg-red-500'
+                performanceData.isMonitoring ? 'bg-green-500' : 'bg-red-500',
               )} />
               <span className="text-sm font-medium">Performance</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 {getPerformanceScore()}%
               </Badge>
-              
+
               {performanceData.activeIssues > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   {performanceData.activeIssues} issues
@@ -276,7 +276,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Performance Monitor</CardTitle>
-            
+
             <div className="flex items-center gap-2">
               <Toggle
                 pressed={monitoringEnabled}
@@ -286,7 +286,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
               >
                 {performanceData.isMonitoring ? 'Monitoring' : 'Stopped'}
               </Toggle>
-              
+
               {showOptimizationControls && (
                 <>
                   <Button
@@ -297,7 +297,7 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
                   >
                     Optimize
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -336,9 +336,9 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
                   {performanceData.lastSnapshot?.metrics?.rendering?.frameRate?.current || 0}
                 </span>
               </div>
-              <Progress 
-                value={(performanceData.lastSnapshot?.metrics?.rendering?.frameRate?.current || 0) / 60 * 100} 
-                className="h-2" 
+              <Progress
+                value={(performanceData.lastSnapshot?.metrics?.rendering?.frameRate?.current || 0) / 60 * 100}
+                className="h-2"
               />
             </div>
           </CardContent>
@@ -350,19 +350,19 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Memory</span>
                 <span className="text-sm font-medium">
-                  {performanceData.lastSnapshot?.metrics?.memory ? 
-                    `${Math.round(performanceData.lastSnapshot.metrics.memory.usage.used / 1024 / 1024)}MB` : 
+                  {performanceData.lastSnapshot?.metrics?.memory ?
+                    `${Math.round(performanceData.lastSnapshot.metrics.memory.usage.used / 1024 / 1024)}MB` :
                     '0MB'
                   }
                 </span>
               </div>
-              <Progress 
+              <Progress
                 value={
-                  performanceData.lastSnapshot?.metrics?.memory ? 
-                    (performanceData.lastSnapshot.metrics.memory.usage.used / performanceData.lastSnapshot.metrics.memory.usage.total) * 100 : 
+                  performanceData.lastSnapshot?.metrics?.memory ?
+                    (performanceData.lastSnapshot.metrics.memory.usage.used / performanceData.lastSnapshot.metrics.memory.usage.total) * 100 :
                     0
-                } 
-                className="h-2" 
+                }
+                className="h-2"
               />
             </div>
           </CardContent>
@@ -377,13 +377,13 @@ export const PerformanceMonitorDashboard: React.FC<PerformanceMonitorDashboardPr
                   {performanceData.optimizationStats?.activeViewports || 0} / {performanceData.optimizationStats?.viewportCount || 0}
                 </span>
               </div>
-              <Progress 
+              <Progress
                 value={
-                  performanceData.optimizationStats?.viewportCount ? 
-                    (performanceData.optimizationStats.activeViewports / performanceData.optimizationStats.viewportCount) * 100 : 
+                  performanceData.optimizationStats?.viewportCount ?
+                    (performanceData.optimizationStats.activeViewports / performanceData.optimizationStats.viewportCount) * 100 :
                     0
-                } 
-                className="h-2" 
+                }
+                className="h-2"
               />
             </div>
           </CardContent>

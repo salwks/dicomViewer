@@ -4,9 +4,12 @@
  * Refactored for security compliance and type safety
  */
 
+import { log } from './logger';
+
 // Safe property access helper
 function safePropertyAccess<T extends object, K extends keyof T>(obj: T, key: K): T[K] | undefined {
   if (Object.prototype.hasOwnProperty.call(obj, key)) {
+    // eslint-disable-next-line security/detect-object-injection
     return obj[key];
   }
   return undefined;
@@ -22,7 +25,7 @@ export function registerRenderingEngine(id: string, engine: unknown): void {
   }
 
   renderingEngines.set(id, engine);
-  console.info('ViewportSynchronizer: Rendering engine registered', { id, hasEngine: !!engine });
+  log.info('ViewportSynchronizer: Rendering engine registered', { id, hasEngine: !!engine });
 }
 
 export function unregisterRenderingEngine(id: string): void {
@@ -107,8 +110,7 @@ export class ViewportSynchronizer {
     options: SynchronizationOptions = {},
   ) {
     // Input validation
-    if (!sourceEngineId?.trim() || !sourceViewportId?.trim() ||
-        !targetEngineId?.trim() || !targetViewportId?.trim()) {
+    if (!sourceEngineId?.trim() || !sourceViewportId?.trim() || !targetEngineId?.trim() || !targetViewportId?.trim()) {
       throw new Error('ViewportSynchronizer: All engine and viewport IDs must be non-empty strings');
     }
 
@@ -147,7 +149,7 @@ export class ViewportSynchronizer {
     try {
       this.setupSynchronization(sourceViewport, targetViewport);
       this.syncState.isEnabled = true;
-      console.info('ViewportSynchronizer: Synchronization enabled successfully');
+      log.info('ViewportSynchronizer: Synchronization enabled successfully');
     } catch (error) {
       console.error('ViewportSynchronizer: Failed to enable synchronization', error);
       this.cleanup();
@@ -159,7 +161,7 @@ export class ViewportSynchronizer {
 
     this.cleanup();
     this.syncState.isEnabled = false;
-    console.info('ViewportSynchronizer: Synchronization disabled');
+    log.info('ViewportSynchronizer: Synchronization disabled');
   }
 
   updateOptions(options: Partial<SynchronizationOptions>): void {
@@ -174,6 +176,7 @@ export class ViewportSynchronizer {
         const optionKey = key as keyof SynchronizationOptions;
         const value = safePropertyAccess(options, optionKey);
         if (typeof value === 'boolean') {
+          // eslint-disable-next-line security/detect-object-injection -- Safe: optionKey is validated keyof SynchronizationOptions
           (this.options as any)[optionKey] = value;
         }
       }
@@ -233,8 +236,12 @@ export class ViewportSynchronizer {
   }
 
   private hasGetViewportMethod(engine: unknown): engine is { getViewport: (id: string) => ViewportLike } {
-    return typeof engine === 'object' && engine !== null && 'getViewport' in engine &&
-           typeof (engine as any).getViewport === 'function';
+    return (
+      typeof engine === 'object' &&
+      engine !== null &&
+      'getViewport' in engine &&
+      typeof (engine as any).getViewport === 'function'
+    );
   }
 
   private setupSynchronization(sourceViewport: ViewportLike, targetViewport: ViewportLike): void {
@@ -283,7 +290,7 @@ export class ViewportSynchronizer {
 
     const startInteraction = (): void => {
       isInteracting = true;
-      console.info('ViewportSynchronizer: Camera interaction started');
+      log.info('ViewportSynchronizer: Camera interaction started');
     };
 
     const endInteraction = (): void => {
@@ -292,7 +299,7 @@ export class ViewportSynchronizer {
         clearInterval(interactionTimer);
         interactionTimer = null;
       }
-      console.info('ViewportSynchronizer: Camera interaction ended');
+      log.info('ViewportSynchronizer: Camera interaction ended');
     };
 
     const handleInteraction = (): void => {
@@ -334,7 +341,8 @@ export class ViewportSynchronizer {
       if (this.syncState.isSyncing) return;
 
       const now = Date.now();
-      if (now - this.syncState.lastRenderTime < 100) { // 100ms debounce
+      if (now - this.syncState.lastRenderTime < 100) {
+        // 100ms debounce
         return;
       }
 
@@ -451,7 +459,7 @@ export class ViewportSynchronizer {
       // Check if right mouse button or specific key combination for W/L
       if (evt.button === 2 || (evt.button === 0 && evt.shiftKey)) {
         isAdjustingWL = true;
-        console.info('ViewportSynchronizer: W/L adjustment started');
+        log.info('ViewportSynchronizer: W/L adjustment started');
       }
     };
 
@@ -462,7 +470,7 @@ export class ViewportSynchronizer {
           clearInterval(wlTimer);
           wlTimer = null;
         }
-        console.info('ViewportSynchronizer: W/L adjustment ended');
+        log.info('ViewportSynchronizer: W/L adjustment ended');
       }
     };
 
@@ -564,12 +572,18 @@ export class ViewportSynchronizer {
   private createSynchronizedCamera(sourceCamera: CameraLike, targetCamera: CameraLike): CameraLike {
     return {
       // Preserve target camera properties where appropriate, sync others
-      position: sourceCamera.position ? [...sourceCamera.position] as [number, number, number] : targetCamera.position,
-      focalPoint: sourceCamera.focalPoint ? [...sourceCamera.focalPoint] as [number, number, number] : targetCamera.focalPoint,
-      viewUp: sourceCamera.viewUp ? [...sourceCamera.viewUp] as [number, number, number] : targetCamera.viewUp,
+      position: sourceCamera.position
+        ? ([...sourceCamera.position] as [number, number, number])
+        : targetCamera.position,
+      focalPoint: sourceCamera.focalPoint
+        ? ([...sourceCamera.focalPoint] as [number, number, number])
+        : targetCamera.focalPoint,
+      viewUp: sourceCamera.viewUp ? ([...sourceCamera.viewUp] as [number, number, number]) : targetCamera.viewUp,
       parallelScale: sourceCamera.parallelScale ?? targetCamera.parallelScale,
       parallelProjection: sourceCamera.parallelProjection ?? targetCamera.parallelProjection,
-      viewPlaneNormal: sourceCamera.viewPlaneNormal ? [...sourceCamera.viewPlaneNormal] as [number, number, number] : targetCamera.viewPlaneNormal,
+      viewPlaneNormal: sourceCamera.viewPlaneNormal
+        ? ([...sourceCamera.viewPlaneNormal] as [number, number, number])
+        : targetCamera.viewPlaneNormal,
     };
   }
 
@@ -653,7 +667,7 @@ export class ViewportSynchronizer {
         // Update sync state
         this.syncState.lastRenderTime = Date.now();
 
-        console.info('ViewportSynchronizer: W/L synchronized', {
+        log.info('ViewportSynchronizer: W/L synchronized', {
           window: synchronizedVOI.upper - synchronizedVOI.lower,
           level: (synchronizedVOI.upper + synchronizedVOI.lower) / 2,
         });
@@ -703,7 +717,7 @@ export class ViewportSynchronizer {
         const mappedIndex = this.syncState.sliceMapping.get(sourceIndex);
         if (mappedIndex !== undefined) {
           targetIndex = mappedIndex;
-          console.info('ViewportSynchronizer: Using anatomical mapping', { sourceIndex, targetIndex });
+          log.info('ViewportSynchronizer: Using anatomical mapping', { sourceIndex, targetIndex });
         }
       }
 
@@ -717,7 +731,7 @@ export class ViewportSynchronizer {
 
           // Update sync state
           this.syncState.lastRenderTime = Date.now();
-          console.info('ViewportSynchronizer: Slice synchronized by index', {
+          log.info('ViewportSynchronizer: Slice synchronized by index', {
             sourceIndex,
             targetIndex,
             totalSlices: targetImageIds.length,
@@ -766,7 +780,7 @@ export class ViewportSynchronizer {
 
             // Update sync state
             this.syncState.lastRenderTime = Date.now();
-            console.info('ViewportSynchronizer: Slice synchronized by position', {
+            log.info('ViewportSynchronizer: Slice synchronized by position', {
               focalPoint: newCamera.focalPoint,
             });
           } else {
@@ -805,7 +819,7 @@ export class ViewportSynchronizer {
 
   private initializeAnatomicalMapping(sourceViewport: ViewportLike, targetViewport: ViewportLike): void {
     try {
-      console.info('ViewportSynchronizer: Initializing anatomical mapping');
+      log.info('ViewportSynchronizer: Initializing anatomical mapping');
 
       // Get image information from both viewports
       const sourceImages = sourceViewport.getImageIds?.();
@@ -825,7 +839,7 @@ export class ViewportSynchronizer {
         this.syncState.sliceMapping.set(i, i);
       }
 
-      console.info('ViewportSynchronizer: Anatomical mapping initialized', {
+      log.info('ViewportSynchronizer: Anatomical mapping initialized', {
         sourceSlices: sourceImages.length,
         targetSlices: targetImages.length,
         mappedSlices: mappingCount,
@@ -862,7 +876,7 @@ export class ViewportSynchronizer {
     this.syncState.isSyncing = false;
     this.syncState.lastRenderTime = 0;
 
-    console.info('ViewportSynchronizer: Cleanup completed', {
+    log.info('ViewportSynchronizer: Cleanup completed', {
       sourceEngineId: this.sourceEngineId,
       targetEngineId: this.targetEngineId,
     });
@@ -889,14 +903,11 @@ import { viewportSynchronizer as globalSynchronizer } from '../services/Viewport
 /**
  * Synchronizes zoom level across all viewports in the same group
  */
-export const synchronizeZoomGlobal = (
-  sourceViewportId: string,
-  zoomLevel: number,
-): void => {
+export const synchronizeZoomGlobal = (sourceViewportId: string, zoomLevel: number): void => {
   try {
     globalSynchronizer.updateViewportState(sourceViewportId, { zoom: zoomLevel }, true);
 
-    console.info('Global zoom synchronization triggered', {
+    log.info('Global zoom synchronization triggered', {
       sourceViewportId,
       zoomLevel,
     });
@@ -912,14 +923,11 @@ export const synchronizeZoomGlobal = (
 /**
  * Synchronizes pan position across all viewports in the same group
  */
-export const synchronizePanGlobal = (
-  sourceViewportId: string,
-  panPosition: [number, number],
-): void => {
+export const synchronizePanGlobal = (sourceViewportId: string, panPosition: [number, number]): void => {
   try {
     globalSynchronizer.updateViewportState(sourceViewportId, { pan: panPosition }, true);
 
-    console.info('Global pan synchronization triggered', {
+    log.info('Global pan synchronization triggered', {
       sourceViewportId,
       panPosition,
     });
@@ -954,10 +962,14 @@ export const getGlobalViewportPan = (viewportId: string): [number, number] => {
 export const resetZoomPanGlobal = (viewportIds: string[]): void => {
   try {
     for (const viewportId of viewportIds) {
-      globalSynchronizer.updateViewportState(viewportId, {
-        zoom: 1.0,
-        pan: [0, 0],
-      }, false);
+      globalSynchronizer.updateViewportState(
+        viewportId,
+        {
+          zoom: 1.0,
+          pan: [0, 0],
+        },
+        false,
+      );
     }
 
     // Trigger sync from first viewport
@@ -966,7 +978,7 @@ export const resetZoomPanGlobal = (viewportIds: string[]): void => {
       globalSynchronizer.synchronize('pan', viewportIds[0], { pan: [0, 0] });
     }
 
-    console.info('Global zoom and pan reset completed', {
+    log.info('Global zoom and pan reset completed', {
       affectedViewports: viewportIds.length,
     });
   } catch (error) {

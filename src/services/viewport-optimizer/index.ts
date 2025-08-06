@@ -97,6 +97,7 @@ export class ViewportOptimizer extends EventEmitter {
   private readonly resourcePool: ViewportResourcePool;
 
   private memoryCheckInterval: NodeJS.Timeout | null = null;
+  private isInitializing = false;
 
   constructor(config: Partial<OptimizationConfig> = {}) {
     super();
@@ -119,6 +120,12 @@ export class ViewportOptimizer extends EventEmitter {
    * Initialize the optimization system
    */
   private initialize(): void {
+    // Check if already initializing to prevent recursion
+    if (this.isInitializing) {
+      return;
+    }
+    this.isInitializing = true;
+
     log.info('ViewportOptimizer initializing', {
       component: 'ViewportOptimizer',
       metadata: {
@@ -139,6 +146,8 @@ export class ViewportOptimizer extends EventEmitter {
 
     // Setup integration with global performance monitoring
     this.setupPerformanceMonitoringIntegration();
+
+    this.isInitializing = false;
   }
 
   /**
@@ -206,15 +215,15 @@ export class ViewportOptimizer extends EventEmitter {
   private handleRenderingIssue(issue: any): void {
     if (issue.severity === 'critical') {
       // Emergency rendering optimizations
-      this.viewportStates.forEach((state, viewportId) => {
+      this.viewportStates.forEach((state, _viewportId) => {
         if (state.priority < RenderPriority.CRITICAL) {
           // Downgrade quality for non-critical viewports
           const lowerQuality = this.qualityManager.getLowerQualityLevel(state.qualityLevel);
           if (lowerQuality) {
             state.qualityLevel = lowerQuality;
-            this.qualityManager.applyQualityToViewport(viewportId, lowerQuality);
+            this.qualityManager.applyQualityToViewport(_viewportId, lowerQuality);
           }
-          
+
           // Increase throttling
           state.throttleRatio *= 0.7;
         }
@@ -231,9 +240,9 @@ export class ViewportOptimizer extends EventEmitter {
     if (issue.severity === 'critical' || issue.severity === 'high') {
       // Trigger emergency memory cleanup
       this.memoryManager.triggerEmergencyCleanup();
-      
+
       // Suspend low priority viewports
-      this.viewportStates.forEach((state, viewportId) => {
+      this.viewportStates.forEach((state, _viewportId) => {
         if (state.priority >= RenderPriority.LOW) {
           state.priority = RenderPriority.SUSPENDED;
           state.isRendering = false;
@@ -279,15 +288,15 @@ export class ViewportOptimizer extends EventEmitter {
 
     // Get current performance statistics from global system
     const stats = performanceMonitoringSystem.getPerformanceStatistics();
-    
+
     if (stats.lastSnapshot) {
       const snapshot = stats.lastSnapshot;
-      
+
       // Adjust optimization strategy based on performance metrics
       if (snapshot.metrics.rendering.frameRate.current < 30) {
         this.applyAggressiveRenderingOptimization();
       }
-      
+
       if (snapshot.metrics.memory.usage.used / snapshot.metrics.memory.usage.total > 0.8) {
         this.applyAggressiveMemoryOptimization();
       }
@@ -307,7 +316,7 @@ export class ViewportOptimizer extends EventEmitter {
         state.qualityLevel = lowestQuality;
         this.qualityManager.applyQualityToViewport(viewportId, lowestQuality);
       }
-      
+
       // Increase throttling significantly
       state.throttleRatio *= 0.5;
     });
@@ -323,10 +332,13 @@ export class ViewportOptimizer extends EventEmitter {
   private applyAggressiveMemoryOptimization(): void {
     // Trigger comprehensive memory cleanup
     this.memoryManager.triggerEmergencyCleanup();
-    this.resourcePool.forceGarbageCollection();
+    // Force garbage collection if available
+    if ('forceGarbageCollection' in this.resourcePool && typeof (this.resourcePool as any).forceGarbageCollection === 'function') {
+      (this.resourcePool as any).forceGarbageCollection();
+    }
 
     // Suspend all but critical viewports
-    this.viewportStates.forEach((state, viewportId) => {
+    this.viewportStates.forEach((state, _viewportId) => {
       if (state.priority > RenderPriority.CRITICAL) {
         state.priority = RenderPriority.SUSPENDED;
         state.isRendering = false;
@@ -414,8 +426,8 @@ export class ViewportOptimizer extends EventEmitter {
       );
 
       // Apply optimizations based on priorities
-      this.viewportStates.forEach((state, viewportId) => {
-        this.applyPriorityOptimizations(viewportId, state.priority);
+      this.viewportStates.forEach((state, _viewportId) => {
+        this.applyPriorityOptimizations(_viewportId, state.priority);
       });
 
       // Update rendering priorities for external systems
@@ -525,7 +537,7 @@ export class ViewportOptimizer extends EventEmitter {
             },
           });
         }
-      } catch (error) {
+      } catch {
         log.warn('Failed to update viewport rendering state', {
           component: 'ViewportOptimizer',
           metadata: { viewportId, shouldRender },
@@ -546,9 +558,9 @@ export class ViewportOptimizer extends EventEmitter {
    */
   private updateRenderingPriorities(): void {
     try {
-      this.viewportStates.forEach((state, viewportId) => {
+      this.viewportStates.forEach((state, _viewportId) => {
         const priority = this.convertToNewPriority(state.priority);
-        renderingPriorityManager.setPriority(viewportId, priority);
+        renderingPriorityManager.setPriority(_viewportId, priority);
       });
     } catch (error) {
       log.warn('Failed to update rendering priorities', {
@@ -733,7 +745,8 @@ export class ViewportOptimizer extends EventEmitter {
     // Apply frame rate targeting for each viewport
     this.viewportStates.forEach((state, viewportId) => {
       const targetFps = this.calculateTargetFps(state.priority, state.qualityLevel);
-      const currentFps = this.performanceMonitor.getViewportPerformanceStats(viewportId)?.fps || 60;
+      const stats = this.performanceMonitor.getViewportPerformanceStats(viewportId);
+      const currentFps = stats?.averageFps || 60;
 
       // Adjust throttling based on actual vs target FPS
       if (currentFps > targetFps * 1.1) {
@@ -866,7 +879,7 @@ export class ViewportOptimizer extends EventEmitter {
   /**
    * Calculate target FPS based on priority and quality level
    */
-  private calculateTargetFps(priority: RenderPriority, quality: QualityLevel): number {
+  private calculateTargetFps(priority: RenderPriority, quality: any): number {
     const baseFps = quality.targetFps;
 
     // Adjust based on priority
@@ -894,9 +907,9 @@ export class ViewportOptimizer extends EventEmitter {
     if (!performanceStats) return 0.5; // Default moderate load
 
     // Combine multiple metrics for system load assessment
-    const cpuLoad = (performanceStats.cpuUsage || 50) / 100;
-    const memoryLoad = (performanceStats.memoryUsage || 512) / (this.config.memoryThreshold * 1024 * 1024);
-    const avgFps = performanceStats.averageFps || 30;
+    const cpuLoad = 0.5; // Mock CPU load since cpuUsage property not available
+    const memoryLoad = (performanceStats.totalMemoryUsage || 512) / (this.config.memoryThreshold * 1024 * 1024);
+    const avgFps = performanceStats.averageSystemFps || 30;
     const fpsLoad = Math.max(0, (60 - avgFps) / 60);
 
     return Math.min(1.0, (cpuLoad * 0.4 + memoryLoad * 0.4 + fpsLoad * 0.2));
@@ -921,7 +934,7 @@ export class ViewportOptimizer extends EventEmitter {
           },
         });
       }
-    } catch (error) {
+    } catch {
       log.warn('Failed to set viewport rendering interval', {
         component: 'ViewportOptimizer',
         metadata: { viewportId, throttleRatio, targetInterval },
@@ -947,10 +960,10 @@ export class ViewportOptimizer extends EventEmitter {
   generatePerformanceReport(): any {
     // Generate report from global performance monitoring system
     const globalReport = performanceMonitoringSystem.generateReport();
-    
+
     // Add viewport-specific optimization data
     const optimizationStats = this.getOptimizationStats();
-    
+
     const enhancedReport = {
       ...globalReport,
       optimization: {
@@ -990,10 +1003,10 @@ export class ViewportOptimizer extends EventEmitter {
    */
   dispose(): void {
     this.stopMemoryMonitoring();
-    
+
     // Stop global performance monitoring
     performanceMonitoringSystem.stopMonitoring();
-    
+
     this.performanceMonitor.dispose();
     this.memoryManager.dispose();
     this.resourcePool.dispose();

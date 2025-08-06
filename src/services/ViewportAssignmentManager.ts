@@ -162,7 +162,6 @@ export class ViewportAssignmentManager extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
       log.error('Failed to assign series to viewport', {
         component: 'ViewportAssignmentManager',
@@ -176,10 +175,7 @@ export class ViewportAssignmentManager extends EventEmitter {
     }
   }
 
-  public clearViewportAssignment(
-    viewportId: string,
-    options: { skipSeriesManagement?: boolean } = {},
-  ): void {
+  public clearViewportAssignment(viewportId: string, options: { skipSeriesManagement?: boolean } = {}): void {
     const assignment = this.assignments.get(viewportId);
     if (!assignment) {
       return;
@@ -311,6 +307,7 @@ export class ViewportAssignmentManager extends EventEmitter {
     // Include all possible viewports up to max
     for (let i = 0; i < this.config.maxViewports; i++) {
       const viewportId = String.fromCharCode(65 + i); // A, B, C, D...
+      // eslint-disable-next-line security/detect-object-injection -- Safe: viewportId is generated from controlled loop (A-Z letters)
       state[viewportId] = this.assignments.get(viewportId) || null;
     }
 
@@ -382,7 +379,6 @@ export class ViewportAssignmentManager extends EventEmitter {
         component: 'ViewportAssignmentManager',
         metadata: { viewportId, seriesInstanceUID },
       });
-
     } catch (error) {
       assignment.isLoading = false;
       assignment.lastModified = new Date();
@@ -431,7 +427,6 @@ export class ViewportAssignmentManager extends EventEmitter {
         component: 'ViewportAssignmentManager',
         metadata: { viewportId, seriesInstanceUID },
       });
-
     } catch (error) {
       log.error('Failed to sync viewport state', {
         component: 'ViewportAssignmentManager',

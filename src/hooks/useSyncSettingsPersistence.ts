@@ -5,9 +5,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SynchronizationSettings } from '../components/SynchronizationControls';
+import { SynchronizationSettings } from '../components/SynchronizationControls/index';
 import { secureStorage } from '../security/secureStorage';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 interface SyncSettingsProfile {
   id: string;
@@ -90,9 +91,12 @@ export function useSyncSettingsPersistence(
   const isInitializedRef = useRef(false);
 
   // Storage keys
-  const getStorageKey = useCallback((suffix: string): string => {
-    return `${opts.storagePrefix}-${suffix}`;
-  }, [opts.storagePrefix]);
+  const getStorageKey = useCallback(
+    (suffix: string): string => {
+      return `${opts.storagePrefix}-${suffix}`;
+    },
+    [opts.storagePrefix],
+  );
 
   // Initialize secure storage
   useEffect(() => {
@@ -121,18 +125,128 @@ export function useSyncSettingsPersistence(
     initializeStorage();
   }, [opts.autoSave, opts.enableProfiles]);
 
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!opts.autoSave || !isInitializedRef.current) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save - inline to avoid dependencies
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      if (isAutoSaving) return;
+
+      setIsAutoSaving(true);
+      try {
+        await secureStorage.store(getStorageKey('current'), JSON.stringify(settings), 'sync-settings-current', {
+          encrypt: true,
+        });
+        setLastSaved(new Date());
+        log.info('Auto-save completed', { component: 'useSyncSettingsPersistence' });
+      } catch (error) {
+        log.error('Auto-save failed', { component: 'useSyncSettingsPersistence' }, error as Error);
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, opts.autoSaveDelay);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [settings, opts.autoSave, opts.autoSaveDelay, isAutoSaving, getStorageKey]);
+
+  // Load profiles function removed as it was unused
+
+  // Save profiles to storage
+  const saveProfiles = useCallback(
+    async (updatedProfiles: SyncSettingsProfile[]): Promise<void> => {
+      try {
+        await secureStorage.store(
+          getStorageKey('profiles'),
+          JSON.stringify(updatedProfiles),
+          'sync-settings-profiles',
+          { encrypt: true },
+        );
+
+        log.info('Sync settings profiles saved', {
+          component: 'useSyncSettingsPersistence',
+          metadata: { count: updatedProfiles.length },
+        });
+      } catch (error) {
+        log.error('Failed to save sync settings profiles', { component: 'useSyncSettingsPersistence' }, error as Error);
+        throw error;
+      }
+    },
+    [getStorageKey],
+  );
+
+  // Update settings with validation
+  const updateSettings = useCallback(
+    (newSettings: SynchronizationSettings): void => {
+      // Validate settings object
+      const validatedSettings = { ...DEFAULT_SETTINGS };
+
+      // Safe property copying
+      Object.keys(DEFAULT_SETTINGS).forEach(key => {
+        const settingKey = key as keyof SynchronizationSettings;
+        if (Object.prototype.hasOwnProperty.call(newSettings, settingKey)) {
+          const value = safePropertyAccess(newSettings, settingKey);
+          if (typeof value === 'boolean') {
+            // eslint-disable-next-line security/detect-object-injection -- Safe: settingKey is typed as keyof SynchronizationSettings
+            validatedSettings[settingKey] = value;
+          }
+        }
+      });
+
+      setSettings(validatedSettings);
+
+      log.info('Sync settings updated', {
+        component: 'useSyncSettingsPersistence',
+        metadata: {
+          activeCount: Object.values(validatedSettings).filter(Boolean).length,
+          changes: Object.keys(validatedSettings).filter(
+            key =>
+              validatedSettings[key as keyof SynchronizationSettings] !== settings[key as keyof SynchronizationSettings],
+          ),
+        },
+      });
+    },
+    [settings],
+  );
+
   // Load settings and profiles on mount
   useEffect(() => {
     const loadInitialData = async (): Promise<void> => {
       if (isInitializedRef.current) return;
 
       try {
-        // Load current settings
-        await loadSettings();
+        // Load current settings - inlined to avoid dependencies
+        try {
+          const settingsData = await secureStorage.retrieve(getStorageKey('current'));
+          if (settingsData) {
+            const loadedSettings = JSON.parse(settingsData);
+            updateSettings(loadedSettings);
+          }
+        } catch (error) {
+          log.error('Failed to load current settings', { component: 'useSyncSettingsPersistence' }, error as Error);
+        }
 
-        // Load profiles if enabled
+        // Load profiles if enabled - inlined to avoid dependencies
         if (opts.enableProfiles) {
-          await loadProfiles();
+          try {
+            const profilesData = await secureStorage.retrieve(getStorageKey('profiles'));
+            if (profilesData) {
+              const loadedProfiles = JSON.parse(profilesData);
+              setProfiles(loadedProfiles);
+            }
+          } catch (error) {
+            log.error('Failed to load profiles', { component: 'useSyncSettingsPersistence' }, error as Error);
+          }
         }
 
         isInitializedRef.current = true;
@@ -150,326 +264,264 @@ export function useSyncSettingsPersistence(
     };
 
     loadInitialData();
-  }, [opts.enableProfiles, loadSettings, loadProfiles]);
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (!opts.autoSave || !isInitializedRef.current) return;
-
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    // Set new timeout for auto-save
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      saveSettings();
-    }, opts.autoSaveDelay);
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [settings, opts.autoSave, opts.autoSaveDelay, saveSettings]);
-
-  // Load profiles from storage
-  const loadProfiles = useCallback(async (): Promise<void> => {
-    try {
-      const profilesData = await secureStorage.retrieve(getStorageKey('profiles'));
-      if (profilesData) {
-        const loadedProfiles: SyncSettingsProfile[] = JSON.parse(profilesData);
-        setProfiles(loadedProfiles);
-
-        log.info('Sync settings profiles loaded', {
-          component: 'useSyncSettingsPersistence',
-          metadata: { count: loadedProfiles.length },
-        });
-      }
-    } catch (error) {
-      log.error(
-        'Failed to load sync settings profiles',
-        { component: 'useSyncSettingsPersistence' },
-        error as Error,
-      );
-    }
-  }, [getStorageKey]);
-
-  // Save profiles to storage
-  const saveProfiles = useCallback(async (updatedProfiles: SyncSettingsProfile[]): Promise<void> => {
-    try {
-      await secureStorage.store(
-        getStorageKey('profiles'),
-        JSON.stringify(updatedProfiles),
-        'sync-settings-profiles',
-        { encrypt: true },
-      );
-
-      log.info('Sync settings profiles saved', {
-        component: 'useSyncSettingsPersistence',
-        metadata: { count: updatedProfiles.length },
-      });
-    } catch (error) {
-      log.error(
-        'Failed to save sync settings profiles',
-        { component: 'useSyncSettingsPersistence' },
-        error as Error,
-      );
-      throw error;
-    }
-  }, [getStorageKey]);
-
-  // Update settings with validation
-  const updateSettings = useCallback((newSettings: SynchronizationSettings): void => {
-    // Validate settings object
-    const validatedSettings = { ...DEFAULT_SETTINGS };
-
-    // Safe property copying
-    Object.keys(DEFAULT_SETTINGS).forEach(key => {
-      const settingKey = key as keyof SynchronizationSettings;
-      if (Object.prototype.hasOwnProperty.call(newSettings, settingKey)) {
-        const value = newSettings[settingKey];
-        if (typeof value === 'boolean') {
-          validatedSettings[settingKey] = value;
-        }
-      }
-    });
-
-    setSettings(validatedSettings);
-
-    log.info('Sync settings updated', {
-      component: 'useSyncSettingsPersistence',
-      metadata: {
-        activeCount: Object.values(validatedSettings).filter(Boolean).length,
-        changes: Object.keys(validatedSettings).filter(
-          key => validatedSettings[key as keyof SynchronizationSettings] !==
-                 settings[key as keyof SynchronizationSettings],
-        ),
-      },
-    });
-  }, [settings]);
+  }, [opts.enableProfiles, getStorageKey, updateSettings]);
 
   // Save current settings
-  const saveSettings = useCallback(async (name?: string): Promise<void> => {
-    if (isAutoSaving) return;
+  const saveSettings = useCallback(
+    async (name?: string): Promise<void> => {
+      if (isAutoSaving) return;
 
-    setIsAutoSaving(true);
+      setIsAutoSaving(true);
 
-    try {
-      // Save current settings
-      await secureStorage.store(
-        getStorageKey('current'),
-        JSON.stringify(settings),
-        'sync-settings-current',
-        { encrypt: true },
-      );
+      try {
+        // Save current settings
+        await secureStorage.store(getStorageKey('current'), JSON.stringify(settings), 'sync-settings-current', {
+          encrypt: true,
+        });
 
-      // If name provided, create/update profile
-      if (name && opts.enableProfiles) {
-        await createProfile(name, settings);
+        // If name provided, create/update profile - inline to avoid dependencies
+        if (name && opts.enableProfiles) {
+          try {
+            const profileId = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const newProfile = {
+              id: profileId,
+              name,
+              settings,
+              createdAt: new Date().toISOString(),
+              lastUsed: new Date().toISOString(),
+            };
+
+            const updatedProfiles = [...profiles, newProfile];
+            setProfiles(updatedProfiles);
+
+            await secureStorage.store(
+              getStorageKey('profiles'),
+              JSON.stringify(updatedProfiles),
+              'sync-settings-profiles',
+              { encrypt: true },
+            );
+
+            log.info('Profile created during save', {
+              component: 'useSyncSettingsPersistence',
+              metadata: { profileId, name },
+            });
+          } catch (error) {
+            log.error('Failed to create profile during save', { component: 'useSyncSettingsPersistence' }, error as Error);
+          }
+        }
+
+        setLastSaved(new Date());
+
+        log.info('Sync settings saved', {
+          component: 'useSyncSettingsPersistence',
+          metadata: {
+            profileName: name,
+            activeCount: Object.values(settings).filter(Boolean).length,
+          },
+        });
+      } catch (error) {
+        log.error(
+          'Failed to save sync settings',
+          { component: 'useSyncSettingsPersistence', metadata: { profileName: name } },
+          error as Error,
+        );
+        throw error;
+      } finally {
+        setIsAutoSaving(false);
       }
-
-      setLastSaved(new Date());
-
-      log.info('Sync settings saved', {
-        component: 'useSyncSettingsPersistence',
-        metadata: {
-          profileName: name,
-          activeCount: Object.values(settings).filter(Boolean).length,
-        },
-      });
-    } catch (error) {
-      log.error(
-        'Failed to save sync settings',
-        { component: 'useSyncSettingsPersistence', metadata: { profileName: name } },
-        error as Error,
-      );
-      throw error;
-    } finally {
-      setIsAutoSaving(false);
-    }
-  }, [settings, isAutoSaving, getStorageKey, opts.enableProfiles, createProfile]);
+    },
+    [settings, isAutoSaving, getStorageKey, opts.enableProfiles, profiles],
+  );
 
   // Load settings from storage
-  const loadSettings = useCallback(async (profileId?: string): Promise<boolean> => {
-    try {
-      let settingsData: string | null = null;
+  const loadSettings = useCallback(
+    async (profileId?: string): Promise<boolean> => {
+      try {
+        let settingsData: string | null = null;
 
-      if (profileId && opts.enableProfiles) {
-        // Load from specific profile
-        const profile = profiles.find(p => p.id === profileId);
-        if (profile) {
-          setSettings(profile.settings);
+        if (profileId && opts.enableProfiles) {
+          // Load from specific profile
+          const profile = profiles.find(p => p.id === profileId);
+          if (profile) {
+            setSettings(profile.settings);
 
-          // Update last used timestamp
-          const updatedProfiles = profiles.map(p =>
-            p.id === profileId ? { ...p, lastUsed: new Date().toISOString() } : p,
-          );
-          setProfiles(updatedProfiles);
-          await saveProfiles(updatedProfiles);
+            // Update last used timestamp
+            const updatedProfiles = profiles.map(p =>
+              p.id === profileId ? { ...p, lastUsed: new Date().toISOString() } : p,
+            );
+            setProfiles(updatedProfiles);
+            await saveProfiles(updatedProfiles);
 
-          log.info('Sync settings loaded from profile', {
+            log.info('Sync settings loaded from profile', {
+              component: 'useSyncSettingsPersistence',
+              metadata: { profileId, profileName: profile.name },
+            });
+
+            return true;
+          } else {
+            log.warn('Profile not found', {
+              component: 'useSyncSettingsPersistence',
+              metadata: { profileId },
+            });
+            return false;
+          }
+        } else {
+          // Load current settings
+          settingsData = await secureStorage.retrieve(getStorageKey('current'));
+        }
+
+        if (settingsData) {
+          const loadedSettings: SynchronizationSettings = JSON.parse(settingsData);
+          updateSettings(loadedSettings);
+
+          log.info('Sync settings loaded', {
             component: 'useSyncSettingsPersistence',
-            metadata: { profileId, profileName: profile.name },
+            metadata: {
+              source: profileId ? 'profile' : 'current',
+              activeCount: Object.values(loadedSettings).filter(Boolean).length,
+            },
           });
 
           return true;
-        } else {
-          log.warn('Profile not found', {
+        } else if (!profileId) {
+          // No saved settings, use defaults
+          log.info('No saved sync settings found, using defaults', {
             component: 'useSyncSettingsPersistence',
-            metadata: { profileId },
           });
-          return false;
         }
-      } else {
-        // Load current settings
-        settingsData = await secureStorage.retrieve(getStorageKey('current'));
+
+        return false;
+      } catch (error) {
+        log.error(
+          'Failed to load sync settings',
+          { component: 'useSyncSettingsPersistence', metadata: { profileId } },
+          error as Error,
+        );
+        return false;
       }
+    },
+    [profiles, updateSettings, getStorageKey, opts.enableProfiles, saveProfiles],
+  );
 
-      if (settingsData) {
-        const loadedSettings: SynchronizationSettings = JSON.parse(settingsData);
-        updateSettings(loadedSettings);
+  // Delete settings profile
+  const deleteSettings = useCallback(
+    async (profileId: string): Promise<boolean> => {
+      try {
+        const updatedProfiles = profiles.filter(p => p.id !== profileId);
+        setProfiles(updatedProfiles);
+        await saveProfiles(updatedProfiles);
 
-        log.info('Sync settings loaded', {
+        log.info('Sync settings profile deleted', {
           component: 'useSyncSettingsPersistence',
-          metadata: {
-            source: profileId ? 'profile' : 'current',
-            activeCount: Object.values(loadedSettings).filter(Boolean).length,
-          },
+          metadata: { profileId },
         });
 
         return true;
-      } else if (!profileId) {
-        // No saved settings, use defaults
-        log.info('No saved sync settings found, using defaults', {
-          component: 'useSyncSettingsPersistence',
-        });
+      } catch (error) {
+        log.error(
+          'Failed to delete sync settings profile',
+          { component: 'useSyncSettingsPersistence', metadata: { profileId } },
+          error as Error,
+        );
+        return false;
       }
-
-      return false;
-    } catch (error) {
-      log.error(
-        'Failed to load sync settings',
-        { component: 'useSyncSettingsPersistence', metadata: { profileId } },
-        error as Error,
-      );
-      return false;
-    }
-  }, [profiles, updateSettings, getStorageKey, opts.enableProfiles, saveProfiles]);
-
-  // Delete settings profile
-  const deleteSettings = useCallback(async (profileId: string): Promise<boolean> => {
-    try {
-      const updatedProfiles = profiles.filter(p => p.id !== profileId);
-      setProfiles(updatedProfiles);
-      await saveProfiles(updatedProfiles);
-
-      log.info('Sync settings profile deleted', {
-        component: 'useSyncSettingsPersistence',
-        metadata: { profileId },
-      });
-
-      return true;
-    } catch (error) {
-      log.error(
-        'Failed to delete sync settings profile',
-        { component: 'useSyncSettingsPersistence', metadata: { profileId } },
-        error as Error,
-      );
-      return false;
-    }
-  }, [profiles, saveProfiles]);
+    },
+    [profiles, saveProfiles],
+  );
 
   // Create new profile
-  const createProfile = useCallback(async (
-    name: string,
-    profileSettings?: SynchronizationSettings,
-  ): Promise<string> => {
-    try {
-      const profileId = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const newProfile: SyncSettingsProfile = {
-        id: profileId,
-        name,
-        settings: profileSettings || settings,
-        createdAt: new Date().toISOString(),
-        lastUsed: new Date().toISOString(),
-      };
+  const createProfile = useCallback(
+    async (name: string, profileSettings?: SynchronizationSettings): Promise<string> => {
+      try {
+        const profileId = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newProfile: SyncSettingsProfile = {
+          id: profileId,
+          name,
+          settings: profileSettings || settings,
+          createdAt: new Date().toISOString(),
+          lastUsed: new Date().toISOString(),
+        };
 
-      const updatedProfiles = [...profiles, newProfile];
-      setProfiles(updatedProfiles);
-      await saveProfiles(updatedProfiles);
+        const updatedProfiles = [...profiles, newProfile];
+        setProfiles(updatedProfiles);
+        await saveProfiles(updatedProfiles);
 
-      log.info('Sync settings profile created', {
-        component: 'useSyncSettingsPersistence',
-        metadata: { profileId, name },
-      });
+        log.info('Sync settings profile created', {
+          component: 'useSyncSettingsPersistence',
+          metadata: { profileId, name },
+        });
 
-      return profileId;
-    } catch (error) {
-      log.error(
-        'Failed to create sync settings profile',
-        { component: 'useSyncSettingsPersistence', metadata: { name } },
-        error as Error,
-      );
-      throw error;
-    }
-  }, [settings, profiles, saveProfiles]);
+        return profileId;
+      } catch (error) {
+        log.error(
+          'Failed to create sync settings profile',
+          { component: 'useSyncSettingsPersistence', metadata: { name } },
+          error as Error,
+        );
+        throw error;
+      }
+    },
+    [settings, profiles, saveProfiles],
+  );
 
   // Update profile
-  const updateProfile = useCallback(async (
-    profileId: string,
-    updates: Partial<SyncSettingsProfile>,
-  ): Promise<boolean> => {
-    try {
-      const updatedProfiles = profiles.map(profile =>
-        profile.id === profileId ? { ...profile, ...updates } : profile,
-      );
+  const updateProfile = useCallback(
+    async (profileId: string, updates: Partial<SyncSettingsProfile>): Promise<boolean> => {
+      try {
+        const updatedProfiles = profiles.map(profile =>
+          profile.id === profileId ? { ...profile, ...updates } : profile,
+        );
 
-      setProfiles(updatedProfiles);
-      await saveProfiles(updatedProfiles);
+        setProfiles(updatedProfiles);
+        await saveProfiles(updatedProfiles);
 
-      log.info('Sync settings profile updated', {
-        component: 'useSyncSettingsPersistence',
-        metadata: { profileId, updates: Object.keys(updates) },
-      });
+        log.info('Sync settings profile updated', {
+          component: 'useSyncSettingsPersistence',
+          metadata: { profileId, updates: Object.keys(updates) },
+        });
 
-      return true;
-    } catch (error) {
-      log.error(
-        'Failed to update sync settings profile',
-        { component: 'useSyncSettingsPersistence', metadata: { profileId } },
-        error as Error,
-      );
-      return false;
-    }
-  }, [profiles, saveProfiles]);
+        return true;
+      } catch (error) {
+        log.error(
+          'Failed to update sync settings profile',
+          { component: 'useSyncSettingsPersistence', metadata: { profileId } },
+          error as Error,
+        );
+        return false;
+      }
+    },
+    [profiles, saveProfiles],
+  );
 
   // Set default profile
-  const setDefaultProfile = useCallback(async (profileId: string): Promise<boolean> => {
-    try {
-      const updatedProfiles = profiles.map(profile => ({
-        ...profile,
-        isDefault: profile.id === profileId,
-      }));
+  const setDefaultProfile = useCallback(
+    async (profileId: string): Promise<boolean> => {
+      try {
+        const updatedProfiles = profiles.map(profile => ({
+          ...profile,
+          isDefault: profile.id === profileId,
+        }));
 
-      setProfiles(updatedProfiles);
-      await saveProfiles(updatedProfiles);
+        setProfiles(updatedProfiles);
+        await saveProfiles(updatedProfiles);
 
-      log.info('Default sync settings profile set', {
-        component: 'useSyncSettingsPersistence',
-        metadata: { profileId },
-      });
+        log.info('Default sync settings profile set', {
+          component: 'useSyncSettingsPersistence',
+          metadata: { profileId },
+        });
 
-      return true;
-    } catch (error) {
-      log.error(
-        'Failed to set default sync settings profile',
-        { component: 'useSyncSettingsPersistence', metadata: { profileId } },
-        error as Error,
-      );
-      return false;
-    }
-  }, [profiles, saveProfiles]);
+        return true;
+      } catch (error) {
+        log.error(
+          'Failed to set default sync settings profile',
+          { component: 'useSyncSettingsPersistence', metadata: { profileId } },
+          error as Error,
+        );
+        return false;
+      }
+    },
+    [profiles, saveProfiles],
+  );
 
   // Export settings
   const exportSettings = useCallback(async (): Promise<string> => {
@@ -490,64 +542,57 @@ export function useSyncSettingsPersistence(
 
       return exportString;
     } catch (error) {
-      log.error(
-        'Failed to export sync settings',
-        { component: 'useSyncSettingsPersistence' },
-        error as Error,
-      );
+      log.error('Failed to export sync settings', { component: 'useSyncSettingsPersistence' }, error as Error);
       throw error;
     }
   }, [settings, profiles, opts.enableProfiles]);
 
   // Import settings
-  const importSettings = useCallback(async (data: string): Promise<boolean> => {
-    try {
-      const importData = JSON.parse(data);
+  const importSettings = useCallback(
+    async (data: string): Promise<boolean> => {
+      try {
+        const importData = JSON.parse(data);
 
-      // Validate import data structure
-      if (!importData.settings || typeof importData.settings !== 'object') {
-        throw new Error('Invalid import data: missing settings');
-      }
-
-      // Import settings
-      updateSettings(importData.settings);
-
-      // Import profiles if enabled and available
-      if (opts.enableProfiles && Array.isArray(importData.profiles)) {
-        // Merge with existing profiles (avoiding duplicates by name)
-        const existingNames = new Set(profiles.map(p => p.name));
-        const newProfiles = importData.profiles.filter(
-          (p: SyncSettingsProfile) => !existingNames.has(p.name),
-        );
-
-        if (newProfiles.length > 0) {
-          const updatedProfiles = [...profiles, ...newProfiles];
-          setProfiles(updatedProfiles);
-          await saveProfiles(updatedProfiles);
+        // Validate import data structure
+        if (!importData.settings || typeof importData.settings !== 'object') {
+          throw new Error('Invalid import data: missing settings');
         }
+
+        // Import settings
+        updateSettings(importData.settings);
+
+        // Import profiles if enabled and available
+        if (opts.enableProfiles && Array.isArray(importData.profiles)) {
+          // Merge with existing profiles (avoiding duplicates by name)
+          const existingNames = new Set(profiles.map(p => p.name));
+          const newProfiles = importData.profiles.filter((p: SyncSettingsProfile) => !existingNames.has(p.name));
+
+          if (newProfiles.length > 0) {
+            const updatedProfiles = [...profiles, ...newProfiles];
+            setProfiles(updatedProfiles);
+            await saveProfiles(updatedProfiles);
+          }
+        }
+
+        // Save imported settings
+        await saveSettings();
+
+        log.info('Sync settings imported', {
+          component: 'useSyncSettingsPersistence',
+          metadata: {
+            version: importData.version,
+            profileCount: importData.profiles?.length || 0,
+          },
+        });
+
+        return true;
+      } catch (error) {
+        log.error('Failed to import sync settings', { component: 'useSyncSettingsPersistence' }, error as Error);
+        return false;
       }
-
-      // Save imported settings
-      await saveSettings();
-
-      log.info('Sync settings imported', {
-        component: 'useSyncSettingsPersistence',
-        metadata: {
-          version: importData.version,
-          profileCount: importData.profiles?.length || 0,
-        },
-      });
-
-      return true;
-    } catch (error) {
-      log.error(
-        'Failed to import sync settings',
-        { component: 'useSyncSettingsPersistence' },
-        error as Error,
-      );
-      return false;
-    }
-  }, [updateSettings, profiles, opts.enableProfiles, saveProfiles, saveSettings]);
+    },
+    [updateSettings, profiles, opts.enableProfiles, saveProfiles, saveSettings],
+  );
 
   // Reset to defaults
   const resetToDefaults = useCallback((): void => {

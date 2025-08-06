@@ -8,15 +8,16 @@ import { EventEmitter } from 'events';
 import { viewportStateManager } from './viewportStateManager';
 import { memoryManager } from './memoryManager';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 // Rendering priority levels (extending existing enum)
 export enum RenderPriority {
-  CRITICAL = 0,    // Active viewport with user interaction
-  HIGH = 1,        // Active viewport
-  MEDIUM = 2,      // Visible inactive viewport
-  LOW = 3,         // Hidden viewport
-  SUSPENDED = 4,   // Suspended rendering
-  BACKGROUND = 5,  // Background processing only
+  CRITICAL = 0, // Active viewport with user interaction
+  HIGH = 1, // Active viewport
+  MEDIUM = 2, // Visible inactive viewport
+  LOW = 3, // Hidden viewport
+  SUSPENDED = 4, // Suspended rendering
+  BACKGROUND = 5, // Background processing only
 }
 
 // Priority queue item interface
@@ -90,48 +91,66 @@ export interface PrioritySystemEvents {
 
 // Default resource allocations for each priority level
 const DEFAULT_RESOURCE_ALLOCATIONS = new Map<RenderPriority, ResourceAllocation>([
-  [RenderPriority.CRITICAL, {
-    cpuPercentage: 60,
-    memoryPercentage: 50,
-    gpuPercentage: 70,
-    maxConcurrentTasks: 1,
-    timeSliceMs: 16, // Target 60fps
-  }],
-  [RenderPriority.HIGH, {
-    cpuPercentage: 30,
-    memoryPercentage: 30,
-    gpuPercentage: 20,
-    maxConcurrentTasks: 2,
-    timeSliceMs: 33, // Target 30fps
-  }],
-  [RenderPriority.MEDIUM, {
-    cpuPercentage: 20,
-    memoryPercentage: 15,
-    gpuPercentage: 10,
-    maxConcurrentTasks: 3,
-    timeSliceMs: 100, // Target 10fps
-  }],
-  [RenderPriority.LOW, {
-    cpuPercentage: 10,
-    memoryPercentage: 5,
-    gpuPercentage: 5,
-    maxConcurrentTasks: 2,
-    timeSliceMs: 200, // Target 5fps
-  }],
-  [RenderPriority.SUSPENDED, {
-    cpuPercentage: 0,
-    memoryPercentage: 0,
-    gpuPercentage: 0,
-    maxConcurrentTasks: 0,
-    timeSliceMs: 0,
-  }],
-  [RenderPriority.BACKGROUND, {
-    cpuPercentage: 5,
-    memoryPercentage: 2,
-    gpuPercentage: 1,
-    maxConcurrentTasks: 1,
-    timeSliceMs: 1000, // Target 1fps
-  }],
+  [
+    RenderPriority.CRITICAL,
+    {
+      cpuPercentage: 60,
+      memoryPercentage: 50,
+      gpuPercentage: 70,
+      maxConcurrentTasks: 1,
+      timeSliceMs: 16, // Target 60fps
+    },
+  ],
+  [
+    RenderPriority.HIGH,
+    {
+      cpuPercentage: 30,
+      memoryPercentage: 30,
+      gpuPercentage: 20,
+      maxConcurrentTasks: 2,
+      timeSliceMs: 33, // Target 30fps
+    },
+  ],
+  [
+    RenderPriority.MEDIUM,
+    {
+      cpuPercentage: 20,
+      memoryPercentage: 15,
+      gpuPercentage: 10,
+      maxConcurrentTasks: 3,
+      timeSliceMs: 100, // Target 10fps
+    },
+  ],
+  [
+    RenderPriority.LOW,
+    {
+      cpuPercentage: 10,
+      memoryPercentage: 5,
+      gpuPercentage: 5,
+      maxConcurrentTasks: 2,
+      timeSliceMs: 200, // Target 5fps
+    },
+  ],
+  [
+    RenderPriority.SUSPENDED,
+    {
+      cpuPercentage: 0,
+      memoryPercentage: 0,
+      gpuPercentage: 0,
+      maxConcurrentTasks: 0,
+      timeSliceMs: 0,
+    },
+  ],
+  [
+    RenderPriority.BACKGROUND,
+    {
+      cpuPercentage: 5,
+      memoryPercentage: 2,
+      gpuPercentage: 1,
+      maxConcurrentTasks: 1,
+      timeSliceMs: 1000, // Target 1fps
+    },
+  ],
 ]);
 
 // Default configuration
@@ -204,8 +223,7 @@ export class RenderingPriorityManager extends EventEmitter {
     this.updateQueuedTaskPriority(viewportId, priority);
 
     // Update active tasks
-    const activeTask = Array.from(this.activeTasks.values())
-      .find(task => task.viewportId === viewportId);
+    const activeTask = Array.from(this.activeTasks.values()).find(task => task.viewportId === viewportId);
 
     if (activeTask) {
       activeTask.priority = priority;
@@ -226,8 +244,8 @@ export class RenderingPriorityManager extends EventEmitter {
       component: 'RenderingPriorityManager',
       metadata: {
         viewportId,
-        previousPriority: previousPriority ? RenderPriority[previousPriority] : 'none',
-        newPriority: RenderPriority[priority],
+        previousPriority: previousPriority ? safePropertyAccess(RenderPriority as any, previousPriority) : 'none',
+        newPriority: safePropertyAccess(RenderPriority as any, priority),
         reason: reason || 'manual',
       },
     });
@@ -283,6 +301,7 @@ export class RenderingPriorityManager extends EventEmitter {
       metadata: {
         viewportId,
         taskId: task.id,
+        // eslint-disable-next-line security/detect-object-injection -- Safe: taskPriority is RenderPriority enum value
         priority: RenderPriority[taskPriority],
         queuePosition: this.priorityQueue.indexOf(queueItem),
         queueSize: this.priorityQueue.length,
@@ -404,7 +423,7 @@ export class RenderingPriorityManager extends EventEmitter {
       }
 
       // Adjust for low FPS
-      if (metrics.avgFrameTime > (1000 / this.config.performanceThresholds.fpsThreshold)) {
+      if (metrics.avgFrameTime > 1000 / this.config.performanceThresholds.fpsThreshold) {
         if (priority === RenderPriority.CRITICAL) {
           adjustedAllocation.cpuPercentage = Math.min(80, adjustedAllocation.cpuPercentage * 1.2);
         } else {
@@ -465,7 +484,7 @@ export class RenderingPriorityManager extends EventEmitter {
 
       // Process the task
       this.processRenderingTask(nextTask)
-        .then((duration) => {
+        .then(duration => {
           // Remove from active tasks
           this.activeTasks.delete(nextTask.renderingTask.id);
 
@@ -482,7 +501,7 @@ export class RenderingPriorityManager extends EventEmitter {
             },
           });
         })
-        .catch((error) => {
+        .catch(error => {
           // Handle task failure
           this.handleTaskFailure(nextTask, error);
         })
@@ -490,12 +509,15 @@ export class RenderingPriorityManager extends EventEmitter {
           this.isProcessing = false;
           this.lastProcessTime = Date.now() - startTime;
         });
-
     } catch (error) {
       this.isProcessing = false;
-      log.error('Error processing priority queue', {
-        component: 'RenderingPriorityManager',
-      }, error as Error);
+      log.error(
+        'Error processing priority queue',
+        {
+          component: 'RenderingPriorityManager',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -527,8 +549,9 @@ export class RenderingPriorityManager extends EventEmitter {
     if (!allocation) return false;
 
     // Check if we can run more concurrent tasks at this priority
-    const activeSamePriority = Array.from(this.activeTasks.values())
-      .filter(activeTask => activeTask.priority === task.priority).length;
+    const activeSamePriority = Array.from(this.activeTasks.values()).filter(
+      activeTask => activeTask.priority === task.priority,
+    ).length;
 
     return activeSamePriority < allocation.maxConcurrentTasks;
   }
@@ -556,16 +579,19 @@ export class RenderingPriorityManager extends EventEmitter {
       // 4. Handle WebGL resource allocation
 
       return Date.now() - startTime;
-
     } catch (error) {
-      log.error('Failed to process rendering task', {
-        component: 'RenderingPriorityManager',
-        metadata: {
-          taskId: task.renderingTask.id,
-          viewportId: task.viewportId,
-          priority: RenderPriority[task.priority],
+      log.error(
+        'Failed to process rendering task',
+        {
+          component: 'RenderingPriorityManager',
+          metadata: {
+            taskId: task.renderingTask.id,
+            viewportId: task.viewportId,
+            priority: RenderPriority[task.priority],
+          },
         },
-      }, error as Error);
+        error as Error,
+      );
       throw error;
     }
   }
@@ -598,14 +624,18 @@ export class RenderingPriorityManager extends EventEmitter {
         },
       });
     } else {
-      log.error('Rendering task failed permanently', {
-        component: 'RenderingPriorityManager',
-        metadata: {
-          taskId: task.renderingTask.id,
-          viewportId: task.viewportId,
-          finalRetryCount: task.retryCount,
+      log.error(
+        'Rendering task failed permanently',
+        {
+          component: 'RenderingPriorityManager',
+          metadata: {
+            taskId: task.renderingTask.id,
+            viewportId: task.viewportId,
+            finalRetryCount: task.retryCount,
+          },
         },
-      }, error);
+        error,
+      );
     }
   }
 
@@ -640,9 +670,9 @@ export class RenderingPriorityManager extends EventEmitter {
    */
   private estimateTaskDuration(task: RenderingTask): number {
     const baseDurations = {
-      'initial': 100,
-      'update': 50,
-      'resize': 30,
+      initial: 100,
+      update: 50,
+      resize: 30,
       'quality-change': 20,
       'tool-change': 10,
     };
@@ -680,7 +710,6 @@ export class RenderingPriorityManager extends EventEmitter {
       if (this.isPerformanceDegraded(metrics)) {
         this.emit('performance-degraded', metrics);
       }
-
     }, 1000); // Collect metrics every second
   }
 
@@ -698,7 +727,6 @@ export class RenderingPriorityManager extends EventEmitter {
 
       // Optimize resource allocation
       this.optimizeResourceAllocation();
-
     }, 5000); // Adjust every 5 seconds
   }
 
@@ -727,7 +755,7 @@ export class RenderingPriorityManager extends EventEmitter {
     const thresholds = this.config.performanceThresholds;
 
     return (
-      metrics.avgFrameTime > (1000 / thresholds.fpsThreshold) ||
+      metrics.avgFrameTime > 1000 / thresholds.fpsThreshold ||
       metrics.memoryPressure > thresholds.memoryThreshold ||
       metrics.cpuUsage > thresholds.cpuThreshold ||
       metrics.queueLength > this.config.maxQueueSize * 0.8
@@ -757,15 +785,19 @@ export class RenderingPriorityManager extends EventEmitter {
         metadata: {
           viewportId,
           order,
+          // eslint-disable-next-line security/detect-object-injection -- Safe: adjustedPriority is RenderPriority enum value
           adjustedPriority: RenderPriority[adjustedPriority],
         },
       });
-
     } catch (error) {
-      log.warn('Failed to set viewport render order', {
-        component: 'RenderingPriorityManager',
-        metadata: { viewportId, order },
-      }, error as Error);
+      log.warn(
+        'Failed to set viewport render order',
+        {
+          component: 'RenderingPriorityManager',
+          metadata: { viewportId, order },
+        },
+        error as Error,
+      );
     }
   }
 

@@ -6,6 +6,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 export interface LazyLoadableResource {
   id: string;
@@ -234,7 +235,10 @@ export class LazyLoadingManager extends EventEmitter {
     this.removeFromAllQueues(resource);
 
     // Add to specified queue
-    this.loadingQueue[queueType].push(resource);
+    const queue = safePropertyAccess(this.loadingQueue, queueType);
+    if (queue) {
+      queue.push(resource);
+    }
     this.sortQueue(queueType);
 
     this.emit('loading-queue-updated', { ...this.loadingQueue });
@@ -272,12 +276,15 @@ export class LazyLoadingManager extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
-      log.error('Failed to unload resource', {
-        component: 'LazyLoadingManager',
-        metadata: { resourceId },
-      }, error as Error);
+      log.error(
+        'Failed to unload resource',
+        {
+          component: 'LazyLoadingManager',
+          metadata: { resourceId },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -285,11 +292,7 @@ export class LazyLoadingManager extends EventEmitter {
   /**
    * Optimize loading for specific viewports
    */
-  public optimizeForViewports(
-    activeViewports: string[],
-    visibleViewports: string[],
-    memoryPressure: number = 0,
-  ): void {
+  public optimizeForViewports(activeViewports: string[], visibleViewports: string[], memoryPressure: number = 0): void {
     const context: LoadingContext = {
       activeViewports: new Set(activeViewports),
       visibleViewports: new Set(visibleViewports),
@@ -428,12 +431,10 @@ export class LazyLoadingManager extends EventEmitter {
       this.emit('resource-loaded', resource, resource.loadTime);
 
       return content;
-
     } catch (error) {
       resource.loadState = 'error';
       this.emit('resource-load-failed', resource, error as Error);
       throw error;
-
     } finally {
       this.currentlyLoading.delete(resource.id);
       resource.loadPromise = undefined;
@@ -472,11 +473,7 @@ export class LazyLoadingManager extends EventEmitter {
     await Promise.all(dependencyPromises);
   }
 
-  private async executeWithRetry<T>(
-    operation: () => Promise<T>,
-    attempts: number,
-    delay: number,
-  ): Promise<T> {
+  private async executeWithRetry<T>(operation: () => Promise<T>, attempts: number, delay: number): Promise<T> {
     let lastError: Error;
 
     for (let i = 0; i < attempts; i++) {
@@ -499,9 +496,11 @@ export class LazyLoadingManager extends EventEmitter {
   }
 
   private findLoadingStrategy(resource: LazyLoadableResource): LoadingStrategy | null {
-    return this.config.strategies.find(strategy =>
-      strategy.shouldLoad && strategy.shouldLoad(resource, this.getCurrentContext()),
-    ) || null;
+    return (
+      this.config.strategies.find(
+        strategy => strategy.shouldLoad && strategy.shouldLoad(resource, this.getCurrentContext()),
+      ) || null
+    );
   }
 
   private findUnloadingStrategy(_resource: LazyLoadableResource): LoadingStrategy | null {
@@ -666,6 +665,7 @@ export class LazyLoadingManager extends EventEmitter {
   }
 
   private sortQueue(queueType: keyof LoadingQueue): void {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: queueType is keyof LoadingQueue type
     this.loadingQueue[queueType].sort((a, b) => b.priority - a.priority);
   }
 
@@ -675,13 +675,13 @@ export class LazyLoadingManager extends EventEmitter {
         name: 'Image Loading Strategy',
         description: 'Loads DICOM images and textures',
         priority: 10,
-        shouldLoad: (resource) => resource.type === 'image' || resource.type === 'texture',
-        loadResource: async (resource) => {
+        shouldLoad: resource => resource.type === 'image' || resource.type === 'texture',
+        loadResource: async resource => {
           // Simulate image loading
           await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 400));
           return { type: resource.type, data: `loaded-${resource.id}`, size: resource.size };
         },
-        unloadResource: async (_resource) => {
+        unloadResource: async _resource => {
           // Simulate unloading
           await new Promise(resolve => setTimeout(resolve, 10));
         },
@@ -690,13 +690,13 @@ export class LazyLoadingManager extends EventEmitter {
         name: 'Volume Loading Strategy',
         description: 'Loads 3D volume data',
         priority: 9,
-        shouldLoad: (resource) => resource.type === 'volume',
-        loadResource: async (resource) => {
+        shouldLoad: resource => resource.type === 'volume',
+        loadResource: async resource => {
           // Simulate volume loading
           await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
           return { type: resource.type, data: `loaded-${resource.id}`, size: resource.size };
         },
-        unloadResource: async (_resource) => {
+        unloadResource: async _resource => {
           await new Promise(resolve => setTimeout(resolve, 50));
         },
       },
@@ -704,13 +704,13 @@ export class LazyLoadingManager extends EventEmitter {
         name: 'Metadata Loading Strategy',
         description: 'Loads resource metadata',
         priority: 8,
-        shouldLoad: (resource) => resource.type === 'metadata',
-        loadResource: async (resource) => {
+        shouldLoad: resource => resource.type === 'metadata',
+        loadResource: async resource => {
           // Simulate metadata loading
           await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
           return { type: resource.type, data: `loaded-${resource.id}`, size: resource.size };
         },
-        unloadResource: async (_resource) => {
+        unloadResource: async _resource => {
           await new Promise(resolve => setTimeout(resolve, 5));
         },
       },
@@ -736,9 +736,13 @@ export class LazyLoadingManager extends EventEmitter {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (error) {
-        log.error('Loading worker error', {
-          component: 'LazyLoadingManager',
-        }, error as Error);
+        log.error(
+          'Loading worker error',
+          {
+            component: 'LazyLoadingManager',
+          },
+          error as Error,
+        );
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -749,6 +753,7 @@ export class LazyLoadingManager extends EventEmitter {
     const queues: (keyof LoadingQueue)[] = ['high', 'medium', 'low', 'background'];
 
     for (const queueType of queues) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: queueType is from controlled queues array of type keyof LoadingQueue
       const queue = this.loadingQueue[queueType];
       if (queue.length > 0) {
         const resource = queue.shift()!;
@@ -767,12 +772,11 @@ export class LazyLoadingManager extends EventEmitter {
     }
 
     this.intersectionObserver = new IntersectionObserver(
-      (entries) => {
+      entries => {
         entries.forEach(entry => {
           const viewportId = entry.target.getAttribute('data-viewport-id');
           if (viewportId) {
-            const resources = Array.from(this.resources.values())
-              .filter(r => r.viewportId === viewportId);
+            const resources = Array.from(this.resources.values()).filter(r => r.viewportId === viewportId);
 
             if (entry.isIntersecting) {
               // Viewport became visible - queue high-priority resources

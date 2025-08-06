@@ -12,11 +12,11 @@ import { log } from '../utils/logger';
 
 // Memory pressure levels
 export enum MemoryPressureLevel {
-  NORMAL = 0,       // < 60% usage
-  MODERATE = 1,     // 60-75% usage
-  HIGH = 2,         // 75-90% usage
-  CRITICAL = 3,     // 90-95% usage
-  EMERGENCY = 4,    // > 95% usage
+  NORMAL = 0, // < 60% usage
+  MODERATE = 1, // 60-75% usage
+  HIGH = 2, // 75-90% usage
+  CRITICAL = 3, // 90-95% usage
+  EMERGENCY = 4, // > 95% usage
 }
 
 // Memory pressure alert
@@ -37,7 +37,7 @@ export interface MemoryTrend {
   rate: number; // bytes per second
   confidence: number; // 0-1
   sustainedDurationMs: number;
-  dataPoints: Array<{ timestamp: number; usage: number; }>;
+  dataPoints: Array<{ timestamp: number; usage: number }>;
 }
 
 // Memory recommendations
@@ -66,7 +66,8 @@ export interface MemoryPressureConfig {
     critical: number;
     emergency: number;
   };
-  alertCooldowns: { // minimum time between same-level alerts
+  alertCooldowns: {
+    // minimum time between same-level alerts
     normal: number;
     moderate: number;
     high: number;
@@ -124,7 +125,7 @@ export interface MemoryPressureEvents {
 
 export class MemoryPressureMonitor extends EventEmitter {
   private readonly config: MemoryPressureConfig;
-  private readonly memoryHistory: Array<{ timestamp: number; usage: MemoryUsage; }> = [];
+  private readonly memoryHistory: Array<{ timestamp: number; usage: MemoryUsage }> = [];
   private readonly alertHistory: MemoryPressureAlert[] = [];
   private readonly lastAlertTime = new Map<MemoryPressureLevel, number>();
 
@@ -132,6 +133,7 @@ export class MemoryPressureMonitor extends EventEmitter {
   private currentPressureLevel: MemoryPressureLevel = MemoryPressureLevel.NORMAL;
   private currentTrend: MemoryTrend | null = null;
   private isEmergencyMode = false;
+  private isProcessingCycle = false;
 
   constructor(config: Partial<MemoryPressureConfig> = {}) {
     super();
@@ -183,6 +185,12 @@ export class MemoryPressureMonitor extends EventEmitter {
    * Perform a complete monitoring cycle
    */
   private async performMonitoringCycle(): Promise<void> {
+    // Prevent recursive calls
+    if (this.isProcessingCycle) {
+      return;
+    }
+    this.isProcessingCycle = true;
+
     try {
       // Collect current memory usage
       const currentUsage = memoryManager.getMemoryUsage();
@@ -224,11 +232,16 @@ export class MemoryPressureMonitor extends EventEmitter {
       }
 
       this.currentPressureLevel = newPressureLevel;
-
     } catch (error) {
-      log.error('Memory monitoring cycle failed', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Memory monitoring cycle failed',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
+    } finally {
+      this.isProcessingCycle = false;
     }
   }
 
@@ -247,7 +260,7 @@ export class MemoryPressureMonitor extends EventEmitter {
 
     // Simple linear regression
     const n = dataPoints.length;
-    const sumX = dataPoints.reduce((sum, point, i) => sum + i, 0);
+    const sumX = dataPoints.reduce((sum, _point, i) => sum + i, 0);
     const sumY = dataPoints.reduce((sum, point) => sum + point.usage, 0);
     const sumXY = dataPoints.reduce((sum, point, i) => sum + i * point.usage, 0);
     const sumXX = dataPoints.reduce((sum, _, i) => sum + i * i, 0);
@@ -257,19 +270,22 @@ export class MemoryPressureMonitor extends EventEmitter {
 
     // Calculate R-squared for confidence
     const yPredicted = dataPoints.map((_, i) => meanY + slope * (i - (n - 1) / 2));
-    const ssRes = dataPoints.reduce((sum, point, i) => sum + Math.pow(point.usage - yPredicted[i], 2), 0);
+    const ssRes = dataPoints.reduce((sum, point, i) =>
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is array iteration index
+      sum + Math.pow(point.usage - yPredicted[i], 2), 0);
     const ssTot = dataPoints.reduce((sum, point) => sum + Math.pow(point.usage - meanY, 2), 0);
-    const rSquared = ssTot === 0 ? 1 : 1 - (ssRes / ssTot);
+    const rSquared = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
 
     // Convert slope to bytes per second
     const timeSpan = dataPoints[dataPoints.length - 1].timestamp - dataPoints[0].timestamp;
     const totalMemory = this.memoryHistory[this.memoryHistory.length - 1].usage.total;
-    const ratePerMs = slope / timeSpan * totalMemory;
+    const ratePerMs = (slope / timeSpan) * totalMemory;
     const ratePerSecond = ratePerMs * 1000;
 
     // Determine direction
     let direction: MemoryTrend['direction'];
-    if (Math.abs(slope) < 0.001) { // Less than 0.1% change
+    if (Math.abs(slope) < 0.001) {
+      // Less than 0.1% change
       direction = 'stable';
     } else if (slope > 0) {
       direction = 'increasing';
@@ -292,7 +308,10 @@ export class MemoryPressureMonitor extends EventEmitter {
   /**
    * Calculate how long the trend has been sustained
    */
-  private calculateSustainedDuration(dataPoints: Array<{ timestamp: number; usage: number; }>, direction: MemoryTrend['direction']): number {
+  private calculateSustainedDuration(
+    dataPoints: Array<{ timestamp: number; usage: number }>,
+    direction: MemoryTrend['direction'],
+  ): number {
     if (dataPoints.length < 2) return 0;
 
     let sustainedCount = 1;
@@ -300,6 +319,7 @@ export class MemoryPressureMonitor extends EventEmitter {
 
     for (let i = dataPoints.length - 2; i >= 0; i--) {
       const current = dataPoints[i + 1].usage;
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is controlled loop index within array bounds
       const previous = dataPoints[i].usage;
       const change = current - previous;
 
@@ -316,6 +336,7 @@ export class MemoryPressureMonitor extends EventEmitter {
     }
 
     const firstSustainedIndex = Math.max(0, dataPoints.length - sustainedCount);
+    // eslint-disable-next-line security/detect-object-injection -- Safe: firstSustainedIndex is calculated index within array bounds
     return dataPoints[dataPoints.length - 1].timestamp - dataPoints[firstSustainedIndex].timestamp;
   }
 
@@ -323,10 +344,12 @@ export class MemoryPressureMonitor extends EventEmitter {
    * Check if trend is significant enough to report
    */
   private isTrendSignificant(trend: MemoryTrend): boolean {
-    return trend.confidence > 0.7 &&
-           trend.sustainedDurationMs > 5000 && // At least 5 seconds
-           (Math.abs(trend.rate) > 1024 * 1024 || // At least 1MB/s change
-            trend.direction !== 'stable');
+    return (
+      trend.confidence > 0.7 &&
+      trend.sustainedDurationMs > 5000 && // At least 5 seconds
+      (Math.abs(trend.rate) > 1024 * 1024 || // At least 1MB/s change
+        trend.direction !== 'stable')
+    );
   }
 
   /**
@@ -355,7 +378,9 @@ export class MemoryPressureMonitor extends EventEmitter {
     log.info('Memory pressure level changed', {
       component: 'MemoryPressureMonitor',
       metadata: {
+        // eslint-disable-next-line security/detect-object-injection -- Safe: oldLevel is MemoryPressureLevel enum value
         from: MemoryPressureLevel[oldLevel],
+        // eslint-disable-next-line security/detect-object-injection -- Safe: newLevel is MemoryPressureLevel enum value
         to: MemoryPressureLevel[newLevel],
         usageRatio: usage.used / usage.total,
         trend: trend?.direction || 'unknown',
@@ -371,6 +396,7 @@ export class MemoryPressureMonitor extends EventEmitter {
         this.isEmergencyMode = false;
         log.info('Emergency mode deactivated', {
           component: 'MemoryPressureMonitor',
+          // eslint-disable-next-line security/detect-object-injection -- Safe: newLevel is MemoryPressureLevel enum value
           metadata: { newLevel: MemoryPressureLevel[newLevel] },
         });
       }
@@ -381,6 +407,7 @@ export class MemoryPressureMonitor extends EventEmitter {
       this.isEmergencyMode = true;
       log.warn('Emergency mode activated', {
         component: 'MemoryPressureMonitor',
+        // eslint-disable-next-line security/detect-object-injection -- Safe: newLevel is MemoryPressureLevel enum value
         metadata: { level: MemoryPressureLevel[newLevel] },
       });
     }
@@ -462,7 +489,7 @@ export class MemoryPressureMonitor extends EventEmitter {
     // Calculate predicted exhaustion time
     if (trend && trend.direction === 'increasing' && trend.rate > 0) {
       const remainingMemory = usage.available;
-      alert.predictedExhaustion = Math.floor(remainingMemory / trend.rate * 1000);
+      alert.predictedExhaustion = Math.floor((remainingMemory / trend.rate) * 1000);
     }
 
     return alert;
@@ -474,7 +501,7 @@ export class MemoryPressureMonitor extends EventEmitter {
   private async generateRecommendations(
     level: MemoryPressureLevel,
     usage: MemoryUsage,
-    trend: MemoryTrend | null,
+    _trend: MemoryTrend | null,
   ): Promise<MemoryRecommendation[]> {
     const recommendations: MemoryRecommendation[] = [];
 
@@ -666,10 +693,14 @@ export class MemoryPressureMonitor extends EventEmitter {
           }
         }
       } catch (error) {
-        log.error('Auto-response execution failed', {
-          component: 'MemoryPressureMonitor',
-          metadata: { action: recommendation.action },
-        }, error as Error);
+        log.error(
+          'Auto-response execution failed',
+          {
+            component: 'MemoryPressureMonitor',
+            metadata: { action: recommendation.action },
+          },
+          error as Error,
+        );
       }
     }
 
@@ -692,9 +723,10 @@ export class MemoryPressureMonitor extends EventEmitter {
   private async performPredictiveAnalysis(usage: MemoryUsage, trend: MemoryTrend): Promise<void> {
     if (trend.direction === 'increasing' && trend.rate > 0 && trend.confidence > 0.8) {
       const remainingMemory = usage.available;
-      const timeToExhaustion = remainingMemory / trend.rate * 1000; // milliseconds
+      const timeToExhaustion = (remainingMemory / trend.rate) * 1000; // milliseconds
 
-      if (timeToExhaustion < 60000) { // Less than 1 minute
+      if (timeToExhaustion < 60000) {
+        // Less than 1 minute
         this.emit('exhaustion-predicted', timeToExhaustion, usage);
 
         log.warn('Memory exhaustion predicted', {
@@ -721,7 +753,7 @@ export class MemoryPressureMonitor extends EventEmitter {
       }
 
       // Clear all viewport resources for inactive viewports
-      const viewportIds = viewportStateManager.getAllViewportIds();
+      const viewportIds = viewportStateManager.getViewportIds();
       for (const viewportId of viewportIds) {
         const state = viewportStateManager.getViewportState(viewportId);
         if (state && !state.activation.isActive) {
@@ -731,16 +763,20 @@ export class MemoryPressureMonitor extends EventEmitter {
 
       return true;
     } catch (error) {
-      log.error('Emergency cleanup failed', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Emergency cleanup failed',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
 
   private async suspendLowPriorityViewports(): Promise<boolean> {
     try {
-      const viewportIds = viewportStateManager.getAllViewportIds();
+      const viewportIds = viewportStateManager.getViewportIds();
       let suspendedCount = 0;
 
       for (const viewportId of viewportIds) {
@@ -764,9 +800,13 @@ export class MemoryPressureMonitor extends EventEmitter {
 
       return suspendedCount > 0;
     } catch (error) {
-      log.error('Failed to suspend viewports', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Failed to suspend viewports',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -776,9 +816,13 @@ export class MemoryPressureMonitor extends EventEmitter {
       memoryManager.performCleanup(3); // Use highest priority cleanup
       return true;
     } catch (error) {
-      log.error('Aggressive cleanup failed', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Aggressive cleanup failed',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -791,16 +835,20 @@ export class MemoryPressureMonitor extends EventEmitter {
       });
       return true;
     } catch (error) {
-      log.error('Failed to force low quality rendering', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Failed to force low quality rendering',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
 
   private async compressInactiveResources(): Promise<boolean> {
     try {
-      const viewportIds = viewportStateManager.getAllViewportIds();
+      const viewportIds = viewportStateManager.getViewportIds();
       for (const viewportId of viewportIds) {
         const state = viewportStateManager.getViewportState(viewportId);
         if (state && !state.activation.isActive) {
@@ -810,27 +858,36 @@ export class MemoryPressureMonitor extends EventEmitter {
       }
       return true;
     } catch (error) {
-      log.error('Resource compression failed', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Resource compression failed',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
 
   private async cleanupInactiveResources(): Promise<boolean> {
     try {
-      const viewportIds = viewportStateManager.getAllViewportIds();
+      const viewportIds = viewportStateManager.getViewportIds();
       for (const viewportId of viewportIds) {
         const state = viewportStateManager.getViewportState(viewportId);
-        if (state && Date.now() - new Date(state.activation.lastInteractionAt || 0).getTime() > 300000) { // 5 minutes
+        if (state && Date.now() - new Date(state.activation.lastInteractionAt || 0).getTime() > 300000) {
+          // 5 minutes
           await advancedMemoryManager.optimizeViewportMemory(viewportId);
         }
       }
       return true;
     } catch (error) {
-      log.error('Inactive resource cleanup failed', {
-        component: 'MemoryPressureMonitor',
-      }, error as Error);
+      log.error(
+        'Inactive resource cleanup failed',
+        {
+          component: 'MemoryPressureMonitor',
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -838,14 +895,14 @@ export class MemoryPressureMonitor extends EventEmitter {
   /**
    * Event handlers for memory manager events
    */
-  private handleCriticalMemory(usage: MemoryUsage): void {
+  private handleCriticalMemory(_usage: MemoryUsage): void {
     // Force immediate monitoring cycle
     setImmediate(() => {
       this.performMonitoringCycle();
     });
   }
 
-  private handleMemoryWarning(usage: MemoryUsage): void {
+  private handleMemoryWarning(_usage: MemoryUsage): void {
     // Force monitoring cycle within 1 second
     setTimeout(() => {
       this.performMonitoringCycle();
@@ -878,7 +935,7 @@ export class MemoryPressureMonitor extends EventEmitter {
     return this.isEmergencyMode;
   }
 
-  public getMemoryHistory(durationMs: number = 60000): Array<{ timestamp: number; usage: MemoryUsage; }> {
+  public getMemoryHistory(durationMs: number = 60000): Array<{ timestamp: number; usage: MemoryUsage }> {
     const cutoffTime = Date.now() - durationMs;
     return this.memoryHistory.filter(entry => entry.timestamp >= cutoffTime);
   }

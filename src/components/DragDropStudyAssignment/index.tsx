@@ -58,7 +58,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   const handleStudyDragStart = useCallback((
     e: React.DragEvent<HTMLDivElement>,
     study: StudyInfo,
-    sourceIndex: number
+    sourceIndex: number,
   ) => {
     const dragData: DragData = {
       type: 'study',
@@ -77,7 +77,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
 
     log.info('Study drag started', {
       component: 'DragDropStudyAssignment',
-      metadata: { 
+      metadata: {
         studyId: study.studyInstanceUID,
         patientId: study.patientId,
       },
@@ -87,7 +87,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   // Handle drag start for assigned slots (for reordering)
   const handleSlotDragStart = useCallback((
     e: React.DragEvent<HTMLDivElement>,
-    slot: ViewportSlot
+    slot: ViewportSlot,
   ) => {
     if (!slot.assignedStudy) return;
 
@@ -103,7 +103,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
 
     log.info('Slot drag started for reordering', {
       component: 'DragDropStudyAssignment',
-      metadata: { 
+      metadata: {
         slotId: slot.id,
         studyId: slot.assignedStudy.studyInstanceUID,
       },
@@ -113,10 +113,10 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   // Handle drag over slot
   const handleSlotDragOver = useCallback((
     e: React.DragEvent<HTMLDivElement>,
-    slot: ViewportSlot
+    slot: ViewportSlot,
   ) => {
     e.preventDefault();
-    
+
     if (!draggedItem) return;
 
     // Determine drop effect
@@ -144,10 +144,10 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   // Handle drop on slot
   const handleSlotDrop = useCallback((
     e: React.DragEvent<HTMLDivElement>,
-    targetSlot: ViewportSlot
+    targetSlot: ViewportSlot,
   ) => {
     e.preventDefault();
-    
+
     const dataText = e.dataTransfer.getData('application/json');
     if (!dataText) return;
 
@@ -157,10 +157,10 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
       if (dragData.type === 'study' && dragData.study) {
         // Assign study to slot
         onAssignment(targetSlot.id, dragData.study);
-        
+
         log.info('Study assigned to slot via drag-drop', {
           component: 'DragDropStudyAssignment',
-          metadata: { 
+          metadata: {
             slotId: targetSlot.id,
             studyId: dragData.study.studyInstanceUID,
           },
@@ -169,10 +169,10 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
         // Reorder slots
         if (dragData.slotId !== targetSlot.id) {
           onReorder(dragData.slotId, targetSlot.id);
-          
+
           log.info('Slots reordered via drag-drop', {
             component: 'DragDropStudyAssignment',
-            metadata: { 
+            metadata: {
               fromSlotId: dragData.slotId,
               toSlotId: targetSlot.id,
             },
@@ -201,7 +201,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   // Remove study from slot
   const handleRemoveStudy = useCallback((slotId: string) => {
     onAssignment(slotId, null);
-    
+
     log.info('Study removed from slot', {
       component: 'DragDropStudyAssignment',
       metadata: { slotId },
@@ -222,10 +222,10 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
   }, [layout]);
 
   // Get unassigned studies
-  const unassignedStudies = availableStudies.filter(study => 
-    !viewportSlots.some(slot => 
-      slot.assignedStudy?.studyInstanceUID === study.studyInstanceUID
-    )
+  const unassignedStudies = availableStudies.filter(study =>
+    !viewportSlots.some(slot =>
+      slot.assignedStudy?.studyInstanceUID === study.studyInstanceUID,
+    ),
   );
 
   return (
@@ -234,7 +234,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
       {showInstructions && (
         <Alert>
           <AlertDescription>
-            Drag studies from the list below to assign them to viewport slots. 
+            Drag studies from the list below to assign them to viewport slots.
             Drag between slots to reorder.
           </AlertDescription>
         </Alert>
@@ -255,7 +255,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
                   'transition-all duration-200',
                   slot.assignedStudy && 'border-solid bg-muted/50',
                   dragOverSlot === slot.id && dropEffect !== 'none' && 'border-primary bg-primary/10',
-                  slot.isActive && 'ring-2 ring-primary ring-offset-2'
+                  slot.isActive && 'ring-2 ring-primary ring-offset-2',
                 )}
                 onDragOver={(e) => handleSlotDragOver(e, slot)}
                 onDragLeave={handleSlotDragLeave}
@@ -334,7 +334,7 @@ export const DragDropStudyAssignment: React.FC<DragDropStudyAssignmentProps> = (
                   className={cn(
                     'p-3 border rounded-lg cursor-move',
                     'hover:bg-muted/50 transition-colors',
-                    draggedItem?.study?.studyInstanceUID === study.studyInstanceUID && 'opacity-50'
+                    draggedItem?.study?.studyInstanceUID === study.studyInstanceUID && 'opacity-50',
                   )}
                 >
                   <div className="space-y-1">

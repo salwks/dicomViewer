@@ -8,6 +8,7 @@ import { EventEmitter } from 'events';
 import { ViewportState } from '../types/viewportState';
 // Import used for reference - CleanupPriority used in comments and future integration
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 export interface MemoryPool {
   id: string;
@@ -103,10 +104,10 @@ export interface AdvancedMemoryConfig {
 export const DEFAULT_ADVANCED_MEMORY_CONFIG: AdvancedMemoryConfig = {
   poolSizes: {
     texture: 2048 * 1024 * 1024, // 2GB for textures
-    buffer: 1024 * 1024 * 1024,  // 1GB for buffers
+    buffer: 1024 * 1024 * 1024, // 1GB for buffers
     geometry: 512 * 1024 * 1024, // 512MB for geometry
-    shader: 64 * 1024 * 1024,    // 64MB for shaders
-    image: 1024 * 1024 * 1024,   // 1GB for image data
+    shader: 64 * 1024 * 1024, // 64MB for shaders
+    image: 1024 * 1024 * 1024, // 1GB for image data
   },
   allocationStrategy: 'best-fit',
   defragmentationEnabled: true,
@@ -241,12 +242,15 @@ export class AdvancedMemoryManager extends EventEmitter {
       this.emit('memory-allocated', result, request);
 
       return result;
-
     } catch (error) {
-      log.error('Memory allocation failed', {
-        component: 'AdvancedMemoryManager',
-        metadata: { request },
-      }, error as Error);
+      log.error(
+        'Memory allocation failed',
+        {
+          component: 'AdvancedMemoryManager',
+          metadata: { request },
+        },
+        error as Error,
+      );
 
       return {
         success: false,
@@ -307,12 +311,15 @@ export class AdvancedMemoryManager extends EventEmitter {
       });
 
       return true;
-
     } catch (error) {
-      log.error('Failed to free memory block', {
-        component: 'AdvancedMemoryManager',
-        metadata: { blockId },
-      }, error as Error);
+      log.error(
+        'Failed to free memory block',
+        {
+          component: 'AdvancedMemoryManager',
+          metadata: { blockId },
+        },
+        error as Error,
+      );
       return false;
     }
   }
@@ -349,12 +356,15 @@ export class AdvancedMemoryManager extends EventEmitter {
       });
 
       return totalFreed;
-
     } catch (error) {
-      log.error('Failed to optimize viewport memory', {
-        component: 'AdvancedMemoryManager',
-        metadata: { viewportId },
-      }, error as Error);
+      log.error(
+        'Failed to optimize viewport memory',
+        {
+          component: 'AdvancedMemoryManager',
+          metadata: { viewportId },
+        },
+        error as Error,
+      );
       return 0;
     }
   }
@@ -418,17 +428,19 @@ export class AdvancedMemoryManager extends EventEmitter {
         maxSize: size,
         currentSize: 0,
         allocatedBlocks: [],
-        freeBlocks: [{
-          id: `free-${type}-0`,
-          poolId: `pool-${type}`,
-          offset: 0,
-          size,
-          isAllocated: false,
-          allocatedAt: 0,
-          lastAccessed: 0,
-          accessCount: 0,
-          priority: 0,
-        }],
+        freeBlocks: [
+          {
+            id: `free-${type}-0`,
+            poolId: `pool-${type}`,
+            offset: 0,
+            size,
+            isAllocated: false,
+            allocatedAt: 0,
+            lastAccessed: 0,
+            accessCount: 0,
+            priority: 0,
+          },
+        ],
         fragmentationRatio: 0,
         defragmentationThreshold: this.config.defragmentationThreshold,
       };
@@ -590,8 +602,13 @@ export class AdvancedMemoryManager extends EventEmitter {
     // Merge adjacent blocks
     let i = 0;
     while (i < pool.freeBlocks.length - 1) {
-      const currentBlock = pool.freeBlocks[i];
-      const nextBlock = pool.freeBlocks[i + 1];
+      const currentBlock = safePropertyAccess(pool.freeBlocks, i);
+      const nextBlock = safePropertyAccess(pool.freeBlocks, i + 1);
+
+      if (!currentBlock || !nextBlock) {
+        i++;
+        continue;
+      }
 
       if (currentBlock.offset + currentBlock.size === nextBlock.offset) {
         // Merge blocks
@@ -710,9 +727,7 @@ export class AdvancedMemoryManager extends EventEmitter {
     const maxAge = profile.retentionPolicy.maxAge;
     let totalFreed = 0;
 
-    const expiredBlocks = profile.memoryBlocks.filter(
-      block => now - block.allocatedAt > maxAge,
-    );
+    const expiredBlocks = profile.memoryBlocks.filter(block => now - block.allocatedAt > maxAge);
 
     for (const block of expiredBlocks) {
       if (await this.freeMemory(block.id)) {
@@ -727,7 +742,8 @@ export class AdvancedMemoryManager extends EventEmitter {
     const alternatives: MemoryAllocationResult[] = [];
 
     // Try smaller allocation
-    if (request.size > 1024 * 1024) { // If > 1MB
+    if (request.size > 1024 * 1024) {
+      // If > 1MB
       alternatives.push({
         success: false,
         error: 'Consider reducing allocation size',
@@ -786,7 +802,7 @@ export class AdvancedMemoryManager extends EventEmitter {
         description: 'Defragment all memory pools to reclaim space',
         threshold: 0.7,
         priority: 3,
-        execute: async (manager) => {
+        execute: async manager => {
           return await manager.defragmentAllPools();
         },
       },
@@ -824,10 +840,14 @@ export class AdvancedMemoryManager extends EventEmitter {
           break; // Only apply one strategy per check
         }
       } catch (error) {
-        log.error('Optimization strategy failed', {
-          component: 'AdvancedMemoryManager',
-          metadata: { strategyName: strategy.name },
-        }, error as Error);
+        log.error(
+          'Optimization strategy failed',
+          {
+            component: 'AdvancedMemoryManager',
+            metadata: { strategyName: strategy.name },
+          },
+          error as Error,
+        );
       }
     }
   }
@@ -841,9 +861,10 @@ export class AdvancedMemoryManager extends EventEmitter {
   private detectMemoryLeaks(): void {
     this.viewportProfiles.forEach((profile, viewportId) => {
       const suspiciousBlocks = profile.memoryBlocks.filter(
-        block => block.accessCount === 1 &&
-                Date.now() - block.allocatedAt > 10 * 60 * 1000 && // > 10 minutes old
-                Date.now() - block.lastAccessed > 5 * 60 * 1000,    // > 5 minutes unused
+        block =>
+          block.accessCount === 1 &&
+          Date.now() - block.allocatedAt > 10 * 60 * 1000 && // > 10 minutes old
+          Date.now() - block.lastAccessed > 5 * 60 * 1000, // > 5 minutes unused
       );
 
       if (suspiciousBlocks.length > 0) {
@@ -876,8 +897,7 @@ export class AdvancedMemoryManager extends EventEmitter {
 
     const prevAvg = this.allocationStats.averageAllocationTime;
     const count = this.allocationStats.totalAllocations;
-    this.allocationStats.averageAllocationTime =
-      (prevAvg * (count - 1) + allocationTime) / count;
+    this.allocationStats.averageAllocationTime = (prevAvg * (count - 1) + allocationTime) / count;
   }
 
   private generateBlockId(): string {

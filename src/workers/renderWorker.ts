@@ -138,7 +138,7 @@ async function processRenderFrame(frame: RenderFrame): Promise<void> {
 function calculateRenderTime(frame: RenderFrame): number {
   // Base render time calculation
   const baseTime = 16; // 16ms for 60fps target
-  const complexityMultiplier = 1 + (frame.complexity / 10);
+  const complexityMultiplier = 1 + frame.complexity / 10;
   const priorityBonus = frame.priority > 7 ? 0.8 : 1.0; // High priority gets bonus
 
   return Math.max(5, baseTime * complexityMultiplier * priorityBonus);

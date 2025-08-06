@@ -47,7 +47,120 @@ interface SampleDataService {
 }
 ```
 
-#### 2. Viewport Management
+#### 2. Selection API
+
+##### SelectionAPI
+**File:** `src/services/SelectionAPI.ts`
+
+The Selection API provides a comprehensive, type-safe interface for managing annotation selections in the Cornerstone3D DICOM viewer.
+
+```typescript
+interface SelectionAPI {
+  // Basic Operations
+  selectAnnotation(annotation: AnnotationCompat | string, viewportId: string, options?: SelectionOptions): Promise<boolean>
+  deselectAnnotation(annotation: AnnotationCompat | string, viewportId: string, options?: SelectionOptions): Promise<boolean>
+  clearSelection(viewportId: string, options?: SelectionOptions): boolean
+  clearAllSelections(options?: SelectionOptions): boolean
+
+  // Bulk Operations
+  selectMultipleAnnotations(annotations: (AnnotationCompat | string)[], viewportId: string, options?: BulkSelectionOptions): Promise<{successful: number; failed: number}>
+  deselectMultipleAnnotations(annotations: (AnnotationCompat | string)[], viewportId: string, options?: BulkSelectionOptions): Promise<{successful: number; failed: number}>
+
+  // Query Operations
+  isAnnotationSelected(annotation: AnnotationCompat | string, viewportId: string): boolean
+  getSelectedAnnotationIds(viewportId: string): string[]
+  getSelectedAnnotations(viewportId: string): AnnotationCompat[]
+  getSelectionCount(viewportId: string): number
+
+  // History Operations
+  undoLastSelection(viewportId: string): boolean
+  getSelectionHistory(limit?: number): ReadonlyArray<SelectionHistoryEntry>
+  clearSelectionHistory(viewportId?: string): boolean
+
+  // State Management
+  saveSelectionState(viewportId: string): string | null
+  restoreSelectionState(viewportId: string, savedState: string): boolean
+
+  // Statistics and Configuration
+  getStatistics(): SelectionStatistics
+  updateConfig(updates: Partial<SelectionAPIConfig>): void
+  getConfig(): SelectionAPIConfig
+}
+```
+
+**Event System:**
+```typescript
+interface SelectionAPIEvents {
+  'selection-changed': [string[], string];     // selectedIds, viewportId
+  'annotation-selected': [AnnotationCompat, string]; // annotation, viewportId
+  'annotation-deselected': [AnnotationCompat, string]; // annotation, viewportId
+  'selection-cleared': [string];               // viewportId
+  'bulk-operation-progress': [number, number]; // completed, total
+  'selection-restored': [SelectionState];      // restored state
+  'error': [Error];                           // error occurred
+}
+```
+
+**Usage Examples:**
+
+*Basic Selection:*
+```typescript
+import { selectionAPI } from '@/services';
+
+// Select an annotation
+const success = await selectionAPI.selectAnnotation('annotation-123', 'viewport-1', {
+  preserveExisting: true,
+  validateAnnotation: true
+});
+
+// Listen to selection changes
+selectionAPI.on('selection-changed', (selectedIds, viewportId) => {
+  console.log(`Selection changed in ${viewportId}:`, selectedIds);
+});
+```
+
+*Bulk Operations:*
+```typescript
+// Select multiple annotations
+const result = await selectionAPI.selectMultipleAnnotations(
+  ['ann-1', 'ann-2', 'ann-3'],
+  'viewport-1',
+  {
+    batchSize: 5,
+    delayBetweenBatches: 50,
+    onProgress: (completed, total) => console.log(`${completed}/${total}`)
+  }
+);
+```
+
+*React Integration:*
+```typescript
+import { SelectionAPIIntegration } from '@/components';
+
+<SelectionAPIIntegration
+  viewportId="main-viewport"
+  onSelectionChange={(ids, viewportId) => updateExternalState(ids)}
+  onAnnotationSelected={(id, viewportId) => highlightInUI(id)}
+  onError={(error) => handleError(error)}
+/>
+```
+
+##### SelectionAPIIntegration Component
+**File:** `src/components/SelectionAPIIntegration.tsx`
+
+React component that provides UI controls and external system integration for the Selection API.
+
+```typescript
+interface SelectionAPIIntegrationProps {
+  viewportId: string;
+  className?: string;
+  onSelectionChange?: (selectedIds: string[], viewportId: string) => void;
+  onAnnotationSelected?: (annotationId: string, viewportId: string) => void;
+  onError?: (error: Error) => void;
+}
+```
+
+#### 3. Viewport Management
 
 ##### ViewportStateManager
 **File:** `src/services/viewportStateManager.ts`

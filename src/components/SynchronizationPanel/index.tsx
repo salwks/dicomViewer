@@ -10,7 +10,7 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { cn } from '../../lib/utils';
+import { cn, safePropertyAccess } from '../../lib/utils';
 import { viewportSynchronizer } from '../../services/ViewportSynchronizer';
 import {
   SynchronizationSettings,
@@ -212,7 +212,7 @@ export const SynchronizationPanel: React.FC<SynchronizationPanelProps> = ({
       'windowLevel', 'zoom', 'pan', 'scroll', 'crosshairs', 'orientation',
     ];
 
-    const active = syncTypes.filter(type => settings[type]).length;
+    const active = syncTypes.filter(type => safePropertyAccess(settings, type)).length;
     return { active, total: syncTypes.length };
   };
 
@@ -306,7 +306,7 @@ export const SynchronizationPanel: React.FC<SynchronizationPanelProps> = ({
                     </p>
                   </div>
                   <Switch
-                    checked={settings[syncType]}
+                    checked={safePropertyAccess(settings, syncType) || false}
                     onCheckedChange={(checked) => handleSyncToggle(syncType, checked)}
                     disabled={!settings.globalSync && syncType !== 'crosshairs'}
                   />

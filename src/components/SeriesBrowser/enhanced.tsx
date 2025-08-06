@@ -11,14 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ScrollArea } from '../ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { Toggle } from '../ui/toggle';
-import { cn } from '../../lib/utils';
+import { cn, safePropertyAccess } from '../../lib/utils';
 import { log } from '../../utils/logger';
 import { DraggableSeries } from '../DragDropSystem';
 import {
   DICOMStudy,
   DICOMSeries,
   SeriesManagementState,
-  SeriesDropData,
   StudyColorScheme,
 } from '../../types/dicom';
 
@@ -51,7 +50,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
   studies = [],
   selectedStudy,
   selectedSeries,
-  onStudySelect,
+  onStudySelect: _onStudySelect,
   onSeriesSelect,
   onSeriesLoad,
   viewportAssignments,
@@ -82,7 +81,8 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
     const colorMappings: Record<string, string> = {};
     studies.forEach((study, index) => {
       const colorIndex = index % DEFAULT_STUDY_COLORS.length;
-      const studyColor = colorSchemes?.get(study.studyInstanceUID) || DEFAULT_STUDY_COLORS[colorIndex];
+      const defaultColor = safePropertyAccess(DEFAULT_STUDY_COLORS, colorIndex) || DEFAULT_STUDY_COLORS[0];
+      const studyColor = colorSchemes?.get(study.studyInstanceUID) || defaultColor;
       colorMappings[study.studyInstanceUID] = studyColor.primaryColor;
     });
 
@@ -187,7 +187,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
         <text x="60" y="60" text-anchor="middle" font-family="system-ui" 
               font-size="14" font-weight="600" fill="${color}">${series.modality}</text>
         <text x="60" y="78" text-anchor="middle" font-family="system-ui" 
-              font-size="11" fill="${color}99">${series.instanceCount || series.numberOfInstances || 0} images</text>
+              font-size="11" fill="${color}99">${series.numberOfInstances || 0} images</text>
         <text x="60" y="94" text-anchor="middle" font-family="system-ui" 
               font-size="10" fill="${color}80">Series ${series.seriesNumber || '?'}</text>
       </svg>
@@ -198,11 +198,11 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
   const renderSeriesItem = useCallback((series: DICOMSeries & { studyColor?: string; studyDescription?: string; patientName?: string; studyDate?: string }) => {
     const isAssigned = Object.values(viewportAssignments).includes(series.seriesInstanceUID);
     const assignedViewport = Object.keys(viewportAssignments).find(
-      viewport => viewportAssignments[viewport] === series.seriesInstanceUID,
+      viewport => safePropertyAccess(viewportAssignments, viewport) === series.seriesInstanceUID,
     );
     const isSelected = selectedSeries === series.seriesInstanceUID;
     const isDragging = managementState.draggedSeries === series.seriesInstanceUID;
-    const isLoading = managementState.loadingStates[series.seriesInstanceUID];
+    const isLoading = safePropertyAccess(managementState.loadingStates, series.seriesInstanceUID);
 
     return (
       <DraggableSeries
@@ -229,7 +229,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
               <div className="space-y-2">
                 <div className="relative aspect-square">
                   <img
-                    src={series.thumbnail || series.thumbnailUrl || generateThumbnail(series)}
+                    src={series.thumbnailUrl || generateThumbnail(series)}
                     alt={`${series.modality} Series ${series.seriesNumber}`}
                     className="w-full h-full rounded border object-cover"
                     loading="lazy"
@@ -261,7 +261,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
                     {series.seriesDescription || 'Unnamed Series'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    #{series.seriesNumber || '?'} • {series.instanceCount || series.numberOfInstances || 0} images
+                    #{series.seriesNumber || '?'} • {series.numberOfInstances || 0} images
                   </p>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
               <>
                 <div className="w-16 h-16 flex-shrink-0">
                   <img
-                    src={series.thumbnail || series.thumbnailUrl || generateThumbnail(series)}
+                    src={series.thumbnailUrl || generateThumbnail(series)}
                     alt={`${series.modality} Series ${series.seriesNumber}`}
                     className="w-full h-full rounded border object-cover"
                     loading="lazy"
@@ -301,7 +301,7 @@ export const EnhancedSeriesBrowser: React.FC<EnhancedSeriesBrowserProps> = ({
                   </h4>
 
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{series.instanceCount || series.numberOfInstances || 0} images</span>
+                    <span>{series.numberOfInstances || 0} images</span>
                     <span>{series.studyDate || 'N/A'}</span>
                   </div>
 

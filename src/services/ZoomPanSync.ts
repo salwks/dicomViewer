@@ -132,7 +132,7 @@ export class Matrix2D {
       c1 * a2 + d1 * c2,
       c1 * b2 + d1 * d2,
       e1 * a2 + f1 * c2 + e2,
-      e1 * b2 + f1 * d2 + f2
+      e1 * b2 + f1 * d2 + f2,
     );
   }
 
@@ -165,7 +165,7 @@ export class Matrix2D {
       -c * invDet,
       a * invDet,
       (c * f - d * e) * invDet,
-      (b * e - a * f) * invDet
+      (b * e - a * f) * invDet,
     );
   }
 
@@ -182,11 +182,11 @@ export class Matrix2D {
    */
   decompose(): Transform2D {
     const [a, b, c, d, e, f] = this.elements;
-    
+
     const scaleX = Math.sqrt(a * a + b * b);
     const scaleY = Math.sqrt(c * c + d * d);
     const rotation = Math.atan2(b, a);
-    
+
     return {
       scaleX,
       scaleY,
@@ -255,7 +255,7 @@ export class ZoomPanSync extends EventEmitter {
         duration?: number;
         easing?: 'linear' | 'ease-in-out' | 'cubic-bezier';
       };
-    } = {}
+    } = {},
   ): string {
     if (this.syncGroups.size >= this.config.maxSyncGroups) {
       throw new Error('Maximum number of sync groups reached');
@@ -291,7 +291,7 @@ export class ZoomPanSync extends EventEmitter {
 
     log.info('Zoom/pan sync group created', {
       component: 'ZoomPanSync',
-      metadata: { 
+      metadata: {
         groupId,
         name,
         viewportCount: viewportIds.length,
@@ -370,7 +370,7 @@ export class ZoomPanSync extends EventEmitter {
       triggerSync?: boolean;
       skipThrottle?: boolean;
       sourceGroup?: string;
-    } = {}
+    } = {},
   ): void {
     const currentTransform = this.viewportTransforms.get(viewportId);
     if (!currentTransform) {
@@ -414,16 +414,13 @@ export class ZoomPanSync extends EventEmitter {
   /**
    * Sync zoom/pan from source viewport to group members (throttled)
    */
-  private throttledSyncFromViewport(
-    sourceViewportId: string,
-    sourceGroupId?: string
-  ): void {
+  private throttledSyncFromViewport(sourceViewportId: string, sourceGroupId?: string): void {
     // Find groups containing this viewport
     const relevantGroups = this.findGroupsForViewport(sourceViewportId, sourceGroupId);
 
     relevantGroups.forEach(group => {
       const timerId = `${group.id}-${sourceViewportId}`;
-      
+
       // Clear existing timer
       const existingTimer = this.throttleTimers.get(timerId);
       if (existingTimer) {
@@ -443,10 +440,7 @@ export class ZoomPanSync extends EventEmitter {
   /**
    * Sync zoom/pan from source viewport to group members (immediate)
    */
-  private syncFromViewport(
-    sourceViewportId: string,
-    sourceGroupId?: string
-  ): void {
+  private syncFromViewport(sourceViewportId: string, sourceGroupId?: string): void {
     const sourceTransform = this.viewportTransforms.get(sourceViewportId);
     if (!sourceTransform) return;
 
@@ -471,19 +465,11 @@ export class ZoomPanSync extends EventEmitter {
           if (!targetTransform) return;
 
           // Calculate synchronized transform
-          const syncedTransform = this.calculateSyncedTransform(
-            sourceTransform,
-            targetTransform,
-            group
-          );
+          const syncedTransform = this.calculateSyncedTransform(sourceTransform, targetTransform, group);
 
           if (syncedTransform) {
             // Apply synchronized transform
-            this.applySyncedTransform(
-              targetViewportId,
-              syncedTransform,
-              group
-            );
+            this.applySyncedTransform(targetViewportId, syncedTransform, group);
 
             // Emit sync event
             this.emit('zoom-pan-synced', {
@@ -495,7 +481,6 @@ export class ZoomPanSync extends EventEmitter {
           }
         });
       });
-
     } finally {
       this.activeSyncOperations.delete(sourceViewportId);
     }
@@ -507,21 +492,21 @@ export class ZoomPanSync extends EventEmitter {
   private calculateSyncedTransform(
     sourceTransform: ViewportTransform,
     targetTransform: ViewportTransform,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): Partial<ViewportTransform> | null {
     switch (group.syncMode) {
       case 'exact':
         return this.calculateExactSync(sourceTransform, targetTransform, group);
-      
+
       case 'relative':
         return this.calculateRelativeSync(sourceTransform, targetTransform, group);
-      
+
       case 'fit-to-window':
         return this.calculateFitToWindowSync(sourceTransform, targetTransform, group);
-      
+
       case 'anatomical':
         return this.calculateAnatomicalSync(sourceTransform, targetTransform, group);
-      
+
       default:
         return null;
     }
@@ -533,7 +518,7 @@ export class ZoomPanSync extends EventEmitter {
   private calculateExactSync(
     sourceTransform: ViewportTransform,
     targetTransform: ViewportTransform,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): Partial<ViewportTransform> {
     const syncedTransform = { ...sourceTransform.transform };
 
@@ -558,12 +543,12 @@ export class ZoomPanSync extends EventEmitter {
   private calculateRelativeSync(
     sourceTransform: ViewportTransform,
     targetTransform: ViewportTransform,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): Partial<ViewportTransform> {
     // Calculate scaling factors based on viewport and image size differences
     const viewportScaleX = targetTransform.viewportSize.width / sourceTransform.viewportSize.width;
     const viewportScaleY = targetTransform.viewportSize.height / sourceTransform.viewportSize.height;
-    
+
     const imageScaleX = targetTransform.imageSize.width / sourceTransform.imageSize.width;
     const imageScaleY = targetTransform.imageSize.height / sourceTransform.imageSize.height;
 
@@ -597,7 +582,7 @@ export class ZoomPanSync extends EventEmitter {
   private calculateFitToWindowSync(
     sourceTransform: ViewportTransform,
     targetTransform: ViewportTransform,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): Partial<ViewportTransform> {
     // Calculate what portion of the source image is visible
     const sourceVisibleWidth = sourceTransform.viewportSize.width / sourceTransform.transform.scaleX;
@@ -618,8 +603,10 @@ export class ZoomPanSync extends EventEmitter {
     }
 
     // Calculate pan to center the same region
-    const sourceCenterX = sourceTransform.imageCenter.x + sourceTransform.transform.translateX / sourceTransform.transform.scaleX;
-    const sourceCenterY = sourceTransform.imageCenter.y + sourceTransform.transform.translateY / sourceTransform.transform.scaleY;
+    const sourceCenterX =
+      sourceTransform.imageCenter.x + sourceTransform.transform.translateX / sourceTransform.transform.scaleX;
+    const sourceCenterY =
+      sourceTransform.imageCenter.y + sourceTransform.transform.translateY / sourceTransform.transform.scaleY;
 
     const targetTranslateX = (targetTransform.imageCenter.x - sourceCenterX) * finalScaleX;
     const targetTranslateY = (targetTransform.imageCenter.y - sourceCenterY) * finalScaleY;
@@ -641,7 +628,7 @@ export class ZoomPanSync extends EventEmitter {
   private calculateAnatomicalSync(
     sourceTransform: ViewportTransform,
     targetTransform: ViewportTransform,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): Partial<ViewportTransform> {
     // For anatomical sync, we need to consider the patient coordinate system
     // This is a simplified implementation - real anatomical sync would require
@@ -649,7 +636,7 @@ export class ZoomPanSync extends EventEmitter {
 
     // Use relative sync as a base and apply anatomical corrections
     const relativeSync = this.calculateRelativeSync(sourceTransform, targetTransform, group);
-    
+
     // Apply anatomical alignment corrections based on coordinate system
     if (group.coordinateSystemAlignment === 'patient') {
       // Apply patient coordinate system alignment
@@ -666,7 +653,7 @@ export class ZoomPanSync extends EventEmitter {
   private applySyncedTransform(
     viewportId: string,
     syncedTransform: Partial<ViewportTransform>,
-    group: ZoomPanSyncGroup
+    group: ZoomPanSyncGroup,
   ): void {
     if (group.smoothing.enabled) {
       this.animateToTransform(viewportId, syncedTransform, group.smoothing);
@@ -685,7 +672,7 @@ export class ZoomPanSync extends EventEmitter {
   private animateToTransform(
     viewportId: string,
     targetTransform: Partial<ViewportTransform>,
-    smoothing: ZoomPanSyncGroup['smoothing']
+    smoothing: ZoomPanSyncGroup['smoothing'],
   ): void {
     const currentTransform = this.viewportTransforms.get(viewportId);
     if (!currentTransform || !targetTransform.transform) return;
@@ -717,11 +704,15 @@ export class ZoomPanSync extends EventEmitter {
       };
 
       // Update viewport transform
-      this.updateViewportTransform(viewportId, {
-        transform: interpolatedTransform,
-      }, {
-        triggerSync: false,
-      });
+      this.updateViewportTransform(
+        viewportId,
+        {
+          transform: interpolatedTransform,
+        },
+        {
+          triggerSync: false,
+        },
+      );
 
       // Continue animation or finish
       if (progress < 1) {
@@ -744,16 +735,14 @@ export class ZoomPanSync extends EventEmitter {
     switch (easing) {
       case 'linear':
         return progress;
-      
+
       case 'ease-in-out':
-        return progress < 0.5 
-          ? 2 * progress * progress 
-          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      
+        return progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
       case 'cubic-bezier':
         // Cubic bezier (0.4, 0, 0.2, 1)
         return progress * progress * (3 - 2 * progress);
-      
+
       default:
         return progress;
     }
@@ -780,10 +769,7 @@ export class ZoomPanSync extends EventEmitter {
   /**
    * Find sync groups containing a viewport
    */
-  private findGroupsForViewport(
-    viewportId: string,
-    preferredGroupId?: string
-  ): ZoomPanSyncGroup[] {
+  private findGroupsForViewport(viewportId: string, preferredGroupId?: string): ZoomPanSyncGroup[] {
     const groups: ZoomPanSyncGroup[] = [];
 
     // If preferred group specified, use it first
@@ -831,7 +817,7 @@ export class ZoomPanSync extends EventEmitter {
   public applyBoundsConstraints(
     viewportId: string,
     transform: Transform2D,
-    constraints?: SyncConstraints
+    constraints?: SyncConstraints,
   ): Transform2D {
     const bounds = constraints || this.config.defaultConstraints;
     const viewportTransform = this.viewportTransforms.get(viewportId);
@@ -855,11 +841,11 @@ export class ZoomPanSync extends EventEmitter {
     if (bounds.panBounds && bounds.preventOverpan) {
       constrainedTransform.translateX = Math.max(
         bounds.panBounds.left,
-        Math.min(bounds.panBounds.right, constrainedTransform.translateX)
+        Math.min(bounds.panBounds.right, constrainedTransform.translateX),
       );
       constrainedTransform.translateY = Math.max(
         bounds.panBounds.top,
-        Math.min(bounds.panBounds.bottom, constrainedTransform.translateY)
+        Math.min(bounds.panBounds.bottom, constrainedTransform.translateY),
       );
     }
 

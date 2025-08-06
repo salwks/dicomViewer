@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
-import { AnnotationCompat } from '../types/annotation-compat';
+// import { AnnotationCompat } from '../types/annotation-compat'; // Currently unused
 
 export interface HighlightState {
   id: string;
@@ -131,11 +131,7 @@ export class HighlightStateManager extends EventEmitter {
   /**
    * Create a new highlight state
    */
-  createHighlightState(
-    annotationId: string,
-    viewportId: string,
-    style: Partial<HighlightStyle> = {},
-  ): string {
+  createHighlightState(annotationId: string, viewportId: string, style: Partial<HighlightStyle> = {}): string {
     const stateId = this.generateStateId();
 
     const highlightState: HighlightState = {
@@ -299,24 +295,21 @@ export class HighlightStateManager extends EventEmitter {
    * Get all states for a viewport
    */
   getViewportStates(viewportId: string): HighlightState[] {
-    return Array.from(this.states.values())
-      .filter(state => state.viewportId === viewportId);
+    return Array.from(this.states.values()).filter(state => state.viewportId === viewportId);
   }
 
   /**
    * Get all states for an annotation
    */
   getAnnotationStates(annotationId: string): HighlightState[] {
-    return Array.from(this.states.values())
-      .filter(state => state.annotationId === annotationId);
+    return Array.from(this.states.values()).filter(state => state.annotationId === annotationId);
   }
 
   /**
    * Get active states
    */
   getActiveStates(): HighlightState[] {
-    return Array.from(this.states.values())
-      .filter(state => state.state === 'active');
+    return Array.from(this.states.values()).filter(state => state.state === 'active');
   }
 
   /**
@@ -451,7 +444,6 @@ export class HighlightStateManager extends EventEmitter {
             component: 'HighlightStateManager',
             metadata: { stateId, fromState, toState, duration: transition.duration },
           });
-
         } catch (error) {
           state.state = 'error';
           state.metadata.errorCount++;
@@ -460,10 +452,14 @@ export class HighlightStateManager extends EventEmitter {
 
           this.emit('transition-error', state, transition, error as Error);
 
-          log.error('State transition failed', {
-            component: 'HighlightStateManager',
-            metadata: { stateId, fromState, toState },
-          }, error as Error);
+          log.error(
+            'State transition failed',
+            {
+              component: 'HighlightStateManager',
+              metadata: { stateId, fromState, toState },
+            },
+            error as Error,
+          );
         }
       }, this.config.transitionDuration);
 
@@ -471,7 +467,6 @@ export class HighlightStateManager extends EventEmitter {
       this.emit('transition-started', state, transition);
 
       return true;
-
     } catch (error) {
       state.state = 'error';
       state.metadata.errorCount++;
@@ -481,10 +476,14 @@ export class HighlightStateManager extends EventEmitter {
 
       this.emit('transition-error', state, transition, error as Error);
 
-      log.error('Failed to start state transition', {
-        component: 'HighlightStateManager',
-        metadata: { stateId, fromState, toState },
-      }, error as Error);
+      log.error(
+        'Failed to start state transition',
+        {
+          component: 'HighlightStateManager',
+          metadata: { stateId, fromState, toState },
+        },
+        error as Error,
+      );
 
       return false;
     }
@@ -542,11 +541,7 @@ export class HighlightStateManager extends EventEmitter {
     animate();
   }
 
-  private applyAnimationToStyle(
-    state: HighlightState,
-    animation: HighlightAnimation,
-    progress: number,
-  ): void {
+  private applyAnimationToStyle(state: HighlightState, animation: HighlightAnimation, progress: number): void {
     const baseStyle = { ...state.style };
 
     switch (animation.type) {
@@ -562,10 +557,11 @@ export class HighlightStateManager extends EventEmitter {
         state.style.opacity = baseStyle.opacity * (1 - progress);
         break;
 
-      case 'scale':
+      case 'scale': {
         const scale = 1 + 0.2 * progress;
         state.style.thickness = baseStyle.thickness * scale;
         break;
+      }
 
       case 'rotate':
         // Rotation would be handled by the rendering system
@@ -577,11 +573,16 @@ export class HighlightStateManager extends EventEmitter {
 
   private applyEasing(t: number, easing: HighlightAnimation['easing']): number {
     switch (easing) {
-      case 'linear': return t;
-      case 'ease-in': return t * t;
-      case 'ease-out': return 1 - (1 - t) * (1 - t);
-      case 'ease-in-out': return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
-      default: return t;
+      case 'linear':
+        return t;
+      case 'ease-in':
+        return t * t;
+      case 'ease-out':
+        return 1 - (1 - t) * (1 - t);
+      case 'ease-in-out':
+        return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+      default:
+        return t;
     }
   }
 
@@ -607,11 +608,14 @@ export class HighlightStateManager extends EventEmitter {
       operations.forEach(operation => operation());
 
       this.emit('batch-processed', operations.length);
-
     } catch (error) {
-      log.error('Batch processing failed', {
-        component: 'HighlightStateManager',
-      }, error as Error);
+      log.error(
+        'Batch processing failed',
+        {
+          component: 'HighlightStateManager',
+        },
+        error as Error,
+      );
     } finally {
       this.isProcessingBatch = false;
 
@@ -676,7 +680,7 @@ export class HighlightStateManager extends EventEmitter {
     const stateSize = 500; // Estimated bytes per state
     const transitionSize = 200; // Estimated bytes per transition
 
-    return (this.states.size * stateSize) + (this.transitions.length * transitionSize);
+    return this.states.size * stateSize + this.transitions.length * transitionSize;
   }
 
   private generateStateId(): string {

@@ -7,6 +7,7 @@
 import { EventEmitter } from 'events';
 import { secureStorage } from '../security/secureStorage';
 import { log } from '../utils/logger';
+import { safePropertySet } from '../lib/utils';
 
 interface RegExpLike {
   test(string: string): boolean;
@@ -239,6 +240,15 @@ export class ViewportConfigurationManager extends EventEmitter {
 
     // Load saved configurations if persistence is enabled
     if (this.config.persistence.enabled) {
+      // In development, clear potentially corrupted data first
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          await secureStorage.clearCorruptedData();
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+
       await this.loadPersistedConfigurations();
       await this.loadPersistedProfiles();
       await this.loadUserPreferences();
@@ -319,10 +329,7 @@ export class ViewportConfigurationManager extends EventEmitter {
     return configuration;
   }
 
-  public updateConfiguration(
-    configId: string,
-    updates: Partial<ViewportConfiguration>,
-  ): ViewportConfiguration {
+  public updateConfiguration(configId: string, updates: Partial<ViewportConfiguration>): ViewportConfiguration {
     const existing = this.configurations.get(configId);
     if (!existing) {
       throw new Error(`Configuration not found: ${configId}`);
@@ -536,10 +543,7 @@ export class ViewportConfigurationManager extends EventEmitter {
     return this.getConfiguration(configId);
   }
 
-  public applyConfigurationToViewport(
-    viewportId: string,
-    configId: string,
-  ): ViewportConfiguration {
+  public applyConfigurationToViewport(viewportId: string, configId: string): ViewportConfiguration {
     const configuration = this.getConfiguration(configId);
     if (!configuration) {
       throw new Error(`Configuration not found: ${configId}`);
@@ -734,11 +738,15 @@ export class ViewportConfigurationManager extends EventEmitter {
       case 'equals':
         return contextValue === value;
       case 'contains':
-        return typeof contextValue === 'string' && typeof value === 'string' &&
-               contextValue.toLowerCase().includes(value.toLowerCase());
+        return (
+          typeof contextValue === 'string' &&
+          typeof value === 'string' &&
+          contextValue.toLowerCase().includes(value.toLowerCase())
+        );
       case 'matches':
-        return typeof contextValue === 'string' && typeof value === 'string' &&
-               this.testRegexPattern(value, contextValue);
+        return (
+          typeof contextValue === 'string' && typeof value === 'string' && this.testRegexPattern(value, contextValue)
+        );
       case 'in':
         return Array.isArray(value) && value.includes(contextValue as string);
       case 'not':
@@ -749,8 +757,7 @@ export class ViewportConfigurationManager extends EventEmitter {
   }
 
   private getDefaultConfiguration(): ViewportConfiguration | null {
-    const defaultConfig = Array.from(this.configurations.values())
-      .find(config => config.metadata.isDefault);
+    const defaultConfig = Array.from(this.configurations.values()).find(config => config.metadata.isDefault);
 
     return defaultConfig ? { ...defaultConfig } : null;
   }
@@ -867,9 +874,13 @@ export class ViewportConfigurationManager extends EventEmitter {
         metadata: { savedCount: savedConfigs.length },
       });
     } catch (error) {
-      log.error('Auto-save failed', {
-        component: 'ViewportConfigurationManager',
-      }, error as Error);
+      log.error(
+        'Auto-save failed',
+        {
+          component: 'ViewportConfigurationManager',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -899,9 +910,13 @@ export class ViewportConfigurationManager extends EventEmitter {
         }
       }
     } catch (error) {
-      log.error('Failed to load persisted configurations', {
-        component: 'ViewportConfigurationManager',
-      }, error as Error);
+      log.error(
+        'Failed to load persisted configurations',
+        {
+          component: 'ViewportConfigurationManager',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -927,9 +942,23 @@ export class ViewportConfigurationManager extends EventEmitter {
         }
       }
     } catch (error) {
-      log.error('Failed to load persisted profiles', {
+      // Silent fail for development - corrupted encryption data
+      log.warn('Failed to load persisted profiles - will use defaults', {
         component: 'ViewportConfigurationManager',
-      }, error as Error);
+        metadata: {
+          isDevelopment: process.env.NODE_ENV !== 'production',
+          errorType: (error as Error).name,
+        },
+      });
+
+      // In development, clear corrupted data
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          await secureStorage.remove('configuration-profiles');
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     }
   }
 
@@ -949,9 +978,30 @@ export class ViewportConfigurationManager extends EventEmitter {
         }
       }
     } catch (error) {
-      log.error('Failed to load user preferences', {
+      // Silent fail for development - corrupted encryption data
+      log.warn('Failed to load user preferences - will use defaults', {
         component: 'ViewportConfigurationManager',
-      }, error as Error);
+        metadata: {
+          isDevelopment: process.env.NODE_ENV !== 'production',
+          errorType: (error as Error).name,
+        },
+      });
+
+      // In development, clear corrupted data and reset to defaults
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          await secureStorage.remove('user-preferences');
+          // Reset to default preferences
+          this.userPreferences = {
+            autoSave: true,
+            defaultQuality: 'medium',
+            enableSynchronization: true,
+            theme: 'system',
+          };
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     }
   }
 
@@ -966,7 +1016,7 @@ export class ViewportConfigurationManager extends EventEmitter {
   // ===== User Preferences =====
 
   public setUserPreference(key: string, value: unknown): void {
-    this.userPreferences[key] = value;
+    safePropertySet(this.userPreferences, key, value);
     this.markForAutoSave('preferences');
 
     log.info('User preference updated', {
@@ -976,6 +1026,7 @@ export class ViewportConfigurationManager extends EventEmitter {
   }
 
   public getUserPreference(key: string): unknown {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: accessing user preferences with validated string key
     return this.userPreferences[key];
   }
 

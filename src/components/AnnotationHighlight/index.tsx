@@ -14,7 +14,7 @@ import { Slider } from '../ui/slider';
 import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import HighlightRenderer, { HighlightStyle, HighlightOptions } from './HighlightRenderer';
-import { AnnotationCompat } from '../../types/annotation-compat';
+import { AnnotationCompat, AnnotationCompatLayer } from '../../types/annotation-compat';
 import { log } from '../../utils/logger';
 
 export interface AnnotationHighlightProps {
@@ -112,7 +112,7 @@ export const AnnotationHighlight: React.FC<AnnotationHighlightProps> = ({
       component: 'AnnotationHighlight',
       metadata: { annotationId, viewportId, wasSelected: isSelected },
     });
-  }, [selectedAnnotationIds, onAnnotationSelect, viewportId, annotations]);
+  }, [selectedAnnotationIds, onAnnotationSelect, viewportId]);
 
   // Handle highlight hover
   const handleHighlightHover = useCallback((annotationId: string, _event: React.MouseEvent) => {
@@ -128,9 +128,12 @@ export const AnnotationHighlight: React.FC<AnnotationHighlightProps> = ({
     return {
       total: annotations.length,
       selected: selectedAnnotationIds.size,
-      visible: annotations.filter(a => selectedAnnotationIds.has(a.id)).length,
+      visible: annotations.filter(a => {
+        const id = AnnotationCompatLayer.getAnnotationId(a);
+        return id && selectedAnnotationIds.has(id);
+      }).length,
     };
-  }, [annotations.length, selectedAnnotationIds]);
+  }, [annotations, selectedAnnotationIds]);
 
   // Preset highlight styles
   const presetStyles = useMemo(() => [
@@ -179,8 +182,8 @@ export const AnnotationHighlight: React.FC<AnnotationHighlightProps> = ({
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "text-xs transition-colors",
-                    "border-2"
+                    'text-xs transition-colors',
+                    'border-2',
                   )}
                   data-highlight-color={highlightStyle.color}
                 >
@@ -217,8 +220,8 @@ export const AnnotationHighlight: React.FC<AnnotationHighlightProps> = ({
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "h-8 text-xs transition-all",
-                      "hover:opacity-80 focus:ring-2"
+                      'h-8 text-xs transition-all',
+                      'hover:opacity-80 focus:ring-2',
                     )}
                     onClick={() => handleStyleChange(preset.style)}
                     data-preset-color={preset.style.color}

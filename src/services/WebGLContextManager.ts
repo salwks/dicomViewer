@@ -5,10 +5,11 @@
  */
 
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 interface WebGLContextInfo {
   canvas: HTMLCanvasElement;
-  context: WebGLRenderingContext | WebGL2RenderingContext;
+  context: WebGLRenderingContext | WebGL2RenderingContext | CanvasRenderingContext2D;
   createdAt: number;
   lastUsed: number;
   isActive: boolean;
@@ -33,15 +34,21 @@ class WebGLContextManager {
   public acquireContext(
     canvas: HTMLCanvasElement,
     contextId: string,
-    viewportId?: string
-  ): WebGLRenderingContext | WebGL2RenderingContext | null {
+    viewportId?: string,
+  ): WebGLRenderingContext | WebGL2RenderingContext | CanvasRenderingContext2D | null {
     try {
       // Check if we already have a context for this canvas
       const existingContext = this.contexts.get(contextId);
-      if (existingContext && !existingContext.context.isContextLost()) {
-        existingContext.lastUsed = Date.now();
-        existingContext.isActive = true;
-        return existingContext.context;
+      if (existingContext) {
+        // Check if it's a WebGL context and if it's lost
+        const isWebGLContext = 'isContextLost' in existingContext.context;
+        const isContextLost = isWebGLContext && existingContext.context.isContextLost();
+
+        if (!isContextLost) {
+          existingContext.lastUsed = Date.now();
+          existingContext.isActive = true;
+          return existingContext.context;
+        }
       }
 
       // Clean up old contexts if we're approaching the limit
@@ -61,14 +68,39 @@ class WebGLContextManager {
         stencil: false,
       };
 
-      // Try WebGL2 first, fallback to WebGL1
-      let context = canvas.getContext('webgl2', contextAttributes) as WebGL2RenderingContext;
+      // Try WebGL2 first, fallback to WebGL1, then Canvas 2D
+      let context: WebGLRenderingContext | WebGL2RenderingContext | CanvasRenderingContext2D | null = null;
+      let contextType = 'Unknown';
+
+      context = canvas.getContext('webgl2', contextAttributes) as WebGL2RenderingContext | null;
+      if (context) {
+        contextType = 'WebGL2';
+      } else {
+        context = canvas.getContext('webgl', contextAttributes) as WebGLRenderingContext | null;
+        if (context) {
+          contextType = 'WebGL1';
+        }
+      }
+
+      // Fallback to Canvas 2D if WebGL is not available
       if (!context) {
-        context = canvas.getContext('webgl', contextAttributes) as WebGLRenderingContext;
+        log.warn('WebGL not available, falling back to Canvas 2D', {
+          component: 'WebGLContextManager',
+          metadata: { contextId, viewportId },
+        });
+
+        context = canvas.getContext('2d') as CanvasRenderingContext2D | null;
+        if (context) {
+          contextType = 'Canvas2D';
+          log.info('Canvas 2D context created as WebGL fallback', {
+            component: 'WebGLContextManager',
+            metadata: { contextId, viewportId },
+          });
+        }
       }
 
       if (!context) {
-        log.error('Failed to create WebGL context', {
+        log.error('Failed to create any rendering context (WebGL or Canvas 2D)', {
           component: 'WebGLContextManager',
           metadata: { contextId, viewportId },
         });
@@ -78,7 +110,7 @@ class WebGLContextManager {
       // Store context info
       const contextInfo: WebGLContextInfo = {
         canvas,
-        context,
+        context: context as WebGLRenderingContext | WebGL2RenderingContext | CanvasRenderingContext2D,
         createdAt: Date.now(),
         lastUsed: Date.now(),
         isActive: true,
@@ -87,26 +119,32 @@ class WebGLContextManager {
 
       this.contexts.set(contextId, contextInfo);
 
-      // Set up context lost/restored handlers
-      this.setupContextEventHandlers(canvas, contextId);
+      // Set up context lost/restored handlers (only for WebGL contexts)
+      if (contextType !== 'Canvas2D') {
+        this.setupContextEventHandlers(canvas, contextId);
+      }
 
-      log.info('WebGL context created', {
+      log.info('Rendering context created', {
         component: 'WebGLContextManager',
         metadata: {
           contextId,
           viewportId,
           totalContexts: this.contexts.size,
-          contextType: context instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1',
+          contextType,
+          fallbackMode: contextType === 'Canvas2D',
         },
       });
 
       return context;
-
     } catch (error) {
-      log.error('Error acquiring WebGL context', {
-        component: 'WebGLContextManager',
-        metadata: { contextId, viewportId },
-      }, error as Error);
+      log.error(
+        'Error acquiring rendering context',
+        {
+          component: 'WebGLContextManager',
+          metadata: { contextId, viewportId },
+        },
+        error as Error,
+      );
       return null;
     }
   }
@@ -134,10 +172,13 @@ class WebGLContextManager {
     const contextInfo = this.contexts.get(contextId);
     if (contextInfo) {
       try {
-        // Lose context intentionally
-        const loseContextExt = contextInfo.context.getExtension('WEBGL_lose_context');
-        if (loseContextExt) {
-          loseContextExt.loseContext();
+        // Lose context intentionally (only for WebGL contexts)
+        const isWebGLContext = 'getExtension' in contextInfo.context;
+        if (isWebGLContext) {
+          const loseContextExt = (contextInfo.context as WebGLRenderingContext).getExtension('WEBGL_lose_context');
+          if (loseContextExt) {
+            loseContextExt.loseContext();
+          }
         }
 
         this.contexts.delete(contextId);
@@ -146,12 +187,15 @@ class WebGLContextManager {
           component: 'WebGLContextManager',
           metadata: { contextId, viewport: contextInfo.viewport },
         });
-
       } catch (error) {
-        log.error('Error destroying WebGL context', {
-          component: 'WebGLContextManager',
-          metadata: { contextId },
-        }, error as Error);
+        log.error(
+          'Error destroying WebGL context',
+          {
+            component: 'WebGLContextManager',
+            metadata: { contextId },
+          },
+          error as Error,
+        );
       }
     }
   }
@@ -165,7 +209,7 @@ class WebGLContextManager {
     inactiveContexts: number;
     oldestContext: number;
     newestContext: number;
-  } {
+    } {
     const now = Date.now();
     let activeCount = 0;
     let oldestTime = now;
@@ -195,7 +239,7 @@ class WebGLContextManager {
 
     // Find old inactive contexts
     this.contexts.forEach((info, contextId) => {
-      if (!info.isActive && (now - info.lastUsed) > this.maxIdleTime) {
+      if (!info.isActive && now - info.lastUsed > this.maxIdleTime) {
         contextsToDestroy.push(contextId);
       }
     });
@@ -206,13 +250,13 @@ class WebGLContextManager {
         .filter(([id]) => !contextsToDestroy.includes(id))
         .sort(([, a], [, b]) => a.lastUsed - b.lastUsed);
 
-      const additionalToRemove = Math.min(
-        4,
-        sortedContexts.length - (this.maxContexts - 4)
-      );
+      const additionalToRemove = Math.min(4, sortedContexts.length - (this.maxContexts - 4));
 
       for (let i = 0; i < additionalToRemove; i++) {
-        contextsToDestroy.push(sortedContexts[i][0]);
+        const contextEntry = safePropertyAccess(sortedContexts, i);
+        if (contextEntry) {
+          contextsToDestroy.push(contextEntry[0]);
+        }
       }
     }
 
@@ -236,7 +280,7 @@ class WebGLContextManager {
    * Setup context event handlers
    */
   private setupContextEventHandlers(canvas: HTMLCanvasElement, contextId: string): void {
-    canvas.addEventListener('webglcontextlost', (event) => {
+    canvas.addEventListener('webglcontextlost', event => {
       event.preventDefault();
       log.warn('WebGL context lost', {
         component: 'WebGLContextManager',
@@ -308,7 +352,7 @@ class WebGLContextManager {
       .slice(0, Math.floor(this.maxContexts / 2));
 
     // Destroy all others
-    this.contexts.forEach((info, contextId) => {
+    this.contexts.forEach((_info, contextId) => {
       if (!activeContexts.find(([id]) => id === contextId)) {
         this.destroyContext(contextId);
       }

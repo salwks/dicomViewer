@@ -6,6 +6,9 @@
 // Core DICOM loading service
 export { simpleDicomLoader } from './simpleDicomLoader';
 
+// Canvas 2D rendering fallback service
+export { Canvas2DRenderer } from './Canvas2DRenderer';
+
 // Sample data service
 export { sampleDataService } from './sampleDataService';
 
@@ -20,7 +23,7 @@ export {
   type PerformanceMetrics as ViewportPerformanceMetrics,
   type OptimizationConfig,
   type QualityLevel,
-} from './viewportOptimizer';
+} from './viewport-optimizer';
 
 // Memory management service
 export {
@@ -43,7 +46,6 @@ export {
   type PrioritySystemConfig,
   type PriorityMetrics as RenderingPriorityMetrics,
 } from './renderingPriorityManager';
-
 
 // Performance monitoring service
 export {
@@ -182,7 +184,7 @@ export {
   lazyLoadingManager,
   type LazyLoadableResource,
   type ResourceRetentionPolicy,
-  type LoadingStrategy,
+  type LoadingStrategy as LazyLoadingStrategy,
   type LoadingContext,
   type LoadingQueue,
   type LazyLoadingConfig,
@@ -225,6 +227,24 @@ export {
   DEFAULT_MIGRATION_CONFIG,
 } from './MigrationSystem';
 
+// Viewer State Migration
+export {
+  ViewerStateMigration,
+  viewerStateMigration,
+  type ViewerStateMigrationConfig,
+  type ViewerStateMigrationResult,
+  DEFAULT_MIGRATION_CONFIG as DEFAULT_VIEWER_MIGRATION_CONFIG,
+} from './ViewerStateMigration';
+
+// Layout State Persistence
+export {
+  LayoutStatePersistence,
+  layoutStatePersistence,
+  type LayoutPersistenceConfig,
+  type StoredLayoutState,
+  DEFAULT_PERSISTENCE_CONFIG as DEFAULT_LAYOUT_PERSISTENCE_CONFIG,
+} from './LayoutStatePersistence';
+
 // Error Recovery System
 export {
   ErrorRecoverySystem,
@@ -247,9 +267,54 @@ export {
   DEFAULT_KEYBOARD_SHORTCUT_CONFIG,
 } from './KeyboardShortcutSystem';
 
+// Annotation Selection API
+export {
+  SelectionAPI,
+  selectionAPI,
+  type SelectionAPIEvents,
+  type SelectionOptions,
+  type BulkSelectionOptions,
+  type SelectionStatistics,
+  type SelectionAPIConfig,
+} from './SelectionAPI';
+
+// Annotation Selection Handler
+export { annotationSelectionHandler, AnnotationSelectionHandler } from './AnnotationSelectionHandler';
+
+// Selection State Manager
+export {
+  selectionStateManager,
+  SelectionStateManager,
+  type SelectionState,
+  type SelectionHistoryEntry,
+} from './SelectionStateManager';
+
 // ===== Core Initialization Services =====
-export { initializeCornerstone, isCornerstoneInitialized, cleanupCornerstone } from './cornerstoneInit';
+export { initializeCornerstone, isCornerstone3DInitialized, cleanupCornerstone } from './cornerstoneInit';
 export { webglContextManager } from './WebGLContextManager';
+
+// ===== Integration Testing & Verification =====
+export { ToolVerificationFramework, toolVerificationFramework } from './ToolVerificationFramework';
+
+export { MeasurementToolCompatibility, measurementToolCompatibility } from './MeasurementToolCompatibility';
+
+export { NavigationToolCompatibility, navigationToolCompatibility } from './NavigationToolCompatibility';
+
+export {
+  SystemIntegrationVerifier,
+  systemIntegrationVerifier,
+  type IntegrationTestResult,
+  type SystemHealthReport,
+  type PerformanceBenchmark,
+} from './SystemIntegrationVerifier';
+
+export {
+  IntegrationTestRunner,
+  integrationTestRunner,
+  type TestRunConfiguration,
+  type TestRunSummary,
+  type TestRunProgress,
+} from './IntegrationTestRunner';
 
 // ===== Comparison Features =====
 export { ComparisonViewportManager } from './ComparisonViewportManager';
@@ -257,3 +322,128 @@ export { LazyViewportLoader } from './LazyViewportLoader';
 export { ViewportPoolManager } from './ViewportPoolManager';
 export { WindowLevelSync, windowLevelSync } from './WindowLevelSync';
 export { ZoomPanSync, zoomPanSync } from './ZoomPanSync';
+
+// Matrix Transform Synchronization
+export {
+  MatrixTransformSync,
+  matrixTransformSync,
+  type Point2D,
+  type Transform2D,
+  type ViewportTransform,
+  type MatrixTransformConfig,
+  type MatrixTransformEvents,
+  DEFAULT_MATRIX_TRANSFORM_CONFIG,
+} from './MatrixTransformSync';
+
+// Sync Toggle Manager
+export {
+  SyncToggleManager,
+  syncToggleManager,
+  type SyncFeatures,
+  type ViewportSyncSettings,
+  type SyncToggleConfig,
+  type SyncToggleEvents,
+  DEFAULT_SYNC_FEATURES,
+  DEFAULT_SYNC_TOGGLE_CONFIG,
+} from './SyncToggleManager';
+
+// Sync Event Emitter
+export {
+  SyncEventEmitter,
+  syncEventEmitter,
+  type SyncEvent,
+  type ScrollSyncEvent,
+  type WindowLevelSyncEvent,
+  type ZoomPanSyncEvent,
+  type CrossReferenceSyncEvent,
+  type StateChangedEvent,
+  type ErrorEvent,
+  type EventSubscription,
+  type EventFilter,
+  type PropagationOptions,
+  type EventPropagationContext,
+  type SyncEventEmitterConfig,
+  DEFAULT_SYNC_EVENT_CONFIG,
+} from './SyncEventEmitter';
+
+// Advanced DICOM Loader
+export {
+  AdvancedDICOMLoaderImpl,
+  advancedDICOMLoader,
+} from './AdvancedDICOMLoader/AdvancedDICOMLoaderImpl';
+
+export {
+  BaseDICOMLoader,
+  SOPClassHandler,
+  type DICOMLoaderConfig,
+  type LoadProgress,
+  type DICOMMetadata,
+  type LoadOptions,
+  type LoadRequest,
+  SUPPORTED_SOP_CLASSES,
+  DEFAULT_DICOM_LOADER_CONFIG,
+} from './AdvancedDICOMLoader';
+
+export {
+  CTImageHandler,
+  MRImageHandler,
+  PETImageHandler,
+  UltrasoundHandler,
+  DigitalXRayHandler,
+  RTHandler,
+  MultiFrameHandler,
+  SegmentationHandler,
+  SOPClassHandlerFactory,
+} from './AdvancedDICOMLoader/SOPClassHandlers';
+
+// WADO Protocol Support
+export {
+  WADOProtocolManager,
+  WADOURIHandler,
+  WADORSHandler,
+  type WADORequest,
+  type WADOResponse,
+  type WADOAuthConfig,
+  type WADORetryConfig,
+  DEFAULT_WADO_RETRY_CONFIG,
+} from './AdvancedDICOMLoader/WADOProtocolHandler';
+
+// Progressive Loading System
+export {
+  ProgressiveLoader,
+  progressiveLoader,
+  LoadPriority,
+  type ProgressiveLoadingConfig,
+  type ProgressiveLoadRequest,
+  type LoadingSession,
+  type LoadingSessionProgress,
+  type ChunkProgress,
+  type LoadingStrategy,
+  DEFAULT_PROGRESSIVE_CONFIG,
+} from './AdvancedDICOMLoader/ProgressiveLoader';
+
+// Metadata Provider System
+export {
+  MetadataProviderManager,
+  type MetadataProvider,
+  type MetadataProviderConfig,
+} from './AdvancedDICOMLoader/MetadataProvider';
+
+export {
+  DefaultMetadataProvider,
+  WADOMetadataProvider,
+  CustomMetadataProvider,
+  createCustomMetadataProvider,
+  createPACSMetadataProvider,
+  createResearchMetadataProvider,
+  type CustomProviderConfig,
+} from './AdvancedDICOMLoader/providers';
+
+// Enhanced DICOM Types
+export {
+  type EnhancedDICOMMetadata,
+  type MetadataExtractionOptions,
+  type MetadataValidationResult,
+  type ProviderCapabilities,
+  type ExtendedLoadOptions,
+} from './AdvancedDICOMLoader/types';

@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { AnnotationCompat } from '../../types/annotation-compat';
+import { AnnotationCompat, AnnotationCompatLayer } from '../../types/annotation-compat';
 import { AnnotationSelectionHandler } from '../../services/AnnotationSelectionHandler';
 import { log } from '../../utils/logger';
 
@@ -132,7 +132,7 @@ export const ClickHandler: React.FC<ClickHandlerProps> = ({
     const rect = container?.getBoundingClientRect() || { left: 0, top: 0 };
 
     return {
-      annotationId: annotation.id,
+      annotationId: AnnotationCompatLayer.getAnnotationId(annotation) || '',
       annotation,
       viewportId,
       clickType,
@@ -199,7 +199,7 @@ export const ClickHandler: React.FC<ClickHandlerProps> = ({
       return;
     }
 
-    setActiveAnnotation(annotation.id);
+    setActiveAnnotation(AnnotationCompatLayer.getAnnotationId(annotation));
 
     // Update stats
     setClickStats(prev => ({
@@ -370,7 +370,7 @@ export const ClickHandler: React.FC<ClickHandlerProps> = ({
           annotations.forEach(annotation => {
             selectionHandler.selectAnnotation(annotation, viewportId, true);
           });
-          const allIds = annotations.map(a => a.id);
+          const allIds = annotations.map(a => AnnotationCompatLayer.getAnnotationId(a)).filter(Boolean) as string[];
           onSelectionChange?.(allIds);
           event.preventDefault();
         }

@@ -4,10 +4,11 @@
  */
 
 import React, { useRef, useCallback } from 'react';
-import { ViewportGrid, ViewportLayout, ViewportState, ViewportGridRef } from '../ViewportGrid';
-import { SynchronizationSettings } from '../SynchronizationControls';
-import { viewportOptimizer, RenderPriority } from '../../services/viewportOptimizer';
+import { ViewportGrid, ViewportLayout, ViewportState, ViewportGridRef } from '../ViewportGrid/index';
+import { SynchronizationSettings } from '../SynchronizationControls/index';
+import { viewportOptimizer, RenderPriority } from '../../services/viewport-optimizer';
 import { log } from '../../utils/logger';
+import { safePropertyAccess } from '../../lib/utils';
 
 export interface ViewportManagerProps {
   layout: ViewportLayout;
@@ -135,7 +136,7 @@ const ViewportManagerComponent = React.forwardRef<ViewportManagerRef, ViewportMa
         },
         syncViewports: () => {
           // Trigger synchronization
-          console.info('Manual viewport synchronization triggered');
+          log.info('Manual viewport synchronization triggered');
         },
         optimizeViewport: (viewportId: string) => {
           try {
@@ -165,14 +166,17 @@ const ViewportManagerComponent = React.forwardRef<ViewportManagerRef, ViewportMa
               suspended: RenderPriority.SUSPENDED,
             };
 
-            viewportOptimizer.setPriority(renderingViewportId, priorityMap[priority]);
+            const mappedPriority = safePropertyAccess(priorityMap, priority);
+            if (mappedPriority !== undefined) {
+              viewportOptimizer.setPriority(renderingViewportId, mappedPriority);
+            }
 
             log.info('Viewport priority set', {
               component: 'ViewportManager',
               metadata: {
                 viewportId: renderingViewportId,
                 priority,
-                priorityValue: priorityMap[priority],
+                priorityValue: safePropertyAccess(priorityMap, priority),
               },
             });
           } catch (error) {
@@ -195,7 +199,7 @@ const ViewportManagerComponent = React.forwardRef<ViewportManagerRef, ViewportMa
         const viewportIds = activeViewports.map(v => `VIEWPORT_${v.id}`);
 
         // Initialize synchronization (this would need to be implemented in ViewportSynchronizer)
-        console.info('Setting up synchronization for viewports:', viewportIds);
+        log.info('Setting up synchronization for viewports:', viewportIds);
       }
 
       // Apply memory management optimization for all viewports

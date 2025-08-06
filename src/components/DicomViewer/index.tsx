@@ -13,7 +13,7 @@ import { useToolSetup } from './hooks/useToolSetup';
 import { useViewportSetup } from './hooks/useViewportSetup';
 import { useImageNavigation } from './hooks/useImageNavigation';
 import { StackScrollIndicator } from '../StackScrollIndicator';
-import { viewportOptimizer, RenderPriority } from '../../services/viewportOptimizer';
+import { viewportOptimizer, RenderPriority } from '../../services/viewport-optimizer';
 import { memoryManager } from '../../services/memoryManager';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';

@@ -29,6 +29,13 @@ class SecureStorage {
   private keyStore = new Map<string, string>();
   private readonly storagePrefix = 'cs3d-secure-';
 
+  constructor() {
+    // 개발 환경에서는 기본 암호화 키 초기화
+    if (process.env.NODE_ENV === 'development') {
+      this.keyStore.set('master', `dev-master-key-${Date.now()}`);
+    }
+  }
+
   /**
    * Initialize secure storage with master key
    */
@@ -209,6 +216,28 @@ class SecureStorage {
 
       return data;
     } catch (error) {
+      // In development, handle decryption failures gracefully
+      if (process.env.NODE_ENV !== 'production') {
+        log.warn('Failed to retrieve encrypted data - clearing corrupted data in development', {
+          component: 'SecureStorage',
+          metadata: {
+            key,
+            errorType: (error as Error).name,
+            isDevelopment: true,
+          },
+        });
+
+        // Clear corrupted data in development
+        try {
+          await this.remove(key);
+        } catch {
+          // Ignore cleanup errors
+        }
+
+        return null; // Return null instead of throwing
+      }
+
+      // In production, still throw for security
       log.error(
         'Failed to retrieve data securely',
         {
@@ -220,7 +249,6 @@ class SecureStorage {
       throw error;
     }
   }
-
 
   /**
    * List all stored keys
@@ -502,7 +530,7 @@ class SecureStorage {
                     keys.push(storedKey);
                   }
                 }
-              } catch (error) {
+              } catch {
                 // Skip invalid entries
                 log.warn('Invalid storage entry found during getAllKeys', {
                   component: 'SecureStorage',
@@ -518,10 +546,14 @@ class SecureStorage {
 
       return keys;
     } catch (error) {
-      log.error('Failed to get all keys', {
-        component: 'SecureStorage',
-        metadata: { purpose },
-      }, error as Error);
+      log.error(
+        'Failed to get all keys',
+        {
+          component: 'SecureStorage',
+          metadata: { purpose },
+        },
+        error as Error,
+      );
       return [];
     }
   }
@@ -546,11 +578,40 @@ class SecureStorage {
 
       return false;
     } catch (error) {
-      log.error('Failed to remove data', {
-        component: 'SecureStorage',
-        metadata: { key },
-      }, error as Error);
+      log.error(
+        'Failed to remove data',
+        {
+          component: 'SecureStorage',
+          metadata: { key },
+        },
+        error as Error,
+      );
       return false;
+    }
+  }
+
+  /**
+   * Clear corrupted data in development environment
+   */
+  async clearCorruptedData(): Promise<void> {
+    if (process.env.NODE_ENV !== 'production') {
+      const corruptedKeys = ['viewport-configurations', 'configuration-profiles', 'user-preferences'];
+
+      for (const key of corruptedKeys) {
+        try {
+          await this.remove(key);
+        } catch {
+          // Ignore errors during cleanup
+        }
+      }
+
+      log.warn('Cleared potentially corrupted data in development', {
+        component: 'SecureStorage',
+        metadata: {
+          keys: corruptedKeys,
+          isDevelopment: true,
+        },
+      });
     }
   }
 }

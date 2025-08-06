@@ -7,7 +7,8 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
-import { ViewportState } from '../types/viewportState';
+import { safePropertyAccess } from '../lib/utils';
+// import { ViewportState } from '../types/viewportState'; // Currently unused
 
 export interface PooledViewport {
   id: string;
@@ -123,7 +124,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     log.info('ViewportPoolManager initialized', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         poolSize: this.pool.size,
         availableCount: this.availableQueue.length,
       },
@@ -172,10 +173,7 @@ export class ViewportPoolManager extends EventEmitter {
   /**
    * Acquire a viewport from the pool
    */
-  public async acquireViewport(
-    type: 'stack' | 'volume' = 'stack',
-    studyId?: string
-  ): Promise<PooledViewport | null> {
+  public async acquireViewport(type: 'stack' | 'volume' = 'stack', studyId?: string): Promise<PooledViewport | null> {
     // Check for available viewport of requested type
     let availableViewport = this.findAvailableViewport(type);
 
@@ -192,7 +190,7 @@ export class ViewportPoolManager extends EventEmitter {
     if (!availableViewport) {
       log.warn('No viewport available in pool', {
         component: 'ViewportPoolManager',
-        metadata: { 
+        metadata: {
           type,
           poolSize: this.pool.size,
           inUse: this.inUseSet.size,
@@ -222,7 +220,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     log.info('Viewport acquired from pool', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         poolId: availableViewport.poolId,
         type,
         studyId,
@@ -260,7 +258,7 @@ export class ViewportPoolManager extends EventEmitter {
     // Mark as pending cleanup
     viewport.state = 'pending-cleanup';
     viewport.assignedStudyId = undefined;
-    
+
     // Remove from in-use set
     this.inUseSet.delete(poolId);
     this.pendingCleanupQueue.push(poolId);
@@ -276,7 +274,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     log.info('Viewport released to pool', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         poolId,
         usageCount: viewport.usageCount,
       },
@@ -316,7 +314,7 @@ export class ViewportPoolManager extends EventEmitter {
     if (this.pool.size >= this.config.maxPoolSize) {
       log.warn('Pool at maximum size', {
         component: 'ViewportPoolManager',
-        metadata: { 
+        metadata: {
           currentSize: this.pool.size,
           maxSize: this.config.maxPoolSize,
         },
@@ -325,10 +323,10 @@ export class ViewportPoolManager extends EventEmitter {
     }
 
     const newViewport = this.createPooledViewport(type);
-    
+
     log.info('Pool expanded', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         newSize: this.pool.size,
         type,
       },
@@ -356,7 +354,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     log.info('Pool shrunk', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         newSize: this.pool.size,
         removed: viewportsToRemove.length,
       },
@@ -384,10 +382,7 @@ export class ViewportPoolManager extends EventEmitter {
     });
 
     // Calculate how many to remove
-    const targetSize = Math.max(
-      this.config.minPoolSize,
-      Math.ceil(this.inUseSet.size / this.config.shrinkThreshold)
-    );
+    const targetSize = Math.max(this.config.minPoolSize, Math.ceil(this.inUseSet.size / this.config.shrinkThreshold));
     const toRemove = Math.max(0, this.pool.size - targetSize);
 
     return candidates.slice(0, toRemove).map(c => c.poolId);
@@ -421,12 +416,12 @@ export class ViewportPoolManager extends EventEmitter {
     await this.cleanViewport(oldestViewport);
     oldestViewport.type = type;
     oldestViewport.lastUsedAt = Date.now();
-    
+
     this.statistics.recycleCount++;
 
     log.info('Viewport recycled', {
       component: 'ViewportPoolManager',
-      metadata: { 
+      metadata: {
         poolId: oldestPoolId,
         newType: type,
         recycleCount: this.statistics.recycleCount,
@@ -459,10 +454,14 @@ export class ViewportPoolManager extends EventEmitter {
         metadata: { poolId: viewport.poolId },
       });
     } catch (error) {
-      log.error('Failed to clean viewport', {
-        component: 'ViewportPoolManager',
-        metadata: { poolId: viewport.poolId },
-      }, error as Error);
+      log.error(
+        'Failed to clean viewport',
+        {
+          component: 'ViewportPoolManager',
+          metadata: { poolId: viewport.poolId },
+        },
+        error as Error,
+      );
     }
   }
 
@@ -482,7 +481,7 @@ export class ViewportPoolManager extends EventEmitter {
    */
   private async completeViewportCleanup(viewport: PooledViewport): Promise<void> {
     viewport.state = 'available';
-    
+
     // Remove from pending cleanup
     const index = this.pendingCleanupQueue.indexOf(viewport.poolId);
     if (index > -1) {
@@ -514,7 +513,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     // Remove from all tracking
     this.pool.delete(poolId);
-    
+
     const availableIndex = this.availableQueue.indexOf(poolId);
     if (availableIndex > -1) {
       this.availableQueue.splice(availableIndex, 1);
@@ -603,11 +602,14 @@ export class ViewportPoolManager extends EventEmitter {
       if (totalAttempts > 0) {
         this.statistics.poolEfficiency = (this.statistics.recycleCount / totalAttempts) * 100;
       }
-
     } catch (error) {
-      log.error('Garbage collection failed', {
-        component: 'ViewportPoolManager',
-      }, error as Error);
+      log.error(
+        'Garbage collection failed',
+        {
+          component: 'ViewportPoolManager',
+        },
+        error as Error,
+      );
       result.errors.push(`GC failed: ${error}`);
     }
 
@@ -615,7 +617,7 @@ export class ViewportPoolManager extends EventEmitter {
 
     log.info('Garbage collection completed', {
       component: 'ViewportPoolManager',
-      metadata: result,
+      metadata: { ...result } as Record<string, unknown>,
     });
 
     this.emit('gc-completed', result);
@@ -631,9 +633,11 @@ export class ViewportPoolManager extends EventEmitter {
     const now = Date.now();
 
     this.pool.forEach((viewport, poolId) => {
-      if (viewport.state === 'available' && 
-          viewport.lastUsedAt > 0 &&
-          (now - viewport.lastUsedAt) > this.config.maxIdleTime) {
+      if (
+        viewport.state === 'available' &&
+        viewport.lastUsedAt > 0 &&
+        now - viewport.lastUsedAt > this.config.maxIdleTime
+      ) {
         idleViewports.push(poolId);
       }
     });
@@ -657,11 +661,11 @@ export class ViewportPoolManager extends EventEmitter {
    */
   private async checkMemoryUsage(): Promise<void> {
     const currentUsage = this.estimateMemoryUsage();
-    
+
     if (currentUsage > this.config.maxMemoryUsage) {
       log.warn('Memory usage exceeded threshold', {
         component: 'ViewportPoolManager',
-        metadata: { 
+        metadata: {
           currentUsage,
           threshold: this.config.maxMemoryUsage,
         },
@@ -709,9 +713,12 @@ export class ViewportPoolManager extends EventEmitter {
       .map(([poolId]) => poolId);
 
     const toRemove = Math.max(0, availableViewports.length - this.config.minPoolSize);
-    
+
     for (let i = 0; i < toRemove; i++) {
-      await this.removeViewportFromPool(availableViewports[i]);
+      const viewport = safePropertyAccess(availableViewports, i);
+      if (viewport) {
+        await this.removeViewportFromPool(viewport);
+      }
     }
 
     // Force garbage collection
@@ -734,7 +741,7 @@ export class ViewportPoolManager extends EventEmitter {
     healthy: boolean;
     issues: string[];
     recommendations: string[];
-  } {
+    } {
     const issues: string[] = [];
     const recommendations: string[] = [];
 
@@ -782,7 +789,7 @@ export class ViewportPoolManager extends EventEmitter {
     }
 
     // Clean all viewports
-    for (const [poolId, viewport] of this.pool.entries()) {
+    for (const [, viewport] of this.pool.entries()) {
       await this.cleanViewport(viewport);
     }
 

@@ -174,10 +174,10 @@ export const ViewportDropZone: React.FC<ViewportDropZoneProps> = ({
     <div
       ref={dropZoneRef}
       className={cn(
-        'relative transition-all duration-200',
+        'relative',
         isDragging && isValidTarget && [
           'ring-2 ring-primary/50 ring-offset-2',
-          isHovering && 'ring-primary bg-primary/5 scale-[1.02]',
+          isHovering && 'ring-primary bg-primary/5',
         ],
         isDragging && !isValidTarget && 'ring-2 ring-destructive/50 ring-offset-2',
         className,
@@ -195,7 +195,7 @@ export const ViewportDropZone: React.FC<ViewportDropZoneProps> = ({
           className={cn(
             'absolute inset-0 flex items-center justify-center',
             'bg-background/80 backdrop-blur-sm',
-            'border-2 border-dashed transition-all duration-200',
+            'border-2 border-dashed',
             isValidTarget ? 'border-primary text-primary' : 'border-destructive text-destructive',
             isHovering && isValidTarget && 'bg-primary/10 border-solid',
             'pointer-events-none z-10',

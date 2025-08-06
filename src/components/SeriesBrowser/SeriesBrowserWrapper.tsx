@@ -1,11 +1,13 @@
 /**
  * SeriesBrowser Wrapper Component
  * Provides backward compatibility for the old SeriesBrowser API
- * while using the new EnhancedSeriesBrowser internally
+ * Built with shadcn/ui components
  */
 
 import React from 'react';
 import { EnhancedSeriesBrowser } from './enhanced';
+import { Card, CardContent } from '../ui/card';
+import { cn, safePropertyAccess } from '../../lib/utils';
 
 interface LegacySeriesBrowserProps {
   seriesData: any[];
@@ -23,7 +25,7 @@ export const SeriesBrowserWrapper: React.FC<LegacySeriesBrowserProps> = ({
   seriesData = [], // Default to empty array
   selectedSeries = 0,
   onSeriesSelect,
-  onSeriesDelete,
+  onSeriesDelete: _onSeriesDelete,
   comparisonStudyA,
   comparisonStudyB,
   setComparisonStudyA,
@@ -33,10 +35,12 @@ export const SeriesBrowserWrapper: React.FC<LegacySeriesBrowserProps> = ({
   // Handle empty or invalid data
   if (!seriesData || seriesData.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
-        <div className="text-4xl mb-2">📁</div>
-        <p className="text-sm">No studies loaded</p>
-      </div>
+      <Card className={cn('m-4')}>
+        <CardContent className={cn('p-6 text-center')}>
+          <div className={cn('text-4xl mb-2')}>📁</div>
+          <p className={cn('text-sm text-muted-foreground')}>No studies loaded</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -53,6 +57,7 @@ export const SeriesBrowserWrapper: React.FC<LegacySeriesBrowserProps> = ({
     seriesCount: 1,
     instanceCount: series.numImageFrames || series.imageIds?.length || 1,
     series: [{
+      studyInstanceUID: series.studyInstanceUID || `study-${index}`,
       seriesInstanceUID: series.seriesInstanceUID || `series-${index}`,
       seriesNumber: series.seriesNumber || index + 1,
       seriesDescription: series.seriesDescription || `Series ${index + 1}`,
@@ -87,7 +92,9 @@ export const SeriesBrowserWrapper: React.FC<LegacySeriesBrowserProps> = ({
   const handleSeriesSelect = (seriesInstanceUID: string) => {
     // Find the series across all studies
     for (let studyIndex = 0; studyIndex < studies.length; studyIndex++) {
-      const seriesIndex = studies[studyIndex].series.findIndex(s => s.seriesInstanceUID === seriesInstanceUID);
+      const study = safePropertyAccess(studies, studyIndex);
+      if (!study) continue;
+      const seriesIndex = study.series.findIndex(s => s.seriesInstanceUID === seriesInstanceUID);
       if (seriesIndex !== -1) {
         onSeriesSelect(studyIndex);
         return;
@@ -116,22 +123,27 @@ export const SeriesBrowserWrapper: React.FC<LegacySeriesBrowserProps> = ({
 
   // Current viewport assignments
   const viewportAssignments: Record<string, string> = {};
-  if (comparisonStudyA !== null && studies[comparisonStudyA]) {
-    const studyA = studies[comparisonStudyA];
-    if (studyA.series.length > 0) {
-      viewportAssignments[studyA.series[0].seriesInstanceUID] = 'A';
+  if (comparisonStudyA !== null && comparisonStudyA !== undefined) {
+    const studyA = safePropertyAccess(studies, comparisonStudyA);
+    if (studyA) {
+      if (studyA.series.length > 0) {
+        viewportAssignments[studyA.series[0].seriesInstanceUID] = 'A';
+      }
     }
   }
-  if (comparisonStudyB !== null && studies[comparisonStudyB]) {
-    const studyB = studies[comparisonStudyB];
-    if (studyB.series.length > 0) {
-      viewportAssignments[studyB.series[0].seriesInstanceUID] = 'B';
+  if (comparisonStudyB !== null && comparisonStudyB !== undefined) {
+    const studyB = safePropertyAccess(studies, comparisonStudyB);
+    if (studyB) {
+      if (studyB.series.length > 0) {
+        viewportAssignments[studyB.series[0].seriesInstanceUID] = 'B';
+      }
     }
   }
 
   // Current selections
-  const selectedStudyUID = studies[selectedSeries]?.studyInstanceUID;
-  const selectedSeriesUID = studies[selectedSeries]?.series[0]?.seriesInstanceUID;
+  const selectedStudy = safePropertyAccess(studies, selectedSeries);
+  const selectedStudyUID = selectedStudy?.studyInstanceUID;
+  const selectedSeriesUID = selectedStudy?.series[0]?.seriesInstanceUID;
 
   return (
     <EnhancedSeriesBrowser

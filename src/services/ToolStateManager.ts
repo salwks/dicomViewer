@@ -2,11 +2,17 @@
  * Tool State Manager Service
  * Advanced tool state management with validation, synchronization, and persistence
  * Handles tool configurations, annotations, measurements, and tool behaviors
+ * Now integrated with Tool Verification Framework and Compatibility Services
  */
 
 import { EventEmitter } from 'events';
 import { AnnotationState, MeasurementState, ToolState } from '../types/viewportState';
 import { log } from '../utils/logger';
+import { safePropertyAccess, safePropertySet } from '../lib/utils';
+import { ToolType } from '../types/tools';
+import { ToolVerificationFramework, toolVerificationFramework } from './ToolVerificationFramework';
+import { MeasurementToolCompatibility, measurementToolCompatibility } from './MeasurementToolCompatibility';
+import { NavigationToolCompatibility, navigationToolCompatibility } from './NavigationToolCompatibility';
 
 export interface ToolDefinition {
   name: string;
@@ -188,9 +194,7 @@ export const BUILT_IN_TOOLS: ToolDefinition[] = [
     },
     requiredConfiguration: ['units'],
     supportedViewportTypes: ['stack', 'volume'],
-    allowedInteractions: [
-      { type: 'leftClick', action: 'addPoint' },
-    ],
+    allowedInteractions: [{ type: 'leftClick', action: 'addPoint' }],
     priority: 11,
   },
   {
@@ -207,9 +211,7 @@ export const BUILT_IN_TOOLS: ToolDefinition[] = [
     },
     requiredConfiguration: [],
     supportedViewportTypes: ['stack', 'volume'],
-    allowedInteractions: [
-      { type: 'drag', action: 'drawRectangle' },
-    ],
+    allowedInteractions: [{ type: 'drag', action: 'drawRectangle' }],
     priority: 12,
   },
 ];
@@ -235,9 +237,25 @@ export class ToolStateManager extends EventEmitter {
   private validationRules = new Map<string, ToolValidationRule[]>();
   private autoSaveInterval: NodeJS.Timeout | null = null;
 
-  constructor(config: Partial<ToolStateManagerConfig> = {}) {
+  // Integration with verification frameworks
+  private verificationFramework: ToolVerificationFramework;
+  private measurementCompatibility: MeasurementToolCompatibility;
+  private navigationCompatibility: NavigationToolCompatibility;
+  private verificationResults = new Map<string, boolean>();
+
+  constructor(
+    config: Partial<ToolStateManagerConfig> = {},
+    verificationFramework?: ToolVerificationFramework,
+    measurementCompatibility?: MeasurementToolCompatibility,
+    navigationCompatibility?: NavigationToolCompatibility,
+  ) {
     super();
     this.config = { ...DEFAULT_TOOL_STATE_CONFIG, ...config };
+
+    // Initialize verification services
+    this.verificationFramework = verificationFramework || toolVerificationFramework;
+    this.measurementCompatibility = measurementCompatibility || measurementToolCompatibility;
+    this.navigationCompatibility = navigationCompatibility || navigationToolCompatibility;
 
     this.initialize();
   }
@@ -264,6 +282,228 @@ export class ToolStateManager extends EventEmitter {
       this.setupAutoSave();
     }
   }
+
+  // ===== Tool Verification Integration =====
+
+  /**
+   * Verify tool group compatibility with all registered verification services
+   */
+  public async verifyToolGroup(toolGroupId: string): Promise<boolean> {
+    try {
+      log.info('Starting tool group verification', {
+        component: 'ToolStateManager',
+        metadata: { toolGroupId },
+      });
+
+      // Run all verification services
+      const [toolGroupResult, measurementResults, navigationResults] = await Promise.all([
+        this.verificationFramework.verifyToolGroup(toolGroupId),
+        this.measurementCompatibility.verifyAllMeasurementTools(toolGroupId),
+        this.navigationCompatibility.verifyAllNavigationTools(toolGroupId),
+      ]);
+
+      // Analyze results
+      const overallSuccess =
+        toolGroupResult.overallStatus === 'passed' &&
+        measurementResults.every((r: any) => r.isCompatible || r.verificationPassed) &&
+        navigationResults.every((r: any) => r.isWorking || r.verificationPassed);
+
+      // Store verification result
+      this.verificationResults.set(toolGroupId, overallSuccess);
+
+      // Generate comprehensive report
+      const report = this.generateVerificationReport(toolGroupId, {
+        toolGroup: toolGroupResult,
+        measurement: measurementResults,
+        navigation: navigationResults,
+      });
+
+      log.info('Tool group verification completed', {
+        component: 'ToolStateManager',
+        metadata: {
+          toolGroupId,
+          success: overallSuccess,
+          reportLength: report.length,
+        },
+      });
+
+      // Emit verification event
+      this.emit('tool-verification-completed', toolGroupId, overallSuccess, report);
+
+      return overallSuccess;
+    } catch (error) {
+      log.error(
+        'Tool group verification failed',
+        {
+          component: 'ToolStateManager',
+          metadata: { toolGroupId },
+        },
+        error as Error,
+      );
+
+      return false;
+    }
+  }
+
+  /**
+   * Verify specific tool compatibility
+   */
+  public async verifyTool(toolGroupId: string, toolType: ToolType): Promise<boolean> {
+    try {
+      // Map tool name to ToolType for verification
+      const toolName = this.getToolTypeFromName(toolType);
+      if (!toolName) {
+        console.warn(`Unknown tool type: ${toolType}`);
+        return false;
+      }
+
+      // Get tool definition
+      const toolDef = this.toolDefinitions.get(toolName);
+      if (!toolDef) {
+        console.warn(`Tool definition not found: ${toolName}`);
+        return false;
+      }
+
+      // Determine verification service based on tool category
+      let verificationResult;
+
+      if (toolDef.category === 'measurement') {
+        verificationResult = await this.measurementCompatibility.verifyMeasurementTool(toolType, toolGroupId);
+      } else if (toolDef.category === 'navigation') {
+        verificationResult = await this.navigationCompatibility.verifyNavigationTool(toolType, toolGroupId);
+      } else {
+        // Use base verification framework for other tools
+        const result = await this.verificationFramework.verifyTool(
+          toolType,
+          null, // Tool class will be resolved internally
+          toolGroupId,
+        );
+        verificationResult = result.verificationPassed;
+      }
+
+      return verificationResult;
+    } catch (error) {
+      log.error(
+        `Tool verification failed: ${toolType}`,
+        {
+          component: 'ToolStateManager',
+          metadata: { toolGroupId, toolType },
+        },
+        error as Error,
+      );
+
+      return false;
+    }
+  }
+
+  /**
+   * Get verification status for tool group
+   */
+  public getVerificationStatus(toolGroupId: string): boolean | undefined {
+    return this.verificationResults.get(toolGroupId);
+  }
+
+  /**
+   * Generate comprehensive verification report
+   */
+  private generateVerificationReport(
+    toolGroupId: string,
+    results: {
+      toolGroup: any;
+      measurement: any[];
+      navigation: any[];
+    },
+  ): string {
+    let report = '\n=== Comprehensive Tool Verification Report ===\n';
+    report += `Tool Group: ${toolGroupId}\n`;
+    report += `Generated: ${new Date().toISOString()}\n\n`;
+
+    // Tool Group Summary
+    report += '=== Overall Status ===\n';
+    report += `Tool Group Status: ${results.toolGroup.overallStatus.toUpperCase()}\n`;
+    report += `Measurement Tools: ${results.measurement.filter(r => r.verificationPassed).length}/${results.measurement.length} passed\n`;
+    report += `Navigation Tools: ${results.navigation.filter(r => r.verificationPassed).length}/${results.navigation.length} passed\n\n`;
+
+    // Base tool verification report
+    if (this.verificationFramework.generateReport) {
+      report += this.verificationFramework.generateReport(results.toolGroup);
+    }
+
+    // Measurement tools report
+    if (results.measurement.length > 0) {
+      report += this.measurementCompatibility.generateMeasurementReport(results.measurement);
+    }
+
+    // Navigation tools report
+    if (results.navigation.length > 0) {
+      report += this.navigationCompatibility.generateNavigationReport(results.navigation);
+    }
+
+    return report;
+  }
+
+  /**
+   * Helper methods for tool type mapping
+   */
+  private getToolTypeFromName(toolType: ToolType): string | null {
+    const typeMap: Record<ToolType, string> = {
+      [ToolType.WINDOW_LEVEL]: 'WindowLevel',
+      [ToolType.PAN]: 'Pan',
+      [ToolType.ZOOM]: 'Zoom',
+      [ToolType.LENGTH]: 'Length',
+      [ToolType.ANGLE]: 'Angle',
+      [ToolType.RECTANGLE_ROI]: 'Rectangle',
+      [ToolType.ELLIPSE_ROI]: 'Ellipse',
+      [ToolType.PROBE]: 'Probe',
+      [ToolType.BIDIRECTIONAL]: 'Bidirectional',
+      [ToolType.HEIGHT]: 'Height',
+      [ToolType.ARROW]: 'Arrow',
+      [ToolType.FREEHAND]: 'Freehand',
+      [ToolType.STACK_SCROLL]: 'StackScroll',
+      [ToolType.COBB_ANGLE]: 'CobbAngle',
+      [ToolType.DRAG_PROBE]: 'DragProbe',
+      [ToolType.SELECTION]: 'Selection',
+      [ToolType.TEXT]: 'Text',
+      [ToolType.SPLINE_ROI]: 'SplineROI',
+      [ToolType.LIVEWIRE]: 'Livewire',
+      [ToolType.KEY_IMAGE]: 'KeyImage',
+      [ToolType.ERASER]: 'Eraser',
+      [ToolType.VOLUME_ROTATE]: 'VolumeRotate',
+      [ToolType.CROSSHAIRS]: 'Crosshairs',
+      [ToolType.ROTATE]: 'Rotate',
+    };
+
+    return safePropertyAccess(typeMap, toolType) || null;
+  }
+
+  // Helper methods for tool verification (currently unused but may be needed for future compatibility)
+  // private findMeasurementConfig(toolType: ToolType): any {
+  //   // Create a basic measurement config for verification
+  //   // This would normally come from the measurement compatibility service
+  //   return {
+  //     toolType,
+  //     toolClass: null, // Will be resolved by the service
+  //     expectedPrecision: 0.1,
+  //     supportedUnits: ['mm', 'px'],
+  //     requiresCalibration: true,
+  //     annotationProperties: ['value', 'unit', 'handles'],
+  //   };
+  // }
+
+  // private findNavigationConfig(toolType: ToolType): any {
+  //   // Create a basic navigation config for verification
+  //   // This would normally come from the navigation compatibility service
+  //   return {
+  //     toolType,
+  //     toolClass: null, // Will be resolved by the service
+  //     supportsTouch: true,
+  //     supportsKeyboard: true,
+  //     supportsMouse: true,
+  //     defaultBindings: [],
+  //     gestureTypes: ['drag', 'pinch'],
+  //     performanceMetrics: ['latency', 'fps'],
+  //   };
+  // }
 
   // ===== Tool Registration =====
 
@@ -328,7 +568,8 @@ export class ToolStateManager extends EventEmitter {
       .map(tool => tool.name);
 
     const toolState: ToolState = {
-      activeTool: this.config.defaultTools.find(tool => compatibleTools.includes(tool)) || compatibleTools[0] || 'WindowLevel',
+      activeTool:
+        this.config.defaultTools.find(tool => compatibleTools.includes(tool)) || compatibleTools[0] || 'WindowLevel',
       availableTools: compatibleTools,
       toolConfiguration: {},
       annotations: [],
@@ -339,7 +580,7 @@ export class ToolStateManager extends EventEmitter {
     compatibleTools.forEach(toolName => {
       const tool = this.toolDefinitions.get(toolName);
       if (tool) {
-        toolState.toolConfiguration[toolName] = { ...tool.defaultConfiguration };
+        safePropertySet(toolState.toolConfiguration, toolName, { ...tool.defaultConfiguration });
       }
     });
 
@@ -399,11 +640,7 @@ export class ToolStateManager extends EventEmitter {
     return toolState?.activeTool || null;
   }
 
-  public setToolConfiguration(
-    viewportId: string,
-    toolName: string,
-    configuration: Record<string, unknown>,
-  ): void {
+  public setToolConfiguration(viewportId: string, toolName: string, configuration: Record<string, unknown>): void {
     const toolState = this.viewportToolStates.get(viewportId);
     if (!toolState) {
       throw new Error(`Viewport not found: ${viewportId}`);
@@ -415,19 +652,17 @@ export class ToolStateManager extends EventEmitter {
     }
 
     // Validate required configuration
-    const missingConfig = tool.requiredConfiguration.filter(
-      key => !(key in configuration),
-    );
+    const missingConfig = tool.requiredConfiguration.filter(key => !(key in configuration));
     if (missingConfig.length > 0) {
       throw new Error(`Missing required configuration: ${missingConfig.join(', ')}`);
     }
 
     // Merge with existing configuration
-    const existingConfig = toolState.toolConfiguration[toolName] || {};
-    toolState.toolConfiguration[toolName] = {
+    const existingConfig = safePropertyAccess(toolState.toolConfiguration, toolName) || {};
+    safePropertySet(toolState.toolConfiguration, toolName, {
       ...existingConfig,
       ...configuration,
-    };
+    });
 
     this.emit('tool-configuration-changed', viewportId, toolName, configuration);
 
@@ -443,6 +678,7 @@ export class ToolStateManager extends EventEmitter {
       return {};
     }
 
+    // eslint-disable-next-line security/detect-object-injection -- Safe: toolName is validated tool identifier
     return { ...(toolState.toolConfiguration[toolName] || {}) };
   }
 
@@ -481,7 +717,11 @@ export class ToolStateManager extends EventEmitter {
     return fullAnnotation;
   }
 
-  public updateAnnotation(viewportId: string, annotationId: string, updates: Partial<AnnotationState>): AnnotationState {
+  public updateAnnotation(
+    viewportId: string,
+    annotationId: string,
+    updates: Partial<AnnotationState>,
+  ): AnnotationState {
     const toolState = this.viewportToolStates.get(viewportId);
     if (!toolState) {
       throw new Error(`Viewport not found: ${viewportId}`);
@@ -567,7 +807,11 @@ export class ToolStateManager extends EventEmitter {
     return fullMeasurement;
   }
 
-  public updateMeasurement(viewportId: string, measurementId: string, updates: Partial<MeasurementState>): MeasurementState {
+  public updateMeasurement(
+    viewportId: string,
+    measurementId: string,
+    updates: Partial<MeasurementState>,
+  ): MeasurementState {
     const toolState = this.viewportToolStates.get(viewportId);
     if (!toolState) {
       throw new Error(`Viewport not found: ${viewportId}`);
@@ -647,6 +891,7 @@ export class ToolStateManager extends EventEmitter {
       }
 
       // Check required configuration
+      // eslint-disable-next-line security/detect-object-injection -- Safe: toolName is validated tool identifier from registry
       const config = toolState.toolConfiguration[toolName];
       if (config && typeof config === 'object' && config !== null) {
         const missingRequired = tool.requiredConfiguration.filter(key => !(key in config));
@@ -689,12 +934,15 @@ export class ToolStateManager extends EventEmitter {
       // Sync tool configurations for shared tools
       Object.keys(sourceState.toolConfiguration).forEach(toolName => {
         if (targetState.availableTools.includes(toolName)) {
+          // eslint-disable-next-line security/detect-object-injection -- Safe: toolName is validated from availableTools array
           const sourceConfig = sourceState.toolConfiguration[toolName];
           if (sourceConfig && typeof sourceConfig === 'object') {
+            // eslint-disable-next-line security/detect-object-injection -- Safe: toolName is validated from availableTools array
             targetState.toolConfiguration[toolName] = {
               ...sourceConfig,
             };
           } else {
+            // eslint-disable-next-line security/detect-object-injection -- Safe: toolName is validated from availableTools array
             targetState.toolConfiguration[toolName] = sourceConfig;
           }
         }
@@ -716,9 +964,12 @@ export class ToolStateManager extends EventEmitter {
     const rules: ToolValidationRule[] = [
       {
         tool: 'Length',
-        rule: (config) => ({
+        rule: config => ({
           isValid: typeof config.precision === 'number' && config.precision >= 0,
-          errors: typeof config.precision !== 'number' || config.precision < 0 ? ['Precision must be a non-negative number'] : [],
+          errors:
+            typeof config.precision !== 'number' || config.precision < 0
+              ? ['Precision must be a non-negative number']
+              : [],
           warnings: [],
         }),
         severity: 'error',
@@ -726,9 +977,12 @@ export class ToolStateManager extends EventEmitter {
       },
       {
         tool: 'Angle',
-        rule: (config) => ({
+        rule: config => ({
           isValid: typeof config.precision === 'number' && config.precision >= 0,
-          errors: typeof config.precision !== 'number' || config.precision < 0 ? ['Precision must be a non-negative number'] : [],
+          errors:
+            typeof config.precision !== 'number' || config.precision < 0
+              ? ['Precision must be a non-negative number']
+              : [],
           warnings: [],
         }),
         severity: 'error',
@@ -771,13 +1025,15 @@ export class ToolStateManager extends EventEmitter {
 
   public getViewportToolState(viewportId: string): ToolState | null {
     const state = this.viewportToolStates.get(viewportId);
-    return state ? {
-      activeTool: state.activeTool,
-      availableTools: [...state.availableTools],
-      toolConfiguration: { ...state.toolConfiguration },
-      annotations: [...state.annotations],
-      measurements: [...state.measurements],
-    } : null;
+    return state
+      ? {
+        activeTool: state.activeTool,
+        availableTools: [...state.availableTools],
+        toolConfiguration: { ...state.toolConfiguration },
+        annotations: [...state.annotations],
+        measurements: [...state.measurements],
+      }
+      : null;
   }
 
   public getAllViewportToolStates(): Map<string, ToolState> {

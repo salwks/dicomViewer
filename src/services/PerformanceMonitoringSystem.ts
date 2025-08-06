@@ -16,4 +16,5 @@ log.warn('PerformanceMonitoringSystem.ts is deprecated, use performance-monitori
 
 // Re-export from the new modular structure
 export * from './performance-monitoring/index';
-export { performanceMonitoringSystem as default } from './performance-monitoring/index';
+import { performanceMonitoringSystem } from './performance-monitoring/index';
+export default performanceMonitoringSystem;

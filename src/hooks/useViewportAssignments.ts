@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { ViewportLayout } from '../components/ViewportGrid';
+import { ViewportLayout } from '../components/ViewportGrid/index';
 
 export interface ViewportAssignment {
   viewportId: string;
@@ -30,10 +30,14 @@ export interface UseViewportAssignmentsReturn {
 
 const getViewportIds = (layout: ViewportLayout): string[] => {
   switch (layout) {
-    case '1x1': return ['A'];
-    case '1x2': return ['A', 'B'];
-    case '2x2': return ['A', 'B', 'C', 'D'];
-    default: return ['A'];
+    case '1x1':
+      return ['A'];
+    case '1x2':
+      return ['A', 'B'];
+    case '2x2':
+      return ['A', 'B', 'C', 'D'];
+    default:
+      return ['A'];
   }
 };
 
@@ -42,17 +46,18 @@ export const useViewportAssignments = ({
   seriesCount,
   initialAssignments = [],
 }: UseViewportAssignmentsProps): UseViewportAssignmentsReturn => {
-
   // Initialize assignments based on layout
   const initializeAssignments = useCallback((): ViewportAssignment[] => {
     const viewportIds = getViewportIds(layout);
 
     return viewportIds.map(viewportId => {
       const existing = initialAssignments.find(a => a.viewportId === viewportId);
-      return existing || {
-        viewportId,
-        seriesIndex: null,
-      };
+      return (
+        existing || {
+          viewportId,
+          seriesIndex: null,
+        }
+      );
     });
   }, [layout, initialAssignments]);
 
@@ -64,9 +69,7 @@ export const useViewportAssignments = ({
 
     setAssignments(prevAssignments => {
       // Keep existing assignments for viewports that still exist
-      const validAssignments = prevAssignments.filter(a =>
-        currentViewportIds.includes(a.viewportId),
-      );
+      const validAssignments = prevAssignments.filter(a => currentViewportIds.includes(a.viewportId));
 
       // Add new viewports
       const existingIds = validAssignments.map(a => a.viewportId);
@@ -82,36 +85,38 @@ export const useViewportAssignments = ({
   }, [layout]);
 
   // Assign series to viewport
-  const assignSeries = useCallback((viewportId: string, seriesIndex: number | null): void => {
-    setAssignments(prevAssignments => {
-      // Validate series index
-      if (seriesIndex !== null && (seriesIndex < 0 || seriesIndex >= seriesCount)) {
-        console.warn(`Invalid series index: ${seriesIndex}`);
-        return prevAssignments;
-      }
+  const assignSeries = useCallback(
+    (viewportId: string, seriesIndex: number | null): void => {
+      setAssignments(prevAssignments => {
+        // Validate series index
+        if (seriesIndex !== null && (seriesIndex < 0 || seriesIndex >= seriesCount)) {
+          console.warn(`Invalid series index: ${seriesIndex}`);
+          return prevAssignments;
+        }
 
-      // If assigning a series that's already assigned elsewhere, clear the old assignment
-      if (seriesIndex !== null) {
-        prevAssignments = prevAssignments.map(assignment =>
-          assignment.seriesIndex === seriesIndex
-            ? { ...assignment, seriesIndex: null }
-            : assignment,
+        // If assigning a series that's already assigned elsewhere, clear the old assignment
+        if (seriesIndex !== null) {
+          prevAssignments = prevAssignments.map(assignment =>
+            assignment.seriesIndex === seriesIndex ? { ...assignment, seriesIndex: null } : assignment,
+          );
+        }
+
+        // Update the target viewport
+        return prevAssignments.map(assignment =>
+          assignment.viewportId === viewportId ? { ...assignment, seriesIndex } : assignment,
         );
-      }
-
-      // Update the target viewport
-      return prevAssignments.map(assignment =>
-        assignment.viewportId === viewportId
-          ? { ...assignment, seriesIndex }
-          : assignment,
-      );
-    });
-  }, [seriesCount]);
+      });
+    },
+    [seriesCount],
+  );
 
   // Clear assignment for specific viewport
-  const clearAssignment = useCallback((viewportId: string): void => {
-    assignSeries(viewportId, null);
-  }, [assignSeries]);
+  const clearAssignment = useCallback(
+    (viewportId: string): void => {
+      assignSeries(viewportId, null);
+    },
+    [assignSeries],
+  );
 
   // Clear all assignments
   const clearAllAssignments = useCallback((): void => {
@@ -124,16 +129,22 @@ export const useViewportAssignments = ({
   }, []);
 
   // Get viewport ID for a series
-  const getAssignedViewport = useCallback((seriesIndex: number): string | null => {
-    const assignment = assignments.find(a => a.seriesIndex === seriesIndex);
-    return assignment?.viewportId || null;
-  }, [assignments]);
+  const getAssignedViewport = useCallback(
+    (seriesIndex: number): string | null => {
+      const assignment = assignments.find(a => a.seriesIndex === seriesIndex);
+      return assignment?.viewportId || null;
+    },
+    [assignments],
+  );
 
   // Get series index for a viewport
-  const getSeriesForViewport = useCallback((viewportId: string): number | null => {
-    const assignment = assignments.find(a => a.viewportId === viewportId);
-    return assignment?.seriesIndex || null;
-  }, [assignments]);
+  const getSeriesForViewport = useCallback(
+    (viewportId: string): number | null => {
+      const assignment = assignments.find(a => a.viewportId === viewportId);
+      return assignment?.seriesIndex || null;
+    },
+    [assignments],
+  );
 
   // Swap assignments between two viewports
   const swapAssignments = useCallback((viewportId1: string, viewportId2: string): void => {

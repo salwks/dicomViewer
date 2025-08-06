@@ -12,6 +12,7 @@ import {
 } from '../services/ViewportAssignmentManager';
 import { SeriesDropData } from '../types/dicom';
 import { log } from '../utils/logger';
+import { safePropertyAccess } from '../lib/utils';
 
 interface UseViewportAssignmentManagerOptions {
   manager?: ViewportAssignmentManager;
@@ -28,7 +29,11 @@ interface UseViewportAssignmentManagerReturn {
   isLoading: Record<string, boolean>;
 
   // Assignment Methods
-  assignSeries: (seriesUID: string, viewportId: string, options?: { skipValidation?: boolean; autoLoad?: boolean }) => Promise<boolean>;
+  assignSeries: (
+    seriesUID: string,
+    viewportId: string,
+    options?: { skipValidation?: boolean; autoLoad?: boolean }
+  ) => Promise<boolean>;
   clearAssignment: (viewportId: string) => void;
   clearAllAssignments: () => void;
 
@@ -51,11 +56,7 @@ interface UseViewportAssignmentManagerReturn {
 export const useViewportAssignmentManager = (
   options: UseViewportAssignmentManagerOptions = {},
 ): UseViewportAssignmentManagerReturn => {
-  const {
-    manager = defaultManager,
-    config,
-    viewportIds = ['A', 'B', 'C', 'D'],
-  } = options;
+  const { manager = defaultManager, config, viewportIds = ['A', 'B', 'C', 'D'] } = options;
 
   // Create manager instance if config is provided
   const managerRef = useRef<ViewportAssignmentManager>(manager);
@@ -136,21 +137,24 @@ export const useViewportAssignmentManager = (
   }, [updateState]);
 
   // Assignment Methods
-  const assignSeries = useCallback(async (
-    seriesUID: string,
-    viewportId: string,
-    assignOptions?: { skipValidation?: boolean; autoLoad?: boolean },
-  ): Promise<boolean> => {
-    try {
-      return await managerRef.current.assignSeriesToViewport(seriesUID, viewportId, assignOptions);
-    } catch (error) {
-      log.error('Failed to assign series via hook', {
-        component: 'useViewportAssignmentManager',
-        metadata: { seriesUID, viewportId, error: error instanceof Error ? error.message : 'Unknown error' },
-      });
-      return false;
-    }
-  }, []);
+  const assignSeries = useCallback(
+    async (
+      seriesUID: string,
+      viewportId: string,
+      assignOptions?: { skipValidation?: boolean; autoLoad?: boolean },
+    ): Promise<boolean> => {
+      try {
+        return await managerRef.current.assignSeriesToViewport(seriesUID, viewportId, assignOptions);
+      } catch (error) {
+        log.error('Failed to assign series via hook', {
+          component: 'useViewportAssignmentManager',
+          metadata: { seriesUID, viewportId, error: error instanceof Error ? error.message : 'Unknown error' },
+        });
+        return false;
+      }
+    },
+    [],
+  );
 
   const clearAssignment = useCallback((viewportId: string) => {
     managerRef.current.clearViewportAssignment(viewportId);
@@ -183,23 +187,26 @@ export const useViewportAssignmentManager = (
   }, []);
 
   // Drag & Drop Handler
-  const handleDrop = useCallback(async (dropData: SeriesDropData, viewportId: string): Promise<boolean> => {
-    log.info('Handling drop via hook', {
-      component: 'useViewportAssignmentManager',
-      metadata: { dropData, viewportId },
-    });
+  const handleDrop = useCallback(
+    async (dropData: SeriesDropData, viewportId: string): Promise<boolean> => {
+      log.info('Handling drop via hook', {
+        component: 'useViewportAssignmentManager',
+        metadata: { dropData, viewportId },
+      });
 
-    // If series is being moved from another viewport, clear the source
-    if (dropData.sourceViewport && dropData.sourceViewport !== viewportId) {
-      clearAssignment(dropData.sourceViewport);
-    }
+      // If series is being moved from another viewport, clear the source
+      if (dropData.sourceViewport && dropData.sourceViewport !== viewportId) {
+        clearAssignment(dropData.sourceViewport);
+      }
 
-    return await assignSeries(dropData.seriesInstanceUID, viewportId, { autoLoad: true });
-  }, [assignSeries, clearAssignment]);
+      return await assignSeries(dropData.seriesInstanceUID, viewportId, { autoLoad: true });
+    },
+    [assignSeries, clearAssignment],
+  );
 
   // Compute derived state
-  const assignedViewports = viewportIds.filter(id => assignments[id]?.seriesInstanceUID);
-  const unassignedViewports = viewportIds.filter(id => !assignments[id]?.seriesInstanceUID);
+  const assignedViewports = viewportIds.filter(id => safePropertyAccess(assignments, id)?.seriesInstanceUID);
+  const unassignedViewports = viewportIds.filter(id => !safePropertyAccess(assignments, id)?.seriesInstanceUID);
 
   return {
     // State
@@ -233,24 +240,22 @@ export const useViewportAssignmentManager = (
 
 // Simplified hook for single viewport management
 export const useSingleViewportAssignment = (viewportId: string, options: UseViewportAssignmentManagerOptions = {}) => {
-  const {
-    assignments,
-    activeViewport,
-    isLoading,
-    assignSeries,
-    clearAssignment,
-    setActiveViewport,
-    handleDrop,
-  } = useViewportAssignmentManager({ ...options, viewportIds: [viewportId] });
+  const { assignments, activeViewport, isLoading, assignSeries, clearAssignment, setActiveViewport, handleDrop } =
+    useViewportAssignmentManager({ ...options, viewportIds: [viewportId] });
 
+  // eslint-disable-next-line security/detect-object-injection -- Safe: viewportId is validated viewport identifier
   const assignment = assignments[viewportId];
   const isAssigned = Boolean(assignment?.seriesInstanceUID);
   const isActive = activeViewport === viewportId;
+  // eslint-disable-next-line security/detect-object-injection -- Safe: viewportId is validated viewport identifier
   const isLoadingSeries = isLoading[viewportId] || false;
 
-  const assign = useCallback((seriesUID: string, assignOptions?: { skipValidation?: boolean; autoLoad?: boolean }) => {
-    return assignSeries(seriesUID, viewportId, assignOptions);
-  }, [assignSeries, viewportId]);
+  const assign = useCallback(
+    (seriesUID: string, assignOptions?: { skipValidation?: boolean; autoLoad?: boolean }) => {
+      return assignSeries(seriesUID, viewportId, assignOptions);
+    },
+    [assignSeries, viewportId],
+  );
 
   const clear = useCallback(() => {
     clearAssignment(viewportId);
@@ -260,9 +265,12 @@ export const useSingleViewportAssignment = (viewportId: string, options: UseView
     setActiveViewport(viewportId);
   }, [setActiveViewport, viewportId]);
 
-  const handleDropOnViewport = useCallback((dropData: SeriesDropData) => {
-    return handleDrop(dropData, viewportId);
-  }, [handleDrop, viewportId]);
+  const handleDropOnViewport = useCallback(
+    (dropData: SeriesDropData) => {
+      return handleDrop(dropData, viewportId);
+    },
+    [handleDrop, viewportId],
+  );
 
   return {
     assignment,

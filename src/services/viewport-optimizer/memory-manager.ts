@@ -24,6 +24,7 @@ export class ViewportMemoryManager extends EventEmitter {
   ];
 
   private memoryPressureCheckInterval: NodeJS.Timeout | null = null;
+  private isProcessingMemoryCheck = false;
 
   constructor() {
     super();
@@ -46,6 +47,12 @@ export class ViewportMemoryManager extends EventEmitter {
    * Check memory pressure for all viewports
    */
   async checkMemoryPressure(): Promise<void> {
+    // Check if already processing to prevent recursion
+    if (this.isProcessingMemoryCheck) {
+      return;
+    }
+    this.isProcessingMemoryCheck = true;
+
     try {
       const memoryUsage = await memoryManager.getMemoryUsage();
       const totalMemoryRatio = memoryUsage
@@ -78,6 +85,8 @@ export class ViewportMemoryManager extends EventEmitter {
         component: 'ViewportMemoryManager',
         metadata: { error: (error as Error).message },
       });
+    } finally {
+      this.isProcessingMemoryCheck = false;
     }
   }
 

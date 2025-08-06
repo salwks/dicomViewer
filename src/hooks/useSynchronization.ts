@@ -2,10 +2,10 @@
  * Viewport Synchronization Hook
  * Manages synchronization between comparison viewports
  */
+import { log } from '../utils/logger';
 
 import { useEffect, useCallback } from 'react';
 import { createBidirectionalSync, ViewportSynchronizer } from '../utils/viewportSynchronizer';
-
 interface UseSynchronizationProps {
   currentMode: string;
   comparisonStudyA: number | null;
@@ -37,7 +37,6 @@ export const useSynchronization = ({
   setSyncTools,
   synchronizerRef,
 }: UseSynchronizationProps) => {
-
   // Handle synchronization between comparison viewers
   useEffect(() => {
     // Only set up synchronization in comparison mode with both studies loaded
@@ -54,8 +53,8 @@ export const useSynchronization = ({
     // Small delay to ensure viewports are fully initialized
     const timer = setTimeout(() => {
       try {
-        console.info('🔄 Attempting to create viewport synchronization...');
-        console.info('📊 Looking for engines:', {
+        log.info('🔄 Attempting to create viewport synchronization...');
+        log.info('📊 Looking for engines:', {
           engineA: 'comparisonRenderingEngineA',
           engineB: 'comparisonRenderingEngineB',
           viewportA: 'COMPARISON_VIEWPORT_A',
@@ -74,16 +73,16 @@ export const useSynchronization = ({
           },
         );
 
-        console.info('🎯 Sync object created:', sync);
+        log.info('🎯 Sync object created:', sync);
 
         const enabledA = sync.syncAtoB.enable();
         const enabledB = sync.syncBtoA.enable();
 
-        console.info('🔗 Sync enable results:', { enabledA, enabledB });
+        log.info('🔗 Sync enable results:', { enabledA, enabledB });
 
         synchronizerRef.current = sync;
 
-        console.info('✅ Viewport synchronization enabled successfully');
+        log.info('✅ Viewport synchronization enabled successfully');
       } catch (error) {
         console.error('❌ Failed to setup viewport synchronization:', error);
       }
@@ -102,9 +101,9 @@ export const useSynchronization = ({
   const handleSyncScrollToggle = useCallback(() => {
     setSyncScroll((prev: boolean) => {
       const newValue = !prev;
-      console.info('🔄 Toggle sync scroll:', { from: prev, to: newValue });
+      log.info('🔄 Toggle sync scroll:', { from: prev, to: newValue });
       if (synchronizerRef.current) {
-        console.info('🔗 Updating synchronizer options for scroll');
+        log.info('🔗 Updating synchronizer options for scroll');
         synchronizerRef.current.syncAtoB.updateOptions({ enableScroll: newValue });
         synchronizerRef.current.syncBtoA.updateOptions({ enableScroll: newValue });
       } else {
@@ -139,7 +138,7 @@ export const useSynchronization = ({
   const handleSyncToolsToggle = useCallback(() => {
     setSyncTools((prev: boolean) => {
       const newValue = !prev;
-      console.info('🔧 Toggle sync tools:', { from: prev, to: newValue });
+      log.info('🔧 Toggle sync tools:', { from: prev, to: newValue });
       return newValue;
     });
   }, [setSyncTools]);

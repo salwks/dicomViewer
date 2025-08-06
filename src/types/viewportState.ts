@@ -4,7 +4,7 @@
  * Built with security compliance and type safety
  */
 
-import { SynchronizationSettings } from '../components/SynchronizationControls';
+import { SynchronizationSettings } from '../components/SynchronizationControls/index';
 
 // Camera state interface for viewport positioning
 export interface CameraState {
@@ -177,7 +177,7 @@ export interface ViewportState {
 export type ViewportStateUpdate = Partial<
   Omit<ViewportState, 'id' | 'type' | 'metadata'> & {
     metadata?: Partial<ViewportState['metadata']> & {
-      modifiedAt?: string;  // Allow updating modification time
+      modifiedAt?: string; // Allow updating modification time
       preferences?: Record<string, unknown>; // Allow updating preferences
     };
   }
@@ -210,10 +210,7 @@ export interface ValidationWarning {
 }
 
 // Factory function for creating default viewport state
-export function createDefaultViewportState(
-  id: string,
-  type: ViewportState['type'] = 'stack',
-): ViewportState {
+export function createDefaultViewportState(id: string, type: ViewportState['type'] = 'stack'): ViewportState {
   const now = new Date().toISOString();
 
   return {
@@ -306,14 +303,7 @@ export interface StatePersistenceConfig {
 // Default persistence configuration
 export const DEFAULT_PERSISTENCE_CONFIG: StatePersistenceConfig = {
   enablePersistence: true,
-  persistFields: [
-    'seriesAssignment',
-    'windowLevel',
-    'transform',
-    'tools',
-    'synchronization',
-    'rendering',
-  ],
+  persistFields: ['seriesAssignment', 'windowLevel', 'transform', 'tools', 'synchronization', 'rendering'],
   storageKey: 'viewport-states',
   encryptionEnabled: true,
   compressionEnabled: false,

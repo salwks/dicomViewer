@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 import { ViewportSynchronizer, ViewportSynchronizerConfig } from './ViewportSynchronizer';
-import { ViewportSyncState, SyncType } from '../types/dicom';
+import { ViewportSyncState } from '../types/dicom';
 import { log } from '../utils/logger';
 
 export interface ComparisonScrollConfig extends ViewportSynchronizerConfig {
@@ -75,17 +75,14 @@ export class ComparisonScrollSync extends EventEmitter {
   private animationFrameId: number | null = null;
   private syncGroups: Map<string, Set<string>> = new Map();
   private isScrolling: boolean = false;
-  private scrollStartTime: number = 0;
+  // private _scrollStartTime: number = 0; // Currently unused
 
-  constructor(
-    config: Partial<ComparisonScrollConfig> = {},
-    baseSynchronizer?: ViewportSynchronizer
-  ) {
+  constructor(config: Partial<ComparisonScrollConfig> = {}, baseSynchronizer?: ViewportSynchronizer) {
     super();
-    
+
     this.config = { ...DEFAULT_COMPARISON_SCROLL_CONFIG, ...config };
     this.baseSynchronizer = baseSynchronizer || new ViewportSynchronizer(this.config);
-    
+
     this.initialize();
   }
 
@@ -111,12 +108,7 @@ export class ComparisonScrollSync extends EventEmitter {
   /**
    * Register a viewport for scroll synchronization
    */
-  public registerViewport(
-    viewportId: string,
-    totalImages: number,
-    initialIndex: number = 0,
-    studyUID?: string
-  ): void {
+  public registerViewport(viewportId: string, totalImages: number, initialIndex: number = 0, studyUID?: string): void {
     // Validate input parameters
     if (!viewportId || totalImages <= 0) {
       throw new Error('Invalid viewport parameters');
@@ -168,9 +160,7 @@ export class ComparisonScrollSync extends EventEmitter {
     this.baseSynchronizer.removeViewport(viewportId);
 
     // Clean up cross-study mappings
-    const mappingKey = Array.from(this.crossStudyMappings.keys()).find(key => 
-      key.includes(viewportId)
-    );
+    const mappingKey = Array.from(this.crossStudyMappings.keys()).find(key => key.includes(viewportId));
     if (mappingKey) {
       this.crossStudyMappings.delete(mappingKey);
     }
@@ -186,11 +176,7 @@ export class ComparisonScrollSync extends EventEmitter {
   /**
    * Synchronize scroll position across viewports
    */
-  public synchronizeScroll(
-    sourceViewportId: string,
-    targetIndex: number,
-    immediately: boolean = false
-  ): void {
+  public synchronizeScroll(sourceViewportId: string, targetIndex: number, immediately: boolean = false): void {
     const sourceState = this.scrollStates.get(sourceViewportId);
     if (!sourceState) {
       log.warn('Attempted to sync from unregistered viewport', {
@@ -225,9 +211,7 @@ export class ComparisonScrollSync extends EventEmitter {
     }
 
     // Update normalized stack position
-    sourceState.stackPosition = sourceState.totalImages > 1 
-      ? clampedIndex / (sourceState.totalImages - 1) 
-      : 0;
+    sourceState.stackPosition = sourceState.totalImages > 1 ? clampedIndex / (sourceState.totalImages - 1) : 0;
 
     // Emit sync started event
     this.emit('scroll-sync-started', sourceViewportId, clampedIndex);
@@ -241,9 +225,13 @@ export class ComparisonScrollSync extends EventEmitter {
     }
 
     // Update base synchronizer
-    this.baseSynchronizer.updateViewportState(sourceViewportId, {
-      scrollIndex: immediately ? clampedIndex : sourceState.currentIndex,
-    }, false); // Don't trigger base sync to avoid loops
+    this.baseSynchronizer.updateViewportState(
+      sourceViewportId,
+      {
+        scrollIndex: immediately ? clampedIndex : sourceState.currentIndex,
+      },
+      false,
+    ); // Don't trigger base sync to avoid loops
   }
 
   /**
@@ -324,7 +312,7 @@ export class ComparisonScrollSync extends EventEmitter {
     const group = this.syncGroups.get(groupId);
     if (group) {
       group.delete(viewportId);
-      
+
       // Remove empty groups (except default comparison group)
       if (group.size === 0 && groupId !== 'comparison') {
         this.syncGroups.delete(groupId);
@@ -341,7 +329,7 @@ export class ComparisonScrollSync extends EventEmitter {
     if (this.isScrolling) return;
 
     this.isScrolling = true;
-    this.scrollStartTime = performance.now();
+    // this._scrollStartTime = performance.now(); // Currently unused
     this.animateScroll();
   }
 
@@ -356,33 +344,35 @@ export class ComparisonScrollSync extends EventEmitter {
     this.scrollStates.forEach((state, viewportId) => {
       if (!state.isAnimating) return;
 
-      const deltaTime = currentTime - state.lastUpdateTime;
+      // const _deltaTime = currentTime - state.lastUpdateTime; // Currently unused
       state.lastUpdateTime = currentTime;
 
       // Calculate smooth movement towards target
       const distance = state.targetIndex - state.currentIndex;
-      
+
       if (Math.abs(distance) < 0.01) {
         // Close enough to target, snap to final position
         state.currentIndex = state.targetIndex;
         state.velocity = 0;
         state.isAnimating = false;
-        
+
         // Update stack position
-        state.stackPosition = state.totalImages > 1 
-          ? state.currentIndex / (state.totalImages - 1) 
-          : 0;
+        state.stackPosition = state.totalImages > 1 ? state.currentIndex / (state.totalImages - 1) : 0;
 
         // Emit completion event
         this.emit('scroll-sync-completed', viewportId, state.targetIndex);
-        
+
         // Update base synchronizer with final position
-        this.baseSynchronizer.updateViewportState(viewportId, {
-          scrollIndex: state.currentIndex,
-        }, false);
+        this.baseSynchronizer.updateViewportState(
+          viewportId,
+          {
+            scrollIndex: state.currentIndex,
+          },
+          false,
+        );
       } else {
         hasActiveAnimations = true;
-        
+
         // Apply smoothing
         if (this.config.enableSmoothing) {
           state.velocity = distance * this.config.smoothingFactor;
@@ -397,19 +387,21 @@ export class ComparisonScrollSync extends EventEmitter {
 
         // Update position
         state.currentIndex += state.velocity;
-        
+
         // Update stack position
-        state.stackPosition = state.totalImages > 1 
-          ? state.currentIndex / (state.totalImages - 1) 
-          : 0;
+        state.stackPosition = state.totalImages > 1 ? state.currentIndex / (state.totalImages - 1) : 0;
 
         // Emit velocity change event
         this.emit('scroll-velocity-changed', viewportId, state.velocity);
-        
+
         // Update base synchronizer with current position
-        this.baseSynchronizer.updateViewportState(viewportId, {
-          scrollIndex: state.currentIndex,
-        }, false);
+        this.baseSynchronizer.updateViewportState(
+          viewportId,
+          {
+            scrollIndex: state.currentIndex,
+          },
+          false,
+        );
       }
     });
 
@@ -474,7 +466,9 @@ export class ComparisonScrollSync extends EventEmitter {
     if (mappingKey && this.config.enableCrossStudySync) {
       const mapping = this.crossStudyMappings.get(mappingKey);
       if (mapping) {
-        const mappedIndex = mapping.indexMapping.get(Math.round(sourceState.stackPosition * (sourceState.totalImages - 1)));
+        const mappedIndex = mapping.indexMapping.get(
+          Math.round(sourceState.stackPosition * (sourceState.totalImages - 1)),
+        );
         targetIndex = mappedIndex ?? this.calculatePositionBasedIndex(sourceState, targetState);
       } else {
         targetIndex = this.calculatePositionBasedIndex(sourceState, targetState);
@@ -493,7 +487,7 @@ export class ComparisonScrollSync extends EventEmitter {
    */
   private calculatePositionBasedIndex(sourceState: ScrollState, targetState: ScrollState): number {
     if (targetState.totalImages <= 1) return 0;
-    
+
     return Math.round(sourceState.stackPosition * (targetState.totalImages - 1));
   }
 
@@ -506,7 +500,7 @@ export class ComparisonScrollSync extends EventEmitter {
     // This is a placeholder for cross-study mapping logic
     // In a real implementation, this would analyze study metadata
     // and generate intelligent mappings based on anatomy, position, or time
-    
+
     log.info('Cross-study mapping placeholder', {
       component: 'ComparisonScrollSync',
       metadata: { viewportId, studyUID },
@@ -518,10 +512,12 @@ export class ComparisonScrollSync extends EventEmitter {
    */
   private findCrossStudyMapping(viewport1: string, viewport2: string): string | null {
     const keys = Array.from(this.crossStudyMappings.keys());
-    return keys.find(key => 
-      (key.includes(viewport1) && key.includes(viewport2)) ||
-      (key.includes(viewport2) && key.includes(viewport1))
-    ) || null;
+    return (
+      keys.find(
+        key =>
+          (key.includes(viewport1) && key.includes(viewport2)) || (key.includes(viewport2) && key.includes(viewport1)),
+      ) || null
+    );
   }
 
   // ===== Base Synchronizer Integration =====

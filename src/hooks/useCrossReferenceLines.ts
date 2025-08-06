@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { viewportSynchronizer } from '../services/ViewportSynchronizer';
-import { CrossReferenceLine, CrossReferencePoint } from '../components/CrossReferenceLines';
+import { CrossReferenceLine, CrossReferencePoint } from '../components/CrossReferenceLines/index';
 import { CrossReferenceSettings } from '../types/dicom';
 import { log } from '../utils/logger';
 
@@ -49,11 +49,8 @@ export const useCrossReferenceLines = ({
   enabled = false,
   autoUpdate = true,
 }: CrossReferenceHookProps): CrossReferenceHookReturn => {
-
   const [lines, setLines] = useState<CrossReferenceLine[]>([]);
-  const [settings, setSettings] = useState<CrossReferenceSettings>(
-    viewportSynchronizer.getCrossReferenceSettings(),
-  );
+  const [settings, setSettings] = useState<CrossReferenceSettings>(viewportSynchronizer.getCrossReferenceSettings());
   const [isEnabled, setIsEnabled] = useState(enabled);
 
   // Sync with global settings
@@ -95,12 +92,58 @@ export const useCrossReferenceLines = ({
   useEffect(() => {
     if (!autoUpdate || !isEnabled) return;
 
+    const updateFromSynchronizerInternal = () => {
+      const allViewportStates = viewportSynchronizer.getAllViewportStates();
+      const otherViewports = Array.from(allViewportStates.keys()).filter(id => id !== viewportId);
+
+      if (otherViewports.length > 0) {
+        // Inline the sync logic to avoid circular dependencies
+        const newLines: CrossReferenceLine[] = [];
+
+        otherViewports.forEach(targetId => {
+          if (targetId === viewportId) return;
+
+          try {
+            const sourceState = viewportSynchronizer.getViewportState(viewportId);
+            const targetState = viewportSynchronizer.getViewportState(targetId);
+
+            if (sourceState && targetState) {
+              const lineId = `sync-${viewportId}-${targetId}`;
+              const lineColor = targetState?.orientation === 'AXIAL' ? settings.color :
+                targetState?.orientation === 'SAGITTAL' ? '#22c55e' :
+                  targetState?.orientation === 'CORONAL' ? '#3b82f6' : settings.color;
+
+              newLines.push({
+                id: lineId,
+                sourcePoint: { x: 256, y: 256, viewportId },
+                targetPoint: { x: 256, y: 256, viewportId: targetId },
+                color: lineColor,
+                visible: true,
+                label: `${viewportId} ↔ ${targetId}`,
+              });
+            }
+          } catch (error) {
+            log.error('Failed to create cross-reference line', {
+              component: 'useCrossReferenceLines',
+              metadata: { viewportId, targetId, error: error instanceof Error ? error.message : 'Unknown error' },
+            });
+          }
+        });
+
+        setLines(prev => {
+          // Remove existing sync lines
+          const filtered = prev.filter(line => !line.id.startsWith('sync-'));
+          return [...filtered, ...newLines];
+        });
+      }
+    };
+
     const handleViewportStateUpdate = () => {
-      updateFromSynchronizer();
+      updateFromSynchronizerInternal();
     };
 
     const handleSynchronizationApplied = () => {
-      updateFromSynchronizer();
+      updateFromSynchronizerInternal();
     };
 
     viewportSynchronizer.on('viewportStateUpdated', handleViewportStateUpdate);
@@ -110,7 +153,7 @@ export const useCrossReferenceLines = ({
       viewportSynchronizer.off('viewportStateUpdated', handleViewportStateUpdate);
       viewportSynchronizer.off('synchronizationApplied', handleSynchronizationApplied);
     };
-  }, [autoUpdate, isEnabled, viewportId, updateFromSynchronizer]);
+  }, [autoUpdate, isEnabled, viewportId, settings.color]);
 
   // Enable cross-reference
   const enableCrossReference = useCallback(() => {
@@ -136,54 +179,64 @@ export const useCrossReferenceLines = ({
   }, [viewportId]);
 
   // Update settings
-  const updateSettings = useCallback((newSettings: Partial<CrossReferenceSettings>) => {
-    viewportSynchronizer.updateCrossReferenceSettings(newSettings);
+  const updateSettings = useCallback(
+    (newSettings: Partial<CrossReferenceSettings>) => {
+      viewportSynchronizer.updateCrossReferenceSettings(newSettings);
 
-    log.info('Cross-reference settings updated', {
-      component: 'useCrossReferenceLines',
-      metadata: { viewportId, settings: newSettings },
-    });
-  }, [viewportId]);
+      log.info('Cross-reference settings updated', {
+        component: 'useCrossReferenceLines',
+        metadata: { viewportId, settings: newSettings },
+      });
+    },
+    [viewportId],
+  );
 
   // Add line
-  const addLine = useCallback((lineData: Omit<CrossReferenceLine, 'id'>): string => {
-    const lineId = `cross-ref-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newLine: CrossReferenceLine = {
-      ...lineData,
-      id: lineId,
-    };
+  const addLine = useCallback(
+    (lineData: Omit<CrossReferenceLine, 'id'>): string => {
+      const lineId = `cross-ref-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newLine: CrossReferenceLine = {
+        ...lineData,
+        id: lineId,
+      };
 
-    setLines(prev => [...prev, newLine]);
+      setLines(prev => [...prev, newLine]);
 
-    log.info('Cross-reference line added', {
-      component: 'useCrossReferenceLines',
-      metadata: { viewportId, lineId },
-    });
+      log.info('Cross-reference line added', {
+        component: 'useCrossReferenceLines',
+        metadata: { viewportId, lineId },
+      });
 
-    return lineId;
-  }, [viewportId]);
+      return lineId;
+    },
+    [viewportId],
+  );
 
   // Remove line
-  const removeLine = useCallback((lineId: string) => {
-    setLines(prev => prev.filter(line => line.id !== lineId));
+  const removeLine = useCallback(
+    (lineId: string) => {
+      setLines(prev => prev.filter(line => line.id !== lineId));
 
-    log.info('Cross-reference line removed', {
-      component: 'useCrossReferenceLines',
-      metadata: { viewportId, lineId },
-    });
-  }, [viewportId]);
+      log.info('Cross-reference line removed', {
+        component: 'useCrossReferenceLines',
+        metadata: { viewportId, lineId },
+      });
+    },
+    [viewportId],
+  );
 
   // Update line
-  const updateLine = useCallback((lineId: string, updates: Partial<CrossReferenceLine>) => {
-    setLines(prev => prev.map(line =>
-      line.id === lineId ? { ...line, ...updates } : line,
-    ));
+  const updateLine = useCallback(
+    (lineId: string, updates: Partial<CrossReferenceLine>) => {
+      setLines(prev => prev.map(line => (line.id === lineId ? { ...line, ...updates } : line)));
 
-    log.info('Cross-reference line updated', {
-      component: 'useCrossReferenceLines',
-      metadata: { viewportId, lineId, updates },
-    });
-  }, [viewportId]);
+      log.info('Cross-reference line updated', {
+        component: 'useCrossReferenceLines',
+        metadata: { viewportId, lineId, updates },
+      });
+    },
+    [viewportId],
+  );
 
   // Clear all lines
   const clearLines = useCallback(() => {
@@ -196,93 +249,104 @@ export const useCrossReferenceLines = ({
   }, [viewportId]);
 
   // Calculate cross-reference point
-  const calculateCrossReferencePoint = useCallback((
-    sourceViewportId: string,
-    targetViewportId: string,
-    sourcePoint?: { x: number; y: number },
-  ): CrossReferencePoint | null => {
-    try {
-      const sourceState = viewportSynchronizer.getViewportState(sourceViewportId);
-      const targetState = viewportSynchronizer.getViewportState(targetViewportId);
+  const calculateCrossReferencePoint = useCallback(
+    (
+      sourceViewportId: string,
+      targetViewportId: string,
+      sourcePoint?: { x: number; y: number },
+    ): CrossReferencePoint | null => {
+      try {
+        const sourceState = viewportSynchronizer.getViewportState(sourceViewportId);
+        const targetState = viewportSynchronizer.getViewportState(targetViewportId);
 
-      if (!sourceState || !targetState) {
-        log.warn('Cannot calculate cross-reference point - viewport states not available', {
+        if (!sourceState || !targetState) {
+          log.warn('Cannot calculate cross-reference point - viewport states not available', {
+            component: 'useCrossReferenceLines',
+            metadata: { sourceViewportId, targetViewportId },
+          });
+          return null;
+        }
+
+        // Simple calculation based on viewport states
+        // In a real implementation, this would use proper coordinate transformation
+        const point: CrossReferencePoint = {
+          x: sourcePoint?.x || 256, // Default center X
+          y: sourcePoint?.y || 256, // Default center Y
+          viewportId: targetViewportId,
+        };
+
+        log.info('Cross-reference point calculated', {
           component: 'useCrossReferenceLines',
-          metadata: { sourceViewportId, targetViewportId },
+          metadata: { sourceViewportId, targetViewportId, point },
+        });
+
+        return point;
+      } catch (error) {
+        log.error('Failed to calculate cross-reference point', {
+          component: 'useCrossReferenceLines',
+          metadata: {
+            sourceViewportId,
+            targetViewportId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
         });
         return null;
       }
-
-      // Simple calculation based on viewport states
-      // In a real implementation, this would use proper coordinate transformation
-      const point: CrossReferencePoint = {
-        x: sourcePoint?.x || 256, // Default center X
-        y: sourcePoint?.y || 256, // Default center Y
-        viewportId: targetViewportId,
-      };
-
-      log.info('Cross-reference point calculated', {
-        component: 'useCrossReferenceLines',
-        metadata: { sourceViewportId, targetViewportId, point },
-      });
-
-      return point;
-    } catch (error) {
-      log.error('Failed to calculate cross-reference point', {
-        component: 'useCrossReferenceLines',
-        metadata: {
-          sourceViewportId,
-          targetViewportId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      });
-      return null;
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Sync with other viewports
-  const syncWithViewports = useCallback((targetViewportIds: string[]) => {
-    if (!isEnabled) return;
+  const syncWithViewports = useCallback(
+    (targetViewportIds: string[]) => {
+      if (!isEnabled) return;
 
-    const newLines: CrossReferenceLine[] = [];
+      const newLines: CrossReferenceLine[] = [];
 
-    targetViewportIds.forEach(targetId => {
-      if (targetId === viewportId) return;
+      targetViewportIds.forEach(targetId => {
+        if (targetId === viewportId) return;
 
-      const sourcePoint = calculateCrossReferencePoint(viewportId, targetId);
-      const targetPoint = calculateCrossReferencePoint(targetId, viewportId);
+        const sourcePoint = calculateCrossReferencePoint(viewportId, targetId);
+        const targetPoint = calculateCrossReferencePoint(targetId, viewportId);
 
-      if (sourcePoint && targetPoint) {
-        const lineId = `sync-${viewportId}-${targetId}`;
+        if (sourcePoint && targetPoint) {
+          const lineId = `sync-${viewportId}-${targetId}`;
 
-        // Use target viewport state to determine line color
-        const targetState = viewportSynchronizer.getViewportState(targetId);
-        const lineColor = targetState?.orientation === 'AXIAL' ? settings.color :
-          targetState?.orientation === 'SAGITTAL' ? '#22c55e' :
-            targetState?.orientation === 'CORONAL' ? '#3b82f6' : settings.color;
+          // Use target viewport state to determine line color
+          const targetState = viewportSynchronizer.getViewportState(targetId);
+          const lineColor =
+            targetState?.orientation === 'AXIAL'
+              ? settings.color
+              : targetState?.orientation === 'SAGITTAL'
+                ? '#22c55e'
+                : targetState?.orientation === 'CORONAL'
+                  ? '#3b82f6'
+                  : settings.color;
 
-        newLines.push({
-          id: lineId,
-          sourcePoint: { ...sourcePoint, viewportId },
-          targetPoint: { ...targetPoint, viewportId: targetId },
-          color: lineColor,
-          visible: true,
-          label: `${viewportId} ↔ ${targetId}`,
-        });
-      }
-    });
+          newLines.push({
+            id: lineId,
+            sourcePoint: { ...sourcePoint, viewportId },
+            targetPoint: { ...targetPoint, viewportId: targetId },
+            color: lineColor,
+            visible: true,
+            label: `${viewportId} ↔ ${targetId}`,
+          });
+        }
+      });
 
-    setLines(prev => {
-      // Remove existing sync lines
-      const filtered = prev.filter(line => !line.id.startsWith('sync-'));
-      return [...filtered, ...newLines];
-    });
+      setLines(prev => {
+        // Remove existing sync lines
+        const filtered = prev.filter(line => !line.id.startsWith('sync-'));
+        return [...filtered, ...newLines];
+      });
 
-    log.info('Cross-reference lines synced with viewports', {
-      component: 'useCrossReferenceLines',
-      metadata: { viewportId, targetViewportIds, newLinesCount: newLines.length },
-    });
-  }, [viewportId, isEnabled, settings.color, calculateCrossReferencePoint]);
+      log.info('Cross-reference lines synced with viewports', {
+        component: 'useCrossReferenceLines',
+        metadata: { viewportId, targetViewportIds, newLinesCount: newLines.length },
+      });
+    },
+    [viewportId, isEnabled, settings.color, calculateCrossReferencePoint],
+  );
 
   // Update from synchronizer state
   const updateFromSynchronizer = useCallback(() => {
@@ -298,9 +362,8 @@ export const useCrossReferenceLines = ({
 
   // Filtered lines for current viewport
   const viewportLines = useMemo(() => {
-    return lines.filter(line =>
-      line.sourcePoint.viewportId === viewportId ||
-      line.targetPoint.viewportId === viewportId,
+    return lines.filter(
+      line => line.sourcePoint.viewportId === viewportId || line.targetPoint.viewportId === viewportId,
     );
   }, [lines, viewportId]);
 

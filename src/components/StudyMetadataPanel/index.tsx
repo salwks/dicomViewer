@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
+import { Progress } from '../ui/progress';
 import { cn } from '../../lib/utils';
 import { DICOMStudy } from '../../types/dicom';
 import { useSeriesManagement } from '../../hooks/useSeriesManagement';
@@ -109,7 +110,12 @@ export const StudyMetadataPanel: React.FC<StudyMetadataPanelProps> = ({
         <CardContent className="flex items-center justify-center h-full">
           <div className="text-center text-muted-foreground">
             <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             <p>Select a study to view metadata</p>
           </div>
@@ -125,8 +131,8 @@ export const StudyMetadataPanel: React.FC<StudyMetadataPanelProps> = ({
       {/* Study Header */}
       <Card>
         <div
-          className="absolute top-0 left-0 w-1 h-full rounded-l-lg"
-          style={{ backgroundColor: studyColor }}
+          className={cn('absolute top-0 left-0 w-1 h-full rounded-l-lg')}
+          style={{ '--study-color': studyColor, backgroundColor: 'var(--study-color)' } as React.CSSProperties}
         />
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -136,8 +142,12 @@ export const StudyMetadataPanel: React.FC<StudyMetadataPanelProps> = ({
               </CardTitle>
               <div className="flex items-center gap-2 mt-2">
                 <Badge
-                  style={{ backgroundColor: `${studyColor}20`, color: studyColor }}
-                  className="text-xs"
+                  className={cn('text-xs')}
+                  style={{
+                    '--study-color': studyColor,
+                    backgroundColor: `${studyColor}20`,
+                    color: 'var(--study-color)',
+                  } as React.CSSProperties}
                 >
                   Study
                 </Badge>
@@ -354,17 +364,12 @@ export const StudyMetadataPanel: React.FC<StudyMetadataPanelProps> = ({
 
                   {/* Progress indicator if loading */}
                   {series.loadingProgress !== undefined && series.loadingProgress < 100 && (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span>Loading...</span>
-                        <span>{series.loadingProgress}%</span>
+                    <div className={cn('mt-2 space-y-2')}>
+                      <div className={cn('flex items-center justify-between text-xs')}>
+                        <span className={cn('text-muted-foreground')}>Loading...</span>
+                        <span className={cn('font-medium')}>{series.loadingProgress}%</span>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-1">
-                        <div
-                          className="bg-primary h-1 rounded-full transition-all"
-                          style={{ width: `${series.loadingProgress}%` }}
-                        />
-                      </div>
+                      <Progress value={series.loadingProgress} className={cn('h-1')} />
                     </div>
                   )}
                 </div>

@@ -182,12 +182,12 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
 
     const studyInfo = convertToStudyInfo(study);
     const isCurrentlySelected = selectedStudies.some(s => s.studyInstanceUID === study.studyInstanceUID);
-    
+
     if (isCurrentlySelected) {
       // Remove study
       const newSelection = selectedStudies.filter(s => s.studyInstanceUID !== study.studyInstanceUID);
       onStudySelectionChange(newSelection);
-      
+
       log.info('Study removed from comparison', {
         component: 'StudySelector',
         metadata: { studyInstanceUID: study.studyInstanceUID, remainingCount: newSelection.length },
@@ -201,10 +201,10 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
         });
         return;
       }
-      
+
       const newSelection = [...selectedStudies, studyInfo];
       onStudySelectionChange(newSelection);
-      
+
       log.info('Study added to comparison', {
         component: 'StudySelector',
         metadata: { studyInstanceUID: study.studyInstanceUID, totalCount: newSelection.length },
@@ -215,11 +215,11 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
   // Handle select all for comparison mode
   const handleSelectAll = useCallback(() => {
     if (mode !== 'comparison' || !onStudySelectionChange) return;
-    
+
     const visibleStudies = filteredStudies.slice(0, maxSelections);
     const studyInfos = visibleStudies.map(convertToStudyInfo);
     onStudySelectionChange(studyInfos);
-    
+
     log.info('All visible studies selected', {
       component: 'StudySelector',
       metadata: { count: studyInfos.length },
@@ -229,9 +229,9 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
   // Handle clear all for comparison mode
   const handleClearAll = useCallback(() => {
     if (mode !== 'comparison' || !onStudySelectionChange) return;
-    
+
     onStudySelectionChange([]);
-    
+
     log.info('All studies cleared from comparison', {
       component: 'StudySelector',
     });
@@ -342,7 +342,11 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
                 placeholder="Search studies..."
                 value={filterState.searchQuery}
                 onChange={handleSearchChange}
-                className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className={cn(
+                  'w-full px-3 py-2 text-sm border border-border rounded-md bg-background',
+                  'placeholder:text-muted-foreground focus:outline-none focus:ring-2',
+                  'focus:ring-primary focus:border-transparent',
+                )}
               />
               <svg
                 className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground"
@@ -455,18 +459,18 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
             style={{ maxHeight }}
           >
             {filteredStudies.map((study) => {
-              const isSelected = mode === 'single' 
+              const isSelected = mode === 'single'
                 ? selectedStudyId === study.studyInstanceUID
                 : selectedStudies.some(s => s.studyInstanceUID === study.studyInstanceUID);
-              
-              const selectionIndex = mode === 'comparison' 
+
+              const selectionIndex = mode === 'comparison'
                 ? selectedStudies.findIndex(s => s.studyInstanceUID === study.studyInstanceUID)
                 : -1;
-              
-              const isDifferentPatient = mode === 'comparison' && enablePatientSafety && 
-                selectedStudies.length > 0 && 
+
+              const isDifferentPatient = mode === 'comparison' && enablePatientSafety &&
+                selectedStudies.length > 0 &&
                 selectedStudies[0].patientId !== (study.patientID || 'Unknown');
-              
+
               const totalImages = study.totalImages || study.series.reduce((sum, s) => sum + s.numberOfInstances, 0);
               const isDisabled = mode === 'comparison' && !isSelected && selectedStudies.length >= maxSelections;
 
@@ -479,7 +483,7 @@ export const StudySelector: React.FC<StudySelectorProps> = ({
                     isSelected && 'ring-2 ring-primary ring-offset-1 border-primary bg-primary/5',
                     !isSelected && 'hover:border-primary/50',
                     isDifferentPatient && 'border-orange-200 bg-orange-50/50',
-                    isDisabled && 'cursor-not-allowed opacity-60'
+                    isDisabled && 'cursor-not-allowed opacity-60',
                   )}
                   style={{
                     backgroundColor: isSelected && study.color ? `${study.color}10` : undefined,

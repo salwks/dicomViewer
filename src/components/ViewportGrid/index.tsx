@@ -14,11 +14,10 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { DicomViewer, DicomViewerRef } from '../DicomViewer';
-import { CrossReferenceLines, CrossReferenceLine } from '../CrossReferenceLines';
-import { cn } from '../../lib/utils';
+import { CrossReferenceLines, CrossReferenceLine } from '../CrossReferenceLines/index';
+import { cn, safePropertyAccess } from '../../lib/utils';
 import { log } from '../../utils/logger';
 
 export type ViewportLayout = '1x1' | '1x2' | '2x2';
@@ -92,19 +91,23 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
 
     const [crossReferenceLines, setCrossReferenceLines] = useState<CrossReferenceLine[]>([]);
     const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
-    const [isTransitioning, setIsTransitioning] = useState(false);
     const [previousLayout, setPreviousLayout] = useState<ViewportLayout | null>(null);
 
     // Initialize canvas refs for each viewport
     useEffect(() => {
-      const config = getGridConfig(layout);
-      config.viewportIds.forEach(id => {
+      const layoutConfigs = {
+        '1x1': { viewportIds: ['A'] },
+        '1x2': { viewportIds: ['A', 'B'] },
+        '2x2': { viewportIds: ['A', 'B', 'C', 'D'] },
+      };
+      const config = safePropertyAccess(layoutConfigs, layout);
+      config?.viewportIds.forEach(id => {
         if (!canvasRefs.current.has(id)) {
           const ref = React.createRef<HTMLCanvasElement>() as React.RefObject<HTMLCanvasElement>;
           canvasRefs.current.set(id, ref);
         }
       });
-    }, [layout, getGridConfig]);
+    }, [layout]);
 
     // Update cross-reference lines when viewports change
     useEffect(() => {
@@ -229,22 +232,13 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
       };
     }, [layout, viewportIds, onViewportResize]);
 
-    // Handle layout transitions with animation
+    // Handle layout changes - immediate for medical software stability
     useEffect(() => {
-      if (previousLayout && previousLayout !== layout && enableAnimations) {
-        setIsTransitioning(true);
-
-        // Call transition callback
+      if (previousLayout && previousLayout !== layout) {
+        // Call transition callback (now immediate)
         if (onLayoutTransition) {
           onLayoutTransition(previousLayout, layout);
         }
-
-        // End transition after animation duration
-        const timer = setTimeout(() => {
-          setIsTransitioning(false);
-        }, 300); // 300ms transition duration
-
-        return () => clearTimeout(timer);
       }
 
       setPreviousLayout(layout);
@@ -272,14 +266,6 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
         return;
       }
 
-      // Prevent activation during transitions
-      if (isTransitioning) {
-        log.info('Viewport activation blocked during transition', {
-          component: 'ViewportGrid',
-          metadata: { viewportId },
-        });
-        return;
-      }
 
       log.info('Viewport activated', {
         component: 'ViewportGrid',
@@ -287,7 +273,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
       });
 
       onViewportActivated(viewportId);
-    }, [viewportIds, isTransitioning, onViewportActivated, layout]);
+    }, [viewportIds, onViewportActivated, layout]);
 
     // Keyboard navigation support
     const handleKeyDown = useCallback((event: React.KeyboardEvent, viewportId: string): void => {
@@ -337,20 +323,17 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
         : null;
 
       return (
-        <Card
+        <div
           key={viewportId}
           className={cn(
-            'relative cursor-pointer transition-all duration-300 transform',
+            'relative cursor-pointer bg-background rounded-lg',
             minViewportSize,
             aspectRatio,
-            'hover:shadow-lg hover:scale-[1.02]',
             'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
             viewportState.isActive && [
-              'ring-2 ring-primary ring-offset-2 shadow-xl scale-[1.01]',
+              'ring-2 ring-primary ring-offset-2 shadow-sm',
               'bg-gradient-to-br from-background to-muted/20',
             ],
-            isTransitioning && enableAnimations && 'animate-pulse',
-            !viewportState.isActive && 'hover:bg-muted/10',
           )}
           onClick={() => handleViewportClick(viewportId)}
           onKeyDown={(event) => handleKeyDown(event, viewportId)}
@@ -383,7 +366,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
             </div>
           )}
 
-          <CardContent className="p-0 h-full">
+          <div className="h-full">
             {/* Check if viewport has a render wrapper (for drop zones) */}
             {(viewportState as any).renderWrapper ?
               (viewportState as any).renderWrapper(
@@ -431,7 +414,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
                     })()}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full bg-muted/10">
+                  <div className="flex items-center justify-center h-full">
                     <div className="text-center space-y-2">
                       <div className="text-4xl text-muted-foreground/50">{viewportId}</div>
                       <p className="text-sm text-muted-foreground">Drop series here</p>
@@ -486,7 +469,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
                   })()}
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full bg-muted/10">
+                <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-2">
                     <div className="text-4xl text-muted-foreground/50">{viewportId}</div>
                     <p className="text-sm text-muted-foreground">Drop series here</p>
@@ -497,7 +480,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
                 </div>
               )
             }
-          </CardContent>
+          </div>
 
           {/* Active Viewport Indicator using shadcn/ui badge */}
           {viewportState.isActive && (
@@ -505,7 +488,7 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
               <Badge variant="default" className="w-2 h-2 p-0 rounded-full animate-pulse" />
             </div>
           )}
-        </Card>
+        </div>
       );
     }, [
       getViewportState,
@@ -514,8 +497,6 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
       aspectRatio,
       handleViewportClick,
       handleKeyDown,
-      isTransitioning,
-      enableAnimations,
       showCrossReferenceLines,
       crossReferenceLines,
       crossReferenceOpacity,
@@ -533,10 +514,9 @@ const ViewportGridComponent = forwardRef<ViewportGridRef, ViewportGridProps>(
       <div
         ref={containerRef}
         className={cn(
-          'h-full w-full grid transition-all duration-300',
+          'h-full w-full grid',
           gridTemplate,
           gridGap,
-          enableAnimations && isTransitioning && 'opacity-90 scale-[0.99]',
           className,
         )}
         role="grid"
@@ -564,8 +544,9 @@ export const ViewportGrid = React.memo(ViewportGridComponent, (prevProps, nextPr
   // Compare viewports array efficiently
   if (prevProps.viewports.length !== nextProps.viewports.length) return false;
   for (let i = 0; i < prevProps.viewports.length; i++) {
-    const prev = prevProps.viewports[i];
-    const next = nextProps.viewports[i];
+    const prev = safePropertyAccess(prevProps.viewports, i);
+    const next = safePropertyAccess(nextProps.viewports, i);
+    if (!prev || !next) return false;
     if (
       prev.id !== next.id ||
       prev.seriesIndex !== next.seriesIndex ||
@@ -582,8 +563,8 @@ export const ViewportGrid = React.memo(ViewportGridComponent, (prevProps, nextPr
   // For large series arrays, do shallow comparison of first few items
   const compareCount = Math.min(5, prevProps.seriesData.length);
   for (let i = 0; i < compareCount; i++) {
-    const prev = prevProps.seriesData[i];
-    const next = nextProps.seriesData[i];
+    const prev = safePropertyAccess(prevProps.seriesData, i);
+    const next = safePropertyAccess(nextProps.seriesData, i);
     if (prev?.seriesInstanceUID !== next?.seriesInstanceUID) {
       return false;
     }
@@ -591,3 +572,5 @@ export const ViewportGrid = React.memo(ViewportGridComponent, (prevProps, nextPr
 
   return true; // No significant changes detected
 });
+
+export default ViewportGrid;

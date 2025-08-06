@@ -38,7 +38,7 @@ export const ComparisonModeToggle: React.FC<ComparisonModeToggleProps> = ({
     if (mode !== currentMode && !disabled) {
       log.info('Viewer mode changed', {
         component: 'ComparisonModeToggle',
-        metadata: { 
+        metadata: {
           previousMode: currentMode,
           newMode: mode,
           studyCount,
@@ -173,14 +173,14 @@ export const ComparisonModeToggle: React.FC<ComparisonModeToggleProps> = ({
         disabled={disabled}
         className={cn(
           'transition-all',
-          currentMode === 'single' && 'shadow-sm'
+          currentMode === 'single' && 'shadow-sm',
         )}
       >
-        <svg 
-          className={cn('h-4 w-4', showLabels && 'mr-2')} 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className={cn('h-4 w-4', showLabels && 'mr-2')}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
           strokeWidth="2"
         >
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -195,14 +195,14 @@ export const ComparisonModeToggle: React.FC<ComparisonModeToggleProps> = ({
         disabled={disabled || studyCount < 2}
         className={cn(
           'transition-all',
-          currentMode === 'comparison' && 'shadow-sm'
+          currentMode === 'comparison' && 'shadow-sm',
         )}
       >
-        <svg 
-          className={cn('h-4 w-4', showLabels && 'mr-2')} 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className={cn('h-4 w-4', showLabels && 'mr-2')}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
           strokeWidth="2"
         >
           <rect x="3" y="3" width="8" height="8" rx="1" />
@@ -214,8 +214,8 @@ export const ComparisonModeToggle: React.FC<ComparisonModeToggleProps> = ({
       </Button>
 
       {studyCount > 0 && (
-        <Badge 
-          variant="secondary" 
+        <Badge
+          variant="secondary"
           className="ml-2 text-xs"
         >
           {studyCount}

@@ -3,6 +3,8 @@
  * Handles API differences between versions
  */
 
+import { log } from '../utils/logger';
+
 export interface AnnotationCompat {
   // v1 properties
   annotationUID?: string;
@@ -44,24 +46,21 @@ export class AnnotationCompatLayer {
    */
   static getAnnotationId(annotation: any): string | null {
     if (!annotation) {
-      console.warn('🚨 AnnotationCompatLayer: annotation is null/undefined');
+      log.warn('🚨 AnnotationCompatLayer: annotation is null/undefined');
       return null;
     }
 
     // If annotation is already a string (UID), return it directly
     if (typeof annotation === 'string') {
-      console.info('🔍 AnnotationCompatLayer: Annotation is UID string:', annotation);
+      log.info('🔍 AnnotationCompatLayer: Annotation is UID string:', annotation);
       return annotation;
     }
 
     // Try all possible UID property names for object annotations
-    const uid = annotation.annotationUID ||
-                annotation.uid ||
-                annotation.id ||
-                annotation.annotationId;
+    const uid = annotation.annotationUID || annotation.uid || annotation.id || annotation.annotationId;
 
     if (!uid) {
-      console.warn('🚨 AnnotationCompatLayer: No valid UID found in annotation', {
+      log.warn('🚨 AnnotationCompatLayer: No valid UID found in annotation', {
         availableKeys: Object.keys(annotation),
         annotation,
       });
@@ -91,19 +90,23 @@ export class AnnotationCompatLayer {
       annotationId: uid,
 
       // Copy metadata if available
-      metadata: annotation.metadata ? {
-        toolName: annotation.metadata.toolName,
-        viewPlaneNormal: annotation.metadata.viewPlaneNormal,
-        FrameOfReferenceUID: annotation.metadata.FrameOfReferenceUID,
-        referencedImageId: annotation.metadata.referencedImageId,
-        viewUp: annotation.metadata.viewUp,
-      } : undefined,
+      metadata: annotation.metadata
+        ? {
+          toolName: annotation.metadata.toolName,
+          viewPlaneNormal: annotation.metadata.viewPlaneNormal,
+          FrameOfReferenceUID: annotation.metadata.FrameOfReferenceUID,
+          referencedImageId: annotation.metadata.referencedImageId,
+          viewUp: annotation.metadata.viewUp,
+        }
+        : undefined,
 
       // Copy data if available
-      data: annotation.data ? {
-        handles: annotation.data.handles,
-        cachedStats: annotation.data.cachedStats,
-      } : undefined,
+      data: annotation.data
+        ? {
+          handles: annotation.data.handles,
+          cachedStats: annotation.data.cachedStats,
+        }
+        : undefined,
 
       // Copy state properties
       highlighted: annotation.highlighted,
@@ -115,10 +118,14 @@ export class AnnotationCompatLayer {
   /**
    * Safe annotation selection with fallback UID handling
    */
-  static async selectAnnotation(annotation: any, selected: boolean = true, preserveSelected: boolean = false): Promise<boolean> {
+  static async selectAnnotation(
+    annotation: any,
+    selected: boolean = true,
+    preserveSelected: boolean = false,
+  ): Promise<boolean> {
     const uid = this.getAnnotationId(annotation);
     if (!uid) {
-      console.warn('🚨 AnnotationCompatLayer: Cannot select annotation without valid UID');
+      log.warn('🚨 AnnotationCompatLayer: Cannot select annotation without valid UID');
       return false;
     }
 
@@ -126,10 +133,10 @@ export class AnnotationCompatLayer {
       // Import ES module dynamically
       const cornerstoneTools = await import('@cornerstonejs/tools');
       cornerstoneTools.annotation.selection.setAnnotationSelected(uid, selected, preserveSelected);
-      console.info('✅ AnnotationCompatLayer: Annotation selection successful', { uid, selected });
+      log.info('✅ AnnotationCompatLayer: Annotation selection successful', { uid, selected });
       return true;
     } catch (error) {
-      console.error('🚨 AnnotationCompatLayer: Annotation selection failed', { uid, error });
+      log.error('🚨 AnnotationCompatLayer: Annotation selection failed', { uid, error });
       return false;
     }
   }
@@ -140,7 +147,7 @@ export class AnnotationCompatLayer {
   static async deleteAnnotation(annotation: any): Promise<boolean> {
     const uid = this.getAnnotationId(annotation);
     if (!uid) {
-      console.warn('🚨 AnnotationCompatLayer: Cannot delete annotation without valid UID');
+      log.warn('🚨 AnnotationCompatLayer: Cannot delete annotation without valid UID');
       return false;
     }
 
@@ -148,10 +155,10 @@ export class AnnotationCompatLayer {
       // Import ES module dynamically
       const cornerstoneTools = await import('@cornerstonejs/tools');
       cornerstoneTools.annotation.state.removeAnnotation(uid);
-      console.info('✅ AnnotationCompatLayer: Annotation deletion successful', { uid });
+      log.info('✅ AnnotationCompatLayer: Annotation deletion successful', { uid });
       return true;
     } catch (error) {
-      console.error('🚨 AnnotationCompatLayer: Annotation deletion failed', { uid, error });
+      log.error('🚨 AnnotationCompatLayer: Annotation deletion failed', { uid, error });
       return false;
     }
   }
@@ -166,26 +173,26 @@ export class AnnotationCompatLayer {
       const selectedUids = cornerstoneTools.annotation.selection.getAnnotationsSelected();
 
       if (!selectedUids || selectedUids.length === 0) {
-        console.info('ℹ️ AnnotationCompatLayer: No annotations currently selected');
+        log.info('ℹ️ AnnotationCompatLayer: No annotations currently selected');
         return [];
       }
 
-      console.info('🔍 AnnotationCompatLayer: Raw selected annotation UIDs:', selectedUids);
+      log.info('🔍 AnnotationCompatLayer: Raw selected annotation UIDs:', selectedUids);
 
       // selectedUids is an array of UID strings, convert to AnnotationCompat objects
       const normalizedAnnotations: AnnotationCompat[] = selectedUids
         .filter((uid: any) => typeof uid === 'string' && uid.length > 0)
         .map((uid: string) => ({
           annotationUID: uid,
-          uid: uid,
+          uid,
           id: uid,
           annotationId: uid,
         }));
 
-      console.info('✅ AnnotationCompatLayer: Normalized selected annotations:', normalizedAnnotations);
+      log.info('✅ AnnotationCompatLayer: Normalized selected annotations:', normalizedAnnotations);
       return normalizedAnnotations;
     } catch (error) {
-      console.error('🚨 AnnotationCompatLayer: Failed to get selected annotations', error);
+      log.error('🚨 AnnotationCompatLayer: Failed to get selected annotations', error);
       return [];
     }
   }
@@ -195,27 +202,27 @@ export class AnnotationCompatLayer {
    */
   static analyzeAnnotationStructure(annotation: any): void {
     if (!annotation) {
-      console.warn('🔍 AnnotationCompatLayer: Annotation is null/undefined');
+      log.warn('🔍 AnnotationCompatLayer: Annotation is null/undefined');
       return;
     }
 
-    console.group('🔍 AnnotationCompatLayer: Annotation Structure Analysis');
-    console.info('📋 All properties:', Object.keys(annotation));
-    console.info('🆔 UID candidates:', {
+    log.info('🔍 AnnotationCompatLayer: Annotation Structure Analysis START');
+    log.info('📋 All properties:', Object.keys(annotation));
+    log.info('🆔 UID candidates:', {
       annotationUID: annotation.annotationUID,
       uid: annotation.uid,
       id: annotation.id,
       annotationId: annotation.annotationId,
     });
-    console.info('📝 Metadata:', annotation.metadata);
-    console.info('📊 Data:', annotation.data);
-    console.info('🎨 State:', {
+    log.info('📝 Metadata:', annotation.metadata);
+    log.info('📊 Data:', annotation.data);
+    log.info('🎨 State:', {
       highlighted: annotation.highlighted,
       selected: annotation.selected,
       invalidated: annotation.invalidated,
     });
-    console.info('🔢 Full object:', annotation);
-    console.groupEnd();
+    log.info('🔢 Full object:', annotation);
+    log.info('🔍 AnnotationCompatLayer: Annotation Structure Analysis END');
   }
 }
 

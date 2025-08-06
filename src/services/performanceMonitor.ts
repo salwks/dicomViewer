@@ -5,7 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { viewportOptimizer } from './viewportOptimizer';
+import { viewportOptimizer } from './viewport-optimizer';
 import { memoryManager } from './memoryManager';
 import { renderingPriorityManager } from './renderingPriorityManager';
 import { synchronizationOptimizer } from './synchronizationOptimizer';
@@ -125,11 +125,14 @@ export interface PerformanceReport {
     system: SystemMetrics[];
   };
   alerts: PerformanceAlert[];
-  trends: Map<MetricCategory, {
-    direction: 'improving' | 'stable' | 'degrading';
-    changeRate: number;
-    significance: number;
-  }>;
+  trends: Map<
+    MetricCategory,
+    {
+      direction: 'improving' | 'stable' | 'degrading';
+      changeRate: number;
+      significance: number;
+    }
+  >;
 }
 
 // Monitor configuration
@@ -326,17 +329,12 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Get metrics history for category
    */
-  getMetricsHistory(
-    category: MetricCategory,
-    timeRange?: { start: number; end: number },
-  ): PerformanceMetrics[] {
+  getMetricsHistory(category: MetricCategory, timeRange?: { start: number; end: number }): PerformanceMetrics[] {
     const metrics = this.metricsHistory.get(category) || [];
 
     if (!timeRange) return [...metrics];
 
-    return metrics.filter(metric =>
-      metric.timestamp >= timeRange.start && metric.timestamp <= timeRange.end,
-    );
+    return metrics.filter(metric => metric.timestamp >= timeRange.start && metric.timestamp <= timeRange.end);
   }
 
   /**
@@ -432,7 +430,6 @@ export class PerformanceMonitor extends EventEmitter {
             categoryScore -= 30;
           }
           break;
-
         }
       }
 
@@ -461,11 +458,14 @@ export class PerformanceMonitor extends EventEmitter {
       if (this.config.enableRealTimeAlerts) {
         this.checkForAlerts();
       }
-
     } catch (error) {
-      log.error('Failed to collect performance metrics', {
-        component: 'PerformanceMonitor',
-      }, error as Error);
+      log.error(
+        'Failed to collect performance metrics',
+        {
+          component: 'PerformanceMonitor',
+        },
+        error as Error,
+      );
     }
   }
 
@@ -490,7 +490,7 @@ export class PerformanceMonitor extends EventEmitter {
       dropFrames: 0, // Default value
       activeViewports: 1, // Default value
       qualityLevel: 'medium', // Default value
-      memoryPressure: optimizationMetrics ? (optimizationMetrics.memoryUsage / 1024) / 1024 : 0.5,
+      memoryPressure: optimizationMetrics ? optimizationMetrics.memoryUsage / 1024 / 1024 : 0.5,
     };
 
     this.addMetrics(MetricCategory.RENDERING, metrics);
@@ -555,8 +555,8 @@ export class PerformanceMonitor extends EventEmitter {
     const strategyEffectiveness = new Map<string, number>();
 
     // Simple effectiveness calculation based on completion rate
-    const completionRate = syncMetrics.totalOperations > 0 ?
-      syncMetrics.completedOperations / syncMetrics.totalOperations : 0;
+    const completionRate =
+      syncMetrics.totalOperations > 0 ? syncMetrics.completedOperations / syncMetrics.totalOperations : 0;
 
     strategyEffectiveness.set('batching', completionRate);
     strategyEffectiveness.set('throttling', completionRate);
@@ -885,7 +885,6 @@ export class PerformanceMonitor extends EventEmitter {
             recommendations.push('Synchronization latency is high, consider optimizing sync algorithms');
           }
           break;
-
         }
       }
     });
@@ -896,17 +895,18 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Calculate performance trends
    */
-  private calculateTrends(timeRange: { start: number; end: number }): Map<MetricCategory, {
-    direction: 'improving' | 'stable' | 'degrading';
-    changeRate: number;
-    significance: number;
-  }> {
+  private calculateTrends(timeRange: { start: number; end: number }): Map<
+    MetricCategory,
+    {
+      direction: 'improving' | 'stable' | 'degrading';
+      changeRate: number;
+      significance: number;
+    }
+  > {
     const trends = new Map<MetricCategory, any>();
 
     this.metricsHistory.forEach((metrics, category) => {
-      const recentMetrics = metrics.filter(m =>
-        m.timestamp >= timeRange.start && m.timestamp <= timeRange.end,
-      );
+      const recentMetrics = metrics.filter(m => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end);
 
       if (recentMetrics.length < 2) {
         trends.set(category, {
@@ -928,7 +928,10 @@ export class PerformanceMonitor extends EventEmitter {
   /**
    * Analyze trend for specific category
    */
-  private analyzeTrendForCategory(category: MetricCategory, metrics: PerformanceMetrics[]): {
+  private analyzeTrendForCategory(
+    category: MetricCategory,
+    metrics: PerformanceMetrics[],
+  ): {
     direction: 'improving' | 'stable' | 'degrading';
     changeRate: number;
     significance: number;
@@ -976,10 +979,11 @@ export class PerformanceMonitor extends EventEmitter {
     const significance = Math.abs(changeRate);
 
     let direction: 'improving' | 'stable' | 'degrading' = 'stable';
-    if (significance > 0.1) { // 10% change threshold
+    if (significance > 0.1) {
+      // 10% change threshold
       // For some metrics, higher is better, for others lower is better
       const higherIsBetter = category === MetricCategory.RENDERING || category === MetricCategory.SYSTEM;
-      direction = (changeRate > 0) === higherIsBetter ? 'improving' : 'degrading';
+      direction = changeRate > 0 === higherIsBetter ? 'improving' : 'degrading';
     }
 
     return { direction, changeRate, significance };
@@ -1011,7 +1015,7 @@ export class PerformanceMonitor extends EventEmitter {
   private setupPerformanceObserver(): void {
     if (typeof PerformanceObserver !== 'undefined') {
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           // Process performance entries
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'measure' || entry.entryType === 'navigation') {
@@ -1022,9 +1026,13 @@ export class PerformanceMonitor extends EventEmitter {
 
         observer.observe({ entryTypes: ['measure', 'navigation'] });
       } catch (error) {
-        log.warn('Failed to setup PerformanceObserver', {
-          component: 'PerformanceMonitor',
-        }, error as Error);
+        log.warn(
+          'Failed to setup PerformanceObserver',
+          {
+            component: 'PerformanceMonitor',
+          },
+          error as Error,
+        );
       }
     }
   }

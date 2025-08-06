@@ -2,6 +2,8 @@
  * Mouse Event Logger for debugging viewport interactions
  */
 
+import { log } from './logger';
+
 export class MouseEventLogger {
   private static instance: MouseEventLogger;
   private isEnabled = process.env.NODE_ENV === 'development';
@@ -16,11 +18,11 @@ export class MouseEventLogger {
   attachToViewport(element: HTMLElement, viewportId: string) {
     if (!this.isEnabled) return;
 
-    console.info('🖱️🖱️🖱️ MOUSE LOGGER: Attaching mouse event logger to viewport', { viewportId });
+    log.info('🖱️🖱️🖱️ MOUSE LOGGER: Attaching mouse event logger to viewport', { viewportId });
 
     // Mouse events
-    element.addEventListener('mousedown', (event) => {
-      console.info('🖱️🖱️🖱️ MOUSE EVENT: mousedown', {
+    element.addEventListener('mousedown', event => {
+      log.info('🖱️🖱️🖱️ MOUSE EVENT: mousedown', {
         timestamp: new Date().toISOString(),
         viewportId,
         button: event.button,
@@ -32,8 +34,8 @@ export class MouseEventLogger {
       });
     });
 
-    element.addEventListener('mouseup', (event) => {
-      console.info('🖱️🖱️🖱️ MOUSE EVENT: mouseup', {
+    element.addEventListener('mouseup', event => {
+      log.info('🖱️🖱️🖱️ MOUSE EVENT: mouseup', {
         timestamp: new Date().toISOString(),
         viewportId,
         button: event.button,
@@ -42,10 +44,10 @@ export class MouseEventLogger {
       });
     });
 
-    element.addEventListener('mousemove', (event) => {
+    element.addEventListener('mousemove', event => {
       // Only log mouse move when button is pressed to avoid spam
       if (event.buttons > 0) {
-        console.info('🖱️🖱️🖱️ MOUSE EVENT: mousemove (dragging)', {
+        log.info('🖱️🖱️🖱️ MOUSE EVENT: mousemove (dragging)', {
           timestamp: new Date().toISOString(),
           viewportId,
           buttons: event.buttons,
@@ -58,8 +60,8 @@ export class MouseEventLogger {
     });
 
     // Touch events for mobile
-    element.addEventListener('touchstart', (event) => {
-      console.info('👆👆👆 TOUCH EVENT: touchstart', {
+    element.addEventListener('touchstart', event => {
+      log.info('👆👆👆 TOUCH EVENT: touchstart', {
         timestamp: new Date().toISOString(),
         viewportId,
         touches: event.touches.length,
@@ -68,8 +70,8 @@ export class MouseEventLogger {
       });
     });
 
-    element.addEventListener('touchend', (event) => {
-      console.info('👆👆👆 TOUCH EVENT: touchend', {
+    element.addEventListener('touchend', event => {
+      log.info('👆👆👆 TOUCH EVENT: touchend', {
         timestamp: new Date().toISOString(),
         viewportId,
         touches: event.touches.length,
@@ -77,8 +79,8 @@ export class MouseEventLogger {
     });
 
     // Wheel events
-    element.addEventListener('wheel', (event) => {
-      console.info('🎡🎡🎡 WHEEL EVENT: wheel', {
+    element.addEventListener('wheel', event => {
+      log.info('🎡🎡🎡 WHEEL EVENT: wheel', {
         timestamp: new Date().toISOString(),
         viewportId,
         deltaX: event.deltaX,
@@ -88,13 +90,13 @@ export class MouseEventLogger {
       });
     });
 
-    console.info('✅✅✅ MOUSE LOGGER: Event listeners attached to viewport', { viewportId });
+    log.info('✅✅✅ MOUSE LOGGER: Event listeners attached to viewport', { viewportId });
   }
 
   logViewportAction(action: string, viewportId: string, data?: any) {
     if (!this.isEnabled) return;
 
-    console.info('📊📊📊 VIEWPORT ACTION:', {
+    log.info('📊📊📊 VIEWPORT ACTION:', {
       timestamp: new Date().toISOString(),
       action,
       viewportId,
@@ -105,7 +107,7 @@ export class MouseEventLogger {
   logToolRendering(toolName: string, viewportId: string, data?: any) {
     if (!this.isEnabled) return;
 
-    console.info('🎨🎨🎨 TOOL RENDERING:', {
+    log.info('🎨🎨🎨 TOOL RENDERING:', {
       timestamp: new Date().toISOString(),
       toolName,
       viewportId,

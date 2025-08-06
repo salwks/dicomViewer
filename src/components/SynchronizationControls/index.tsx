@@ -11,7 +11,7 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { cn } from '../../lib/utils';
+import { cn, safePropertyAccess } from '../../lib/utils';
 
 export interface SynchronizationSettings {
   enableZoom: boolean;
@@ -143,25 +143,27 @@ export const SynchronizationControls: React.FC<SynchronizationControlsProps> = (
 
     onSettingsChange({
       ...settings,
-      [key]: !settings[key],
+      [key]: !safePropertyAccess(settings, key),
     });
   }, [disabled, settings, onSettingsChange]);
 
   const toggleAll = (): void => {
     if (disabled) return;
 
-    const allEnabled = syncControls.every(control => settings[control.key]);
+    const allEnabled = syncControls.every(control => safePropertyAccess(settings, control.key));
     const newSettings = { ...settings };
 
     syncControls.forEach(control => {
-      newSettings[control.key] = !allEnabled;
+      if (control.key in settings) {
+        newSettings[control.key] = !allEnabled;
+      }
     });
 
     onSettingsChange(newSettings);
   };
 
   const getActiveCount = (): number => {
-    return syncControls.filter(control => settings[control.key]).length;
+    return syncControls.filter(control => safePropertyAccess(settings, control.key)).length;
   };
 
   // Handle keyboard shortcuts

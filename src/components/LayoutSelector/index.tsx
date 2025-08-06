@@ -8,9 +8,10 @@ import React from 'react';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { ViewportLayout } from '../ViewportGrid';
+// Local type definition
+type ViewportLayout = '1x1' | '1x2' | '2x1' | '2x2' | '1x3' | '3x1' | '2x3' | '3x2';
 import { ComparisonLayout } from '../../services/ComparisonViewportManager';
-import { cn } from '../../lib/utils';
+import { cn, safePropertyAccess } from '../../lib/utils';
 
 export interface LayoutSelectorProps {
   currentLayout: ViewportLayout;
@@ -32,7 +33,10 @@ interface LayoutOption {
 }
 
 interface ComparisonLayoutOption {
+  id: string;
   layout: ComparisonLayout;
+  description: string;
+  label: string;
   icon: React.ReactNode;
   shortcut: string;
 }
@@ -62,6 +66,18 @@ const standardLayoutOptions: LayoutOption[] = [
     ),
   },
   {
+    id: '2x1',
+    label: 'Top/Bottom',
+    description: 'Two viewports stacked vertically',
+    shortcut: '3',
+    icon: (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="18" height="8" rx="1" />
+        <rect x="3" y="13" width="18" height="8" rx="1" />
+      </svg>
+    ),
+  },
+  {
     id: '2x2',
     label: 'Quad',
     description: 'Four viewports in grid',
@@ -81,7 +97,7 @@ const standardLayoutOptions: LayoutOption[] = [
 const generateComparisonLayoutOptions = (layouts: ComparisonLayout[]): ComparisonLayoutOption[] => {
   return layouts.map((layout, index) => {
     let icon: React.ReactNode;
-    
+
     switch (layout.type) {
       case '1x1':
         icon = (
@@ -127,7 +143,10 @@ const generateComparisonLayoutOptions = (layouts: ComparisonLayout[]): Compariso
     }
 
     return {
+      id: layout.id,
       layout,
+      description: `${layout.type} comparison layout`,
+      label: layout.type.toUpperCase(),
       icon,
       shortcut: String(index + 1),
     };
@@ -144,7 +163,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
   onComparisonLayoutChange,
   currentComparisonLayout,
 }) => {
-  const layoutOptions = mode === 'comparison' && comparisonLayouts.length > 0
+  const actualLayoutOptions = mode === 'comparison' && comparisonLayouts.length > 0
     ? generateComparisonLayoutOptions(comparisonLayouts)
     : standardLayoutOptions;
 
@@ -161,7 +180,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
         // Handle comparison layout shortcuts
         const optionIndex = parseInt(event.key) - 1;
         if (!isNaN(optionIndex) && optionIndex >= 0 && optionIndex < comparisonLayouts.length) {
-          const layout = comparisonLayouts[optionIndex];
+          const layout = safePropertyAccess(comparisonLayouts, optionIndex);
           if (layout && layout.id !== currentComparisonLayout?.id) {
             event.preventDefault();
             onComparisonLayoutChange(layout);
@@ -184,7 +203,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
   // Render comparison mode
   if (mode === 'comparison' && comparisonLayouts.length > 0 && onComparisonLayoutChange) {
     const comparisonOptions = generateComparisonLayoutOptions(comparisonLayouts);
-    
+
     return (
       <TooltipProvider>
         <div className={cn('flex flex-col gap-2', className)}>
@@ -198,7 +217,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
               </Badge>
             )}
           </div>
-          
+
           <ToggleGroup
             type="single"
             value={currentComparisonLayout?.id || ''}
@@ -274,7 +293,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps> = ({
         disabled={disabled}
         className={cn('flex items-center gap-1', className)}
       >
-        {standardLayoutOptions.map((option) => (
+        {actualLayoutOptions.map((option) => (
           <Tooltip key={option.id}>
             <TooltipTrigger asChild>
               <ToggleGroupItem

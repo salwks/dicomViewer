@@ -7,8 +7,8 @@
 
 import { EventEmitter } from 'events';
 import { log } from '../utils/logger';
-import { ViewportState } from '../types/viewportState';
-import { StudyInfo } from './ComparisonViewportManager';
+// import { ViewportState } from '../types/viewportState'; // Currently unused
+// import { StudyInfo } from './ComparisonViewportManager'; // Currently unused
 
 export interface ViewportInstance {
   id: string;
@@ -156,7 +156,7 @@ export class LazyViewportLoader extends EventEmitter {
   public async activateViewport(
     viewportId: string,
     element?: HTMLDivElement,
-    immediate: boolean = false
+    immediate: boolean = false,
   ): Promise<boolean> {
     const instance = this.viewportInstances.get(viewportId);
     if (!instance) {
@@ -186,16 +186,16 @@ export class LazyViewportLoader extends EventEmitter {
     if (!immediate && !this.canActivateViewport()) {
       log.warn('Cannot activate viewport due to resource constraints', {
         component: 'LazyViewportLoader',
-        metadata: { 
+        metadata: {
           viewportId,
           activeCount: this.activeViewports.size,
           maxActive: this.config.maxActiveViewports,
         },
       });
-      
+
       // Try to free up resources
       await this.freeUpResources();
-      
+
       // Check again
       if (!this.canActivateViewport()) {
         return false;
@@ -209,10 +209,7 @@ export class LazyViewportLoader extends EventEmitter {
   /**
    * Initialize viewport instance
    */
-  private async initializeViewport(
-    viewportId: string,
-    element?: HTMLDivElement
-  ): Promise<boolean> {
+  private async initializeViewport(viewportId: string, element?: HTMLDivElement): Promise<boolean> {
     const instance = this.viewportInstances.get(viewportId);
     if (!instance) return false;
 
@@ -231,7 +228,7 @@ export class LazyViewportLoader extends EventEmitter {
       instance.state = 'ready';
       instance.lastAccessTime = Date.now();
       instance.accessCount++;
-      
+
       this.activeViewports.add(viewportId);
       this.loadingQueue.delete(viewportId);
 
@@ -248,7 +245,7 @@ export class LazyViewportLoader extends EventEmitter {
 
       log.info('Viewport initialized successfully', {
         component: 'LazyViewportLoader',
-        metadata: { 
+        metadata: {
           viewportId,
           activeCount: this.activeViewports.size,
         },
@@ -259,10 +256,14 @@ export class LazyViewportLoader extends EventEmitter {
       instance.state = 'error';
       this.loadingQueue.delete(viewportId);
 
-      log.error('Failed to initialize viewport', {
-        component: 'LazyViewportLoader',
-        metadata: { viewportId },
-      }, error as Error);
+      log.error(
+        'Failed to initialize viewport',
+        {
+          component: 'LazyViewportLoader',
+          metadata: { viewportId },
+        },
+        error as Error,
+      );
 
       return false;
     }
@@ -272,10 +273,7 @@ export class LazyViewportLoader extends EventEmitter {
    * Perform actual viewport initialization
    * This would integrate with Cornerstone3D in real implementation
    */
-  private async performViewportInitialization(
-    instance: ViewportInstance,
-    element?: HTMLDivElement
-  ): Promise<void> {
+  private async performViewportInitialization(instance: ViewportInstance, element?: HTMLDivElement): Promise<void> {
     // Store element reference
     if (element) {
       instance.element = element;
@@ -365,7 +363,7 @@ export class LazyViewportLoader extends EventEmitter {
    */
   private analyzePredictivePatterns(): void {
     const predictions = this.predictNextViewports();
-    
+
     predictions.forEach(prediction => {
       if (prediction.probability > 0.7) {
         // Schedule preload
@@ -391,7 +389,7 @@ export class LazyViewportLoader extends EventEmitter {
     });
 
     // Generate predictions
-    this.viewportInstances.forEach((instance, viewportId) => {
+    this.viewportInstances.forEach((_instance, viewportId) => {
       if (!this.activeViewports.has(viewportId)) {
         const accessCount = accessCounts.get(viewportId) || 0;
         const probability = accessCount / Math.max(recentAccesses.length, 1);
@@ -422,10 +420,7 @@ export class LazyViewportLoader extends EventEmitter {
     const prefix = currentViewportId.substring(0, currentViewportId.length - match[1].length);
 
     // Preload previous and next viewports
-    const adjacentIds = [
-      `${prefix}${currentNum - 1}`,
-      `${prefix}${currentNum + 1}`,
-    ];
+    const adjacentIds = [`${prefix}${currentNum - 1}`, `${prefix}${currentNum + 1}`];
 
     for (const adjacentId of adjacentIds) {
       if (this.viewportInstances.has(adjacentId) && !this.activeViewports.has(adjacentId)) {
@@ -462,8 +457,10 @@ export class LazyViewportLoader extends EventEmitter {
    * Check if viewport can be activated
    */
   private canActivateViewport(): boolean {
-    return this.activeViewports.size < this.config.maxActiveViewports &&
-           this.getEstimatedMemoryUsage() < this.config.memoryThreshold;
+    return (
+      this.activeViewports.size < this.config.maxActiveViewports &&
+      this.getEstimatedMemoryUsage() < this.config.memoryThreshold
+    );
   }
 
   /**
@@ -477,10 +474,11 @@ export class LazyViewportLoader extends EventEmitter {
     // Deactivate least recently used viewports
     const toDeactivate = Math.min(
       2, // Deactivate up to 2 viewports
-      Math.max(0, this.activeViewports.size - this.config.maxActiveViewports + 1)
+      Math.max(0, this.activeViewports.size - this.config.maxActiveViewports + 1),
     );
 
     for (let i = 0; i < toDeactivate && i < sortedByAccess.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: i is controlled loop index within array bounds
       await this.deactivateViewport(sortedByAccess[i][0]);
     }
   }
@@ -491,16 +489,16 @@ export class LazyViewportLoader extends EventEmitter {
   private startMemoryMonitoring(): void {
     this.memoryMonitorInterval = setInterval(() => {
       const usage = this.getMemoryUsage();
-      
+
       if (usage.used > this.config.memoryThreshold) {
         log.warn('Memory threshold exceeded', {
           component: 'LazyViewportLoader',
-          metadata: { 
+          metadata: {
             used: usage.used,
             threshold: this.config.memoryThreshold,
           },
         });
-        
+
         this.freeUpResources();
       }
     }, 10000); // Check every 10 seconds
@@ -563,7 +561,7 @@ export class LazyViewportLoader extends EventEmitter {
 
     log.info('Viewport inactive, deactivating', {
       component: 'LazyViewportLoader',
-      metadata: { 
+      metadata: {
         viewportId,
         lastAccessTime: instance.lastAccessTime,
         inactivityTimeout: this.config.inactivityTimeout,
@@ -605,15 +603,12 @@ export class LazyViewportLoader extends EventEmitter {
   /**
    * Wait for viewport initialization
    */
-  private async waitForInitialization(
-    viewportId: string,
-    timeout: number = 5000
-  ): Promise<boolean> {
+  private async waitForInitialization(viewportId: string, timeout: number = 5000): Promise<boolean> {
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
       const instance = this.viewportInstances.get(viewportId);
-      
+
       if (!instance) return false;
       if (instance.state === 'ready') return true;
       if (instance.state === 'error') return false;

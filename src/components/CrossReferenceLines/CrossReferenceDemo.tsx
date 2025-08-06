@@ -4,10 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { ViewportGrid, ViewportLayout, ViewportState } from '../ViewportGrid';
-import { SynchronizationControls, SynchronizationSettings } from '../SynchronizationControls';
+import { ViewportGrid, type ViewportLayout, type ViewportState } from '../ViewportGrid/index';
+import { SynchronizationControls, type SynchronizationSettings } from '../SynchronizationControls/index';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '../../lib/utils';
+
+// Local type definitions
 
 // Sample series data for demo
 const DEMO_SERIES_DATA = [
