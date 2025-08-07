@@ -20,10 +20,11 @@ import { viewportSynchronizer } from '../services/ViewportSynchronizer';
 interface UnifiedViewerProps {
   className?: string;
   children?: React.ReactNode;
+  onTestModeToggle?: () => void;
 }
 
 // UnifiedViewer 내부 구현 컴포넌트
-const UnifiedViewerContent: React.FC<UnifiedViewerProps> = ({ className, children }) => {
+const UnifiedViewerContent: React.FC<UnifiedViewerProps> = ({ className, children, onTestModeToggle }) => {
   const { state } = useViewer();
   const layout = useViewerLayout();
   const [showAnnotationManager, setShowAnnotationManager] = useState(false);
@@ -61,7 +62,7 @@ const UnifiedViewerContent: React.FC<UnifiedViewerProps> = ({ className, childre
         )}
       >
         {/* 헤더 네비게이션 - 모드 변경 버튼 포함 */}
-        <HeaderNavigation />
+        <HeaderNavigation onTestModeToggle={onTestModeToggle} />
 
         {/* 메인 컨텐츠 영역 */}
         <div className='flex-1 flex min-h-0'>
@@ -151,10 +152,10 @@ const UnifiedViewerContent: React.FC<UnifiedViewerProps> = ({ className, childre
 };
 
 // 메인 UnifiedViewer 컴포넌트 - ViewerProvider로 래핑
-export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({ className, children }) => {
+export const UnifiedViewer: React.FC<UnifiedViewerProps> = ({ className, children, onTestModeToggle }) => {
   return (
     <ViewerProvider>
-      <UnifiedViewerContent className={className}>{children}</UnifiedViewerContent>
+      <UnifiedViewerContent className={className} onTestModeToggle={onTestModeToggle}>{children}</UnifiedViewerContent>
     </ViewerProvider>
   );
 };

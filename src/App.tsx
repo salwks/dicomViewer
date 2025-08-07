@@ -4,11 +4,13 @@
  * Built with shadcn/ui components and ViewerContext
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UnifiedViewer } from './components/UnifiedViewer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { SimpleDicomTest } from './components/SimpleDicomTest';
 import { useCornerstone } from './hooks/useCornerstone';
 import { log } from './utils/logger';
+import { Button } from './components/ui/button';
 
 // Loading component
 const LoadingScreen: React.FC = () => (
@@ -50,7 +52,15 @@ const ErrorScreen: React.FC<{ error: Error; onRetry: () => void }> = ({ error, o
   </div>
 );
 
+// UnifiedViewer를 래핑해서 테스트 버튼을 HeaderNavigation에 전달
+const UnifiedViewerWithTestButton: React.FC<{ onTestModeToggle: () => void }> = ({ onTestModeToggle }) => {
+  return (
+    <UnifiedViewer onTestModeToggle={onTestModeToggle} />
+  );
+};
+
 const App: React.FC = () => {
+  const [testMode, setTestMode] = useState(false);
   const { isLoading, isInitialized, error } = useCornerstone();
 
   React.useEffect(() => {
@@ -75,6 +85,15 @@ const App: React.FC = () => {
     window.location.reload();
   };
 
+  // 테스트 모드일 때는 초기화 없이 바로 테스트 컴포넌트 표시
+  if (testMode) {
+    return (
+      <ErrorBoundary>
+        <SimpleDicomTest onBackToMain={() => setTestMode(false)} />
+      </ErrorBoundary>
+    );
+  }
+
   // Show loading screen while initializing
   if (isLoading) {
     return <LoadingScreen />;
@@ -92,7 +111,9 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <UnifiedViewer />
+      <UnifiedViewerWithTestButton 
+        onTestModeToggle={() => setTestMode(true)} 
+      />
     </ErrorBoundary>
   );
 };

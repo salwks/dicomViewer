@@ -174,14 +174,19 @@ export class SimpleDicomLoader {
 
   /**
    * Load DICOM files and create blob URLs (optimized for performance)
+   * 기존 파일들을 유지하고 새 파일들을 추가
    */
   public async loadFiles(files: File[]): Promise<SimpleDicomFile[]> {
-    this.loadedFiles = [];
     const startTime = Date.now();
+    const previousFileCount = this.loadedFiles.length;
 
-    log.info('Starting DICOM files loading', {
+    log.info('Starting DICOM files loading (append mode)', {
       component: 'SimpleDicomLoader',
-      metadata: { fileCount: files.length },
+      metadata: { 
+        newFileCount: files.length,
+        existingFileCount: previousFileCount,
+        totalExpected: previousFileCount + files.length
+      },
     });
 
     // Filter valid DICOM files first
@@ -294,20 +299,22 @@ export class SimpleDicomLoader {
       });
     }
 
-    this.loadedFiles = results;
+    // 기존 파일들과 새로 로드한 파일들을 합치기
+    this.loadedFiles = [...this.loadedFiles, ...results];
     const totalTime = Date.now() - startTime;
 
     log.info('DICOM files loading completed', {
       component: 'SimpleDicomLoader',
       metadata: {
-        totalFiles: validFiles.length,
-        loadedFrames: results.length,
+        newFiles: validFiles.length,
+        newFrames: results.length,
+        totalFiles: this.loadedFiles.length,
         processingTime: `${totalTime}ms`,
-        averageTimePerFile: `${Math.round(totalTime / validFiles.length)}ms`,
+        averageTimePerFile: validFiles.length > 0 ? `${Math.round(totalTime / validFiles.length)}ms` : '0ms',
       },
     });
 
-    return this.loadedFiles;
+    return results; // 새로 로드된 파일들만 반환
   }
 
   /**
@@ -356,6 +363,37 @@ export class SimpleDicomLoader {
 
     log.info('Cleared all DICOM files', {
       component: 'SimpleDicomLoader',
+    });
+  }
+
+  /**
+   * Remove files for a specific study
+   */
+  public removeStudy(studyInstanceUID: string): void {
+    const filesToRemove = this.loadedFiles.filter(file => 
+      file.metadata.studyInstanceUID === studyInstanceUID
+    );
+
+    // Revoke blob URLs for files being removed
+    filesToRemove.forEach(file => {
+      if (file.imageId.startsWith('wadouri:blob:')) {
+        const blobUrl = file.imageId.replace('wadouri:', '');
+        URL.revokeObjectURL(blobUrl);
+      }
+    });
+
+    // Remove files from loaded files array
+    this.loadedFiles = this.loadedFiles.filter(file => 
+      file.metadata.studyInstanceUID !== studyInstanceUID
+    );
+
+    log.info('Removed study files', {
+      component: 'SimpleDicomLoader',
+      metadata: {
+        studyInstanceUID,
+        removedFiles: filesToRemove.length,
+        remainingFiles: this.loadedFiles.length,
+      },
     });
   }
 

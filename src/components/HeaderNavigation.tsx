@@ -17,6 +17,8 @@ import { simpleDicomLoader } from '../services/simpleDicomLoader';
 
 interface HeaderNavigationProps {
   className?: string;
+  onTestModeToggle?: () => void;
+  showTestButton?: boolean;
 }
 
 // 뷰어 레이아웃 컨트롤 컴포넌트 (LayoutSelector 사용)
@@ -106,7 +108,7 @@ const ViewerLayoutControls: React.FC = () => {
   );
 };
 
-export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className }) => {
+export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className, onTestModeToggle, showTestButton = true }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { loadStudy } = useViewer();
 
@@ -174,6 +176,15 @@ export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className })
           averageTimePerFile: `${Math.round(totalTime / fileArray.length)}ms`,
         },
       });
+
+      // SidePanelSystem에 새로운 DICOM 파일이 로드되었음을 알림
+      window.dispatchEvent(new CustomEvent('dicom-files-loaded', {
+        detail: {
+          seriesCount: seriesData.length,
+          studyCount: new Set(seriesData.map(s => s.studyInstanceUID)).size,
+          files: loadedFiles.length
+        }
+      }));
     } catch (error) {
       log.error(
         'Failed to load DICOM files',
@@ -217,6 +228,11 @@ export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className })
 
         {/* 우측 액션 버튼들 */}
         <div className='flex items-center space-x-2'>
+          {showTestButton && onTestModeToggle && (
+            <Button variant='secondary' size='sm' onClick={onTestModeToggle}>
+              DICOM 테스트
+            </Button>
+          )}
           <Button variant='outline' size='sm' className='gap-2'>
             <Settings className='h-4 w-4' />
             <span className='hidden sm:inline'>설정</span>

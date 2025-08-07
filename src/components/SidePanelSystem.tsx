@@ -10,12 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { useViewer, useViewerLayout } from '../context/ViewerContext';
 import { ComparisonModeManager } from './ComparisonModeManager';
 import { cn } from '../lib/utils';
 import { simpleDicomLoader } from '../services/simpleDicomLoader';
 import { log } from '../utils/logger';
-import { Folder, Settings, BarChart3, AlertTriangle, Calendar, Stethoscope } from 'lucide-react';
+import { Folder, Settings, BarChart3, AlertTriangle, Calendar, Stethoscope, X } from 'lucide-react';
 
 interface SidePanelSystemProps {
   className?: string;
@@ -44,69 +45,124 @@ interface SafetyIndicator {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Mock 스터디 데이터
-const mockStudies: StudyInfo[] = [
-  {
-    studyInstanceUID: 'study-001',
-    patientName: 'John Doe',
-    patientId: 'PAT001',
-    studyDate: '2024-01-15',
-    seriesCount: 3,
-    modality: 'CT',
-    safetyFlags: {},
-  },
-  {
-    studyInstanceUID: 'study-002',
-    patientName: 'Jane Smith',
-    patientId: 'PAT002',
-    studyDate: '2024-01-14',
-    seriesCount: 2,
-    modality: 'MR',
-    safetyFlags: {
-      patientMismatch: true,
-    },
-  },
-  {
-    studyInstanceUID: 'study-003',
-    patientName: 'Bob Johnson',
-    patientId: 'PAT003',
-    studyDate: '2023-12-20',
-    seriesCount: 4,
-    modality: 'US',
-    safetyFlags: {
-      dateConflict: true,
-      modalityIncompatible: true,
-    },
-  },
-];
 
 export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) => {
   const { state, loadStudyInViewport } = useViewer();
   const layout = useViewerLayout();
+  const [studies, setStudies] = React.useState<StudyInfo[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+
+  // DICOM 파일 로드를 감지하여 스터디 목록 업데이트
+  const loadStudiesFromDicomData = React.useCallback(async () => {
+    try {
+      const seriesData = await simpleDicomLoader.getSeriesData();
+      
+      log.info('Updating studies from DICOM data', {
+        component: 'SidePanelSystem',
+        metadata: {
+          seriesCount: seriesData.length,
+          series: seriesData.map(s => ({
+            studyUID: s.studyInstanceUID,
+            seriesUID: s.seriesInstanceUID,
+            patientName: s.patientName,
+            modality: s.modality
+          }))
+        }
+      });
+      
+      // 스터디별로 그룹화
+      const studyMap = new Map<string, StudyInfo>();
+      
+      for (const series of seriesData) {
+        const studyUID = series.studyInstanceUID;
+        
+        if (!studyMap.has(studyUID)) {
+          studyMap.set(studyUID, {
+            studyInstanceUID: studyUID,
+            patientName: series.patientName || 'Unknown Patient',
+            patientId: `PAT${studyUID.slice(-3)}`,
+            studyDate: series.studyDate || new Date().toISOString().split('T')[0],
+            seriesCount: 1,
+            modality: series.modality || 'OT',
+            safetyFlags: {}
+          });
+        } else {
+          const study = studyMap.get(studyUID)!;
+          study.seriesCount++;
+        }
+      }
+      
+      const studiesArray = Array.from(studyMap.values());
+      setStudies(studiesArray);
+      
+      log.info('Studies updated successfully', {
+        component: 'SidePanelSystem',
+        metadata: {
+          studyCount: studiesArray.length,
+          studies: studiesArray.map(s => ({
+            studyUID: s.studyInstanceUID,
+            patientName: s.patientName,
+            seriesCount: s.seriesCount,
+            modality: s.modality
+          }))
+        }
+      });
+      
+    } catch (error) {
+      log.warn('Failed to load studies from DICOM data', {
+        component: 'SidePanelSystem',
+      });
+      setStudies([]);
+    }
+  }, []);
+
+  // 컴포넌트 마운트 시 및 파일 로드 시 스터디 목록 업데이트
+  React.useEffect(() => {
+    loadStudiesFromDicomData();
+  }, [loadStudiesFromDicomData, refreshTrigger]);
+
+  // 전역 이벤트 리스너로 파일 로드 감지
+  React.useEffect(() => {
+    const handleDicomFilesLoaded = () => {
+      log.info('DICOM files loaded event detected, refreshing studies', {
+        component: 'SidePanelSystem'
+      });
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    // 커스텀 이벤트 리스너 등록
+    window.addEventListener('dicom-files-loaded', handleDicomFilesLoaded);
+    
+    return () => {
+      window.removeEventListener('dicom-files-loaded', handleDicomFilesLoaded);
+    };
+  }, []);
 
   const handleStudyLoad = async (studyInstanceUID: string) => {
-    // 첫 번째 사용 가능한 뷰포트에 로드
-    const availableViewport = state.viewports.find(v => !v.studyInstanceUID);
-    if (availableViewport) {
+    // 활성 뷰포트에 로드 (없으면 첫 번째 뷰포트 사용)
+    const activeViewportId = state.activeViewportId || state.viewports[0]?.id;
+    
+    if (!activeViewportId) {
+      log.warn('No viewport available for loading study', {
+        component: 'SidePanelSystem',
+        metadata: { studyInstanceUID },
+      });
+      return;
+    }
+
+    try {
       // Get series data to load the first series automatically
       const seriesData = await simpleDicomLoader.getSeriesData();
       const studySeries = seriesData.filter(s => s.studyInstanceUID === studyInstanceUID);
 
-      log.info('SidePanelSystem series lookup', {
+      log.info('Loading study in active viewport', {
         component: 'SidePanelSystem',
         metadata: {
           studyInstanceUID,
+          activeViewportId,
           totalSeriesData: seriesData.length,
-          allStudyUIDs: seriesData.map(s => s.studyInstanceUID),
           studySeriesCount: studySeries.length,
           studySeriesUIDs: studySeries.map(s => s.seriesInstanceUID),
-          firstSeriesData: seriesData[0] ? {
-            studyUID: seriesData[0].studyInstanceUID,
-            seriesUID: seriesData[0].seriesInstanceUID,
-            studyUIDMatch: seriesData[0].studyInstanceUID === studyInstanceUID,
-            studyUIDType: typeof seriesData[0].studyInstanceUID,
-            targetStudyUIDType: typeof studyInstanceUID,
-          } : null,
         },
       });
 
@@ -117,20 +173,79 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
           metadata: {
             studyInstanceUID,
             seriesInstanceUID: firstSeries.seriesInstanceUID,
-            viewportId: availableViewport.id,
-            firstSeriesTitle: firstSeries.seriesDescription || 'No description',
+            viewportId: activeViewportId,
+            seriesDescription: firstSeries.seriesDescription,
+            patientName: firstSeries.patientName,
+            modality: firstSeries.modality,
           },
         });
 
-        loadStudyInViewport(availableViewport.id, studyInstanceUID, firstSeries.seriesInstanceUID);
+        // 활성 뷰포트에 스터디 로드
+        loadStudyInViewport(activeViewportId, studyInstanceUID, firstSeries.seriesInstanceUID);
       } else {
         log.warn('No series found for study, loading study only', {
           component: 'SidePanelSystem',
-          metadata: { studyInstanceUID },
+          metadata: { studyInstanceUID, activeViewportId },
         });
 
-        loadStudyInViewport(availableViewport.id, studyInstanceUID);
+        loadStudyInViewport(activeViewportId, studyInstanceUID);
       }
+    } catch (error) {
+      log.error('Failed to load study', {
+        component: 'SidePanelSystem',
+        metadata: { studyInstanceUID, activeViewportId },
+      }, error as Error);
+    }
+  };
+
+  // 스터디 삭제 함수
+  const handleStudyDelete = async (studyInstanceUID: string, event: React.MouseEvent) => {
+    // 이벤트 버블링 방지 (스터디 카드 클릭 이벤트와 충돌 방지)
+    event.stopPropagation();
+
+    try {
+      log.info('Deleting study', {
+        component: 'SidePanelSystem',
+        metadata: { studyInstanceUID },
+      });
+
+      // simpleDicomLoader에서 해당 스터디의 파일들 삭제
+      simpleDicomLoader.removeStudy(studyInstanceUID);
+
+      // 해당 스터디가 현재 뷰포트에 로드되어 있다면 뷰포트 클리어
+      const affectedViewports = state.viewports.filter(v => v.studyInstanceUID === studyInstanceUID);
+      
+      for (const viewport of affectedViewports) {
+        log.info('Clearing viewport with deleted study', {
+          component: 'SidePanelSystem',
+          metadata: { viewportId: viewport.id, studyInstanceUID },
+        });
+        
+        // 뷰포트에서 스터디 정보 제거
+        loadStudyInViewport(viewport.id, '', '');
+      }
+
+      // 스터디 목록 새로고침
+      setRefreshTrigger(prev => prev + 1);
+
+      // 글로벌 이벤트 발생 (다른 컴포넌트들에게 알림)
+      window.dispatchEvent(new CustomEvent('study-deleted', {
+        detail: { studyInstanceUID }
+      }));
+
+      log.info('Study deleted successfully', {
+        component: 'SidePanelSystem',
+        metadata: { 
+          studyInstanceUID,
+          affectedViewports: affectedViewports.length
+        },
+      });
+
+    } catch (error) {
+      log.error('Failed to delete study', {
+        component: 'SidePanelSystem',
+        metadata: { studyInstanceUID },
+      }, error as Error);
     }
   };
 
@@ -216,9 +331,13 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                 <div className='space-y-2'>
                   <div className='text-sm font-medium mb-3'>스터디 목록</div>
 
-                  {mockStudies.map(study => {
+                  {studies.map(study => {
                     const safetyIndicators = generateSafetyIndicators(study);
                     const hasErrors = safetyIndicators.some(i => i.severity === 'error');
+                    
+                    // 현재 활성 뷰포트에 로드된 스터디인지 확인
+                    const activeViewport = state.viewports.find(v => v.id === state.activeViewportId);
+                    const isActiveStudy = activeViewport?.studyInstanceUID === study.studyInstanceUID;
 
                     return (
                       <Card
@@ -227,15 +346,27 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                           'p-3 cursor-pointer transition-colors',
                           hasErrors
                             ? 'border-destructive/50 bg-destructive/5 hover:bg-destructive/10'
+                            : isActiveStudy
+                            ? 'border-primary bg-primary/5 hover:bg-primary/10'
                             : 'hover:bg-accent',
                         )}
                         onClick={() => handleStudyLoad(study.studyInstanceUID)}
                       >
                         <div className='space-y-2'>
+                          {/* 헤더 영역 - X 버튼 포함 */}
                           <div className='flex items-center justify-between'>
-                            <Badge variant='outline' className='text-xs'>
-                              {study.studyInstanceUID.slice(-6)}
-                            </Badge>
+                            <div className='flex items-center gap-2'>
+                              <Badge variant='outline' className='text-xs'>
+                                {study.studyInstanceUID.slice(-6)}
+                              </Badge>
+                              {isActiveStudy && (
+                                <Badge variant='default' className='text-xs bg-primary'>
+                                  활성화
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* 우측 정보 및 삭제 버튼 */}
                             <div className='flex items-center gap-1'>
                               <Badge variant='secondary' className='text-xs'>
                                 {study.seriesCount}개 시리즈
@@ -243,6 +374,17 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                               <Badge variant='outline' className='text-xs'>
                                 {study.modality}
                               </Badge>
+                              
+                              {/* 삭제 버튼 */}
+                              <Button
+                                variant='ghost'
+                                size='sm'
+                                className='h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground'
+                                onClick={(e) => handleStudyDelete(study.studyInstanceUID, e)}
+                                title={`스터디 ${study.studyInstanceUID.slice(-6)} 삭제`}
+                              >
+                                <X className='h-3 w-3' />
+                              </Button>
                             </div>
                           </div>
 
@@ -267,7 +409,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                     );
                   })}
 
-                  {mockStudies.length === 0 && (
+                  {studies.length === 0 && (
                     <div className='text-center text-muted-foreground text-sm py-8'>
                       <Folder className='h-8 w-8 mx-auto mb-2 opacity-50' />
                       스터디가 없습니다

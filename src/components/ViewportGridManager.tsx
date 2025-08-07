@@ -128,14 +128,6 @@ export const ViewportGridManager: React.FC = () => {
         <ViewportItem key={viewport.id} viewport={viewport} gridPosition={getGridPositionClasses(index, layout.cols)} />
       ))}
 
-      {/* 레이아웃 정보 디버그 패널 (개발 중에만) - 하단 좌측으로 이동 */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className='absolute bottom-4 left-4 z-10'>
-          <Badge variant='outline' className='text-xs bg-background/90 backdrop-blur-sm'>
-            {layout.rows}x{layout.cols}
-          </Badge>
-        </div>
-      )}
     </div>
   );
 };
