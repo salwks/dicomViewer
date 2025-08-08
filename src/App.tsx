@@ -10,7 +10,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { SimpleDicomTest } from './components/SimpleDicomTest';
 import { useCornerstone } from './hooks/useCornerstone';
 import { log } from './utils/logger';
-import { Button } from './components/ui/button';
 
 // Loading component
 const LoadingScreen: React.FC = () => (
@@ -111,8 +110,8 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <UnifiedViewerWithTestButton 
-        onTestModeToggle={() => setTestMode(true)} 
+      <UnifiedViewerWithTestButton
+        onTestModeToggle={() => setTestMode(true)}
       />
     </ErrorBoundary>
   );

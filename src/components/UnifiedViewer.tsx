@@ -13,7 +13,7 @@ import { ViewportGridManager } from './ViewportGridManager';
 import { StatusBar } from './StatusBar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ToolPanel } from './ToolPanel';
-import { AnnotationManager } from './AnnotationManager';
+// import { AnnotationManager } from './AnnotationManager'; // Temporarily disabled
 import { log } from '../utils/logger';
 import { viewportSynchronizer } from '../services/ViewportSynchronizer';
 
@@ -86,13 +86,12 @@ const UnifiedViewerContent: React.FC<UnifiedViewerProps> = ({ className, childre
                 />
               </div>
 
-              {/* 주석 관리 패널 */}
+              {/* 주석 관리 패널 - Temporarily disabled */}
               {showAnnotationManager && (
                 <div className='h-1/2 border-t border-border overflow-y-auto'>
-                  <AnnotationManager
-                    annotations={[]} // TODO: 실제 annotations 연결
-                    className='p-4'
-                  />
+                  <div className='p-4 text-muted-foreground'>
+                    Annotation Manager temporarily disabled
+                  </div>
                 </div>
               )}
 

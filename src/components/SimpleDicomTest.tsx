@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 // 글로벌 변수로 초기화 상태 관리
 let isInitialized = false;
-let renderingEngine: cornerstone.RenderingEngine | null = null;
+let renderingEngine: any = null;
 
 interface SimpleDicomTestProps {
   onBackToMain?: () => void;
@@ -29,18 +29,18 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
 
     try {
       setStatus('Initializing Cornerstone...');
-      
+
       // Cornerstone 초기화
       await cornerstone.init();
-      
-      // DICOM Image Loader 초기화  
+
+      // DICOM Image Loader 초기화
       await dicomImageLoader.init({
         maxWebWorkers: 1,
       });
-      
+
       // RenderingEngine 생성
       renderingEngine = new cornerstone.RenderingEngine('simple-test-engine');
-      
+
       isInitialized = true;
       setStatus('Cornerstone initialized');
     } catch (error) {
@@ -55,7 +55,7 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
 
     try {
       setStatus('Setting up viewport...');
-      
+
       const viewportInput = {
         viewportId: 'test-viewport',
         type: cornerstone.Enums.ViewportType.STACK,
@@ -85,24 +85,24 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
       console.log('Generated imageId:', imageId);
 
       // 뷰포트에 이미지 설정 - Context7 최신 패턴
-      const viewport = renderingEngine.getViewport('test-viewport') as cornerstone.Types.IStackViewport;
-      
+      const viewport = renderingEngine.getViewport('test-viewport') as any;
+
       if (viewport) {
         // Context7 공식 패턴: setStack 후 즉시 render 호출
         viewport.setStack([imageId], 0);
         viewport.render();
         setStatus(`Loaded: ${file.name}`);
-        
+
         console.log('✅ Image successfully loaded and rendered:', {
           imageId,
           viewportId: 'test-viewport',
-          fileName: file.name
+          fileName: file.name,
         });
       } else {
         setStatus('Error: Viewport not found');
         console.error('❌ Viewport not found');
       }
-      
+
     } catch (error) {
       console.error('File loading failed:', error);
       setStatus(`Loading failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -117,7 +117,7 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
       await initializeCornerstone();
       await setupViewport();
     };
-    
+
     init();
   }, []);
 
@@ -142,7 +142,7 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Button 
+              <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading || !isInitialized}
               >
@@ -162,7 +162,7 @@ export const SimpleDicomTest: React.FC<SimpleDicomTestProps> = ({ onBackToMain }
 
       <Card>
         <CardContent className="p-0">
-          <div 
+          <div
             ref={viewportRef}
             className="w-full h-96 bg-black"
             style={{ minHeight: '400px' }}
