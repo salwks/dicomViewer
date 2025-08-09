@@ -5,11 +5,11 @@
 
 import React, { useEffect, useCallback, useRef } from 'react';
 import { useViewer, useViewerLayout, useSynchronization } from '../context/ViewerContext';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Card, CardContent } from '../components/ui/card';
-import { Switch } from '../components/ui/switch';
-import { Separator } from '../components/ui/separator';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Card, CardContent } from './ui/card';
+import { Switch } from './ui/switch';
+import { Separator } from './ui/separator';
 import { cn, safePropertyAccess } from '../lib/utils';
 import { log } from '../utils/logger';
 

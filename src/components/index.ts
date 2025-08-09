@@ -93,7 +93,6 @@ export { SelectionAPIIntegration } from './SelectionAPIIntegration';
 export { SelectionAPIDemo } from './examples/SelectionAPIDemo';
 
 // ===== Security Dashboard =====
-export { AuditDashboard } from './AuditDashboard';
 export { SecurityDashboard } from './SecurityDashboard';
 
 // ===== Essential viewer components bundle =====

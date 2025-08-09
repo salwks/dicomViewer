@@ -93,7 +93,7 @@ export default [
       'comma-dangle': ['error', 'always-multiline'],
       'semi': ['error', 'always'],
       'quotes': ['error', 'single', { avoidEscape: true }],
-      'indent': ['error', 2, { SwitchCase: 1 }],
+      'indent': 'off', // Temporarily disabled due to stack overflow in ComparisonModeManager
       'max-len': 'off', // Disabled for medical software complexity
     },
   },

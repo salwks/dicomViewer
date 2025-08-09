@@ -8,9 +8,7 @@ import React, { useCallback, useRef } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { useViewer, useViewerLayout, useSynchronization } from '../context/ViewerContext';
-import { LayoutSelector } from './LayoutSelector';
+import { useViewer } from '../context/ViewerContext';
 import { Settings } from 'lucide-react';
 import { log } from '../utils/logger';
 import { simpleDicomLoader } from '../services/simpleDicomLoader';
@@ -20,93 +18,6 @@ interface HeaderNavigationProps {
   onTestModeToggle?: () => void;
   showTestButton?: boolean;
 }
-
-// 뷰어 레이아웃 컨트롤 컴포넌트 (LayoutSelector 사용)
-const ViewerLayoutControls: React.FC = () => {
-  const { switchToSingleLayout, switchToSideBySideLayout, switchToQuadLayout, setLayout } = useViewer();
-  const layout = useViewerLayout();
-  const { isEnabled: syncEnabled } = useSynchronization();
-
-  // ViewerLayout의 rows/cols를 LayoutSelector의 ViewportLayout 타입으로 변환
-  const getCurrentLayoutType = useCallback(() => {
-    const { rows, cols } = layout;
-    if (rows === 1 && cols === 1) return '1x1';
-    if (rows === 1 && cols === 2) return '1x2';
-    if (rows === 2 && cols === 1) return '2x1';
-    if (rows === 2 && cols === 2) return '2x2';
-    return '1x1'; // 기본값
-  }, [layout]);
-
-  // LayoutSelector에서 레이아웃 변경 시 호출되는 핸들러
-  const handleLayoutChange = useCallback((layoutType: '1x1' | '1x2' | '2x1' | '2x2' | '1x3' | '3x1' | '2x3' | '3x2') => {
-    switch (layoutType) {
-      case '1x1':
-        switchToSingleLayout();
-        log.info('Switched to single layout (1x1)', {
-          component: 'HeaderNavigation',
-        });
-        break;
-      case '1x2':
-        switchToSideBySideLayout();
-        log.info('Switched to side-by-side layout (1x2)', {
-          component: 'HeaderNavigation',
-        });
-        break;
-      case '2x1':
-        setLayout({ rows: 2, cols: 1 });
-        log.info('Switched to top/bottom layout (2x1)', {
-          component: 'HeaderNavigation',
-        });
-        break;
-      case '2x2':
-        switchToQuadLayout();
-        log.info('Switched to quad layout (2x2)', {
-          component: 'HeaderNavigation',
-        });
-        break;
-      default:
-        log.warn('Unsupported layout type', {
-          component: 'HeaderNavigation',
-          layoutType,
-        });
-    }
-  }, [switchToSingleLayout, switchToSideBySideLayout, switchToQuadLayout, setLayout]);
-
-  const getLayoutDisplayName = (layout: { rows: number; cols: number }) => {
-    const { rows, cols } = layout;
-    if (rows === 1 && cols === 1) return '단일 뷰어';
-    if (rows === 1 && cols === 2) return '좌우 분할';
-    if (rows === 2 && cols === 1) return '상하 분할';
-    if (rows === 2 && cols === 2) return '4분할 뷰어';
-    return `${rows}×${cols} 뷰어`;
-  };
-
-  return (
-    <div className='flex items-center space-x-4'>
-      {/* 현재 레이아웃 표시 */}
-      <div className='flex items-center space-x-2'>
-        <Badge variant='secondary' className='text-xs'>
-          {getLayoutDisplayName(layout)}
-        </Badge>
-        <Badge variant='outline' className='text-xs'>
-          {layout.rows}×{layout.cols}
-        </Badge>
-        {(layout.rows > 1 || layout.cols > 1) && syncEnabled && (
-          <Badge variant='default' className='text-xs'>
-            동기화
-          </Badge>
-        )}
-      </div>
-
-      {/* LayoutSelector 컴포넌트 사용 */}
-      <LayoutSelector
-        currentLayout={getCurrentLayoutType()}
-        onLayoutChange={handleLayoutChange}
-        className="flex items-center"
-      />
-    </div>
-  );
-};
 
 export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className, onTestModeToggle, showTestButton = true }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -182,8 +93,8 @@ export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className, o
         detail: {
           seriesCount: seriesData.length,
           studyCount: new Set(seriesData.map(s => s.studyInstanceUID)).size,
-          files: loadedFiles.length
-        }
+          files: loadedFiles.length,
+        },
       }));
     } catch (error) {
       log.error(
@@ -222,9 +133,6 @@ export const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ className, o
             </div>
           </div>
         </div>
-
-        {/* 뷰어 레이아웃 컨트롤 (중앙) */}
-        <ViewerLayoutControls />
 
         {/* 우측 액션 버튼들 */}
         <div className='flex items-center space-x-2'>

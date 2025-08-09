@@ -182,10 +182,10 @@ export class SimpleDicomLoader {
 
     log.info('Starting DICOM files loading (append mode)', {
       component: 'SimpleDicomLoader',
-      metadata: { 
+      metadata: {
         newFileCount: files.length,
         existingFileCount: previousFileCount,
-        totalExpected: previousFileCount + files.length
+        totalExpected: previousFileCount + files.length,
       },
     });
 
@@ -370,8 +370,8 @@ export class SimpleDicomLoader {
    * Remove files for a specific study
    */
   public removeStudy(studyInstanceUID: string): void {
-    const filesToRemove = this.loadedFiles.filter(file => 
-      file.metadata.studyInstanceUID === studyInstanceUID
+    const filesToRemove = this.loadedFiles.filter(file =>
+      file.metadata.studyInstanceUID === studyInstanceUID,
     );
 
     // Revoke blob URLs for files being removed
@@ -383,8 +383,8 @@ export class SimpleDicomLoader {
     });
 
     // Remove files from loaded files array
-    this.loadedFiles = this.loadedFiles.filter(file => 
-      file.metadata.studyInstanceUID !== studyInstanceUID
+    this.loadedFiles = this.loadedFiles.filter(file =>
+      file.metadata.studyInstanceUID !== studyInstanceUID,
     );
 
     log.info('Removed study files', {

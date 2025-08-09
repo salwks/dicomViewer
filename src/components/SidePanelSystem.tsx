@@ -56,7 +56,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
   const loadStudiesFromDicomData = React.useCallback(async () => {
     try {
       const seriesData = await simpleDicomLoader.getSeriesData();
-      
+
       log.info('Updating studies from DICOM data', {
         component: 'SidePanelSystem',
         metadata: {
@@ -65,17 +65,17 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
             studyUID: s.studyInstanceUID,
             seriesUID: s.seriesInstanceUID,
             patientName: s.patientName,
-            modality: s.modality
-          }))
-        }
+            modality: s.modality,
+          })),
+        },
       });
-      
+
       // 스터디별로 그룹화
       const studyMap = new Map<string, StudyInfo>();
-      
+
       for (const series of seriesData) {
         const studyUID = series.studyInstanceUID;
-        
+
         if (!studyMap.has(studyUID)) {
           studyMap.set(studyUID, {
             studyInstanceUID: studyUID,
@@ -84,17 +84,17 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
             studyDate: series.studyDate || new Date().toISOString().split('T')[0],
             seriesCount: 1,
             modality: series.modality || 'OT',
-            safetyFlags: {}
+            safetyFlags: {},
           });
         } else {
           const study = studyMap.get(studyUID)!;
           study.seriesCount++;
         }
       }
-      
+
       const studiesArray = Array.from(studyMap.values());
       setStudies(studiesArray);
-      
+
       log.info('Studies updated successfully', {
         component: 'SidePanelSystem',
         metadata: {
@@ -103,12 +103,12 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
             studyUID: s.studyInstanceUID,
             patientName: s.patientName,
             seriesCount: s.seriesCount,
-            modality: s.modality
-          }))
-        }
+            modality: s.modality,
+          })),
+        },
       });
-      
-    } catch (error) {
+
+    } catch (_error) {
       log.warn('Failed to load studies from DICOM data', {
         component: 'SidePanelSystem',
       });
@@ -125,14 +125,14 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
   React.useEffect(() => {
     const handleDicomFilesLoaded = () => {
       log.info('DICOM files loaded event detected, refreshing studies', {
-        component: 'SidePanelSystem'
+        component: 'SidePanelSystem',
       });
       setRefreshTrigger(prev => prev + 1);
     };
 
     // 커스텀 이벤트 리스너 등록
     window.addEventListener('dicom-files-loaded', handleDicomFilesLoaded);
-    
+
     return () => {
       window.removeEventListener('dicom-files-loaded', handleDicomFilesLoaded);
     };
@@ -141,7 +141,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
   const handleStudyLoad = async (studyInstanceUID: string) => {
     // 활성 뷰포트에 로드 (없으면 첫 번째 뷰포트 사용)
     const activeViewportId = state.activeViewportId || state.viewports[0]?.id;
-    
+
     if (!activeViewportId) {
       log.warn('No viewport available for loading study', {
         component: 'SidePanelSystem',
@@ -190,7 +190,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
 
         loadStudyInViewport(activeViewportId, studyInstanceUID);
       }
-    } catch (error) {
+    } catch (_error) {
       log.error('Failed to load study', {
         component: 'SidePanelSystem',
         metadata: { studyInstanceUID, activeViewportId },
@@ -214,13 +214,13 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
 
       // 해당 스터디가 현재 뷰포트에 로드되어 있다면 뷰포트 클리어
       const affectedViewports = state.viewports.filter(v => v.studyInstanceUID === studyInstanceUID);
-      
+
       for (const viewport of affectedViewports) {
         log.info('Clearing viewport with deleted study', {
           component: 'SidePanelSystem',
           metadata: { viewportId: viewport.id, studyInstanceUID },
         });
-        
+
         // 뷰포트에서 스터디 정보 제거
         loadStudyInViewport(viewport.id, '', '');
       }
@@ -230,18 +230,18 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
 
       // 글로벌 이벤트 발생 (다른 컴포넌트들에게 알림)
       window.dispatchEvent(new CustomEvent('study-deleted', {
-        detail: { studyInstanceUID }
+        detail: { studyInstanceUID },
       }));
 
       log.info('Study deleted successfully', {
         component: 'SidePanelSystem',
-        metadata: { 
+        metadata: {
           studyInstanceUID,
-          affectedViewports: affectedViewports.length
+          affectedViewports: affectedViewports.length,
         },
       });
 
-    } catch (error) {
+    } catch (_error) {
       log.error('Failed to delete study', {
         component: 'SidePanelSystem',
         metadata: { studyInstanceUID },
@@ -334,7 +334,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                   {studies.map(study => {
                     const safetyIndicators = generateSafetyIndicators(study);
                     const hasErrors = safetyIndicators.some(i => i.severity === 'error');
-                    
+
                     // 현재 활성 뷰포트에 로드된 스터디인지 확인
                     const activeViewport = state.viewports.find(v => v.id === state.activeViewportId);
                     const isActiveStudy = activeViewport?.studyInstanceUID === study.studyInstanceUID;
@@ -365,7 +365,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                                 </Badge>
                               )}
                             </div>
-                            
+
                             {/* 우측 정보 및 삭제 버튼 */}
                             <div className='flex items-center gap-1'>
                               <Badge variant='secondary' className='text-xs'>
@@ -374,7 +374,7 @@ export const SidePanelSystem: React.FC<SidePanelSystemProps> = ({ className }) =
                               <Badge variant='outline' className='text-xs'>
                                 {study.modality}
                               </Badge>
-                              
+
                               {/* 삭제 버튼 */}
                               <Button
                                 variant='ghost'
